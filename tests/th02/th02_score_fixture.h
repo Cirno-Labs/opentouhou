@@ -3,4 +3,4 @@
 // g_Score is read-only outside th02/score.c; this fixture pulls in the
 // module's private storage so tests can poke it directly for setup
 // and assertions.
-#include "th02/score.c"
+#include "th02/score_private.h"

@@ -152,7 +152,7 @@ TEST(sigma_entry_borrows_cached_sprites_and_resets_only_its_owned_state)
     p_Bullets->slots[1].state = ENTITY_REMOVE;
     p_Background->cache.mode = TILE_DISABLED;
     const SCORE score = *g_Score;
-    const RANDOM_STATE before_random = m_Rng;
+    const RANDOM_STATE before_random = *p_Rng;
     const PLAYER player = m_Player;
     const uint32_t world = g_Stage->world.frame;
     const int32_t session = f.session.frame;
@@ -183,7 +183,7 @@ TEST(sigma_entry_borrows_cached_sprites_and_resets_only_its_owned_state)
     CHECK_EQ_INT(g_Video.pages[0][48 * 640 + 160], 6);
     CHECK_EQ_INT(g_Video.pages[0][143 * 640 + 287], 6);
     CHECK(memcmp(g_Score, &score, sizeof(score)) == 0);
-    CHECK(memcmp(&m_Rng, &before_random, sizeof(before_random)) == 0);
+    CHECK(memcmp(p_Rng, &before_random, sizeof(before_random)) == 0);
     CHECK(memcmp(&m_Player, &player, sizeof(player)) == 0);
     CHECK_EQ_INT(g_Stage->world.frame, world);
     CHECK_EQ_INT(f.session.frame, session);
@@ -262,7 +262,7 @@ TEST(sigma_live_hit_draws_the_hit_sprite_then_restores_its_pattern)
             f.session.reduce_effects),
         1);
     CHECK_EQ_INT(BossFight_State()->damage, 5);
-    CHECK_EQ_INT(m_Score.delta, 5);
+    CHECK_EQ_INT(p_Score->delta, 5);
     CHECK_EQ_INT(BossFight_State()->sprite, 128);
     CHECK_EQ_INT(BossFight_State()->hit_flash, 0);
     CHECK_EQ_INT(shot->age, 2);
@@ -285,8 +285,8 @@ TEST(sigma_defeat_awards_directly_and_excludes_its_animation_from_fight_time)
     m_Sigma.attacks[0] = SIGMA_ATTACK_FAN_SWEEP;
     m_Sigma.phase_damage = 5000;
     TestBossFight_State()->damage = 1300;
-    m_Score.value = 123;
-    m_Score.delta = 17;
+    p_Score->value = 123;
+    p_Score->delta = 17;
     p_Stage->world.extra_boss_frames = UINT32_MAX;
     m_Player.invincibility = 77;
     CHECK_EQ_INT(
@@ -296,8 +296,8 @@ TEST(sigma_defeat_awards_directly_and_excludes_its_animation_from_fight_time)
         1);
     CHECK_EQ_INT(BossFight_State()->defeated, 1);
     CHECK_EQ_INT(BossFight_State()->phase_frame, 0);
-    CHECK_EQ_INT(m_Score.value, 300123);
-    CHECK_EQ_INT(m_Score.delta, 17);
+    CHECK_EQ_INT(p_Score->value, 300123);
+    CHECK_EQ_INT(p_Score->delta, 17);
     CHECK_EQ_INT(g_Stage->world.extra_boss_frames, 0);
     CHECK_EQ_INT(m_Player.invincibility, 77);
     m_Player.position[0] = (ENTITY_POINT) { 224, 390 };
@@ -309,7 +309,7 @@ TEST(sigma_defeat_awards_directly_and_excludes_its_animation_from_fight_time)
                 f.session.reduce_effects),
             frame == 224 ? 2 : 1);
         CHECK_EQ_INT(g_Stage->world.extra_boss_frames, 0);
-        CHECK_EQ_INT(m_Score.value, 300123);
+        CHECK_EQ_INT(p_Score->value, 300123);
         if (frame == 101) {
             CHECK_EQ_INT(m_Player.hit, 1);
         } else if (frame == 141) {
@@ -398,15 +398,15 @@ TEST(sigma_sweep_reads_x_before_speed_and_keeps_the_frame_start_origin)
     TestBossFight_State()->phase_frame = 20;
     p_Performance->value = 0;
     BulletSpawn_Init(SESSION_EXTRA_RANK);
-    m_Rng.cursor = 0;
-    m_Rng.ring[0] = 17;
-    m_Rng.ring[1] = 3;
+    p_Rng->cursor = 0;
+    p_Rng->ring[0] = 17;
+    p_Rng->ring[1] = 3;
     CHECK_EQ_INT(
         M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns,
             f.session.reduce_effects),
         1);
-    CHECK_EQ_INT(m_Rng.cursor, 2);
+    CHECK_EQ_INT(p_Rng->cursor, 2);
     CHECK_EQ_INT(BossFight_State()->position[1].x, 161);
     CHECK_EQ_INT(m_Sigma.position.x, 161);
     CHECK_EQ_INT(m_Sigma.bullet_origin.x, 220);

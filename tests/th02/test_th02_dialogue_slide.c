@@ -35,7 +35,7 @@ static void M_Init(FIXTURE *const fixture)
     memset(g_Video.pages[0], 15, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 15, VIDEO_PAGE_SIZE);
     Clip_Reset();
-    memset(&m_Tram, 0xa5, sizeof(m_Tram));
+    memset(p_Tram, 0xa5, sizeof(*p_Tram));
     PatternBank_Init(&fixture->patterns, &g_HeapAllocator);
     uint8_t pixels[32 * 48];
     memset(pixels, 1, sizeof(pixels));
@@ -60,10 +60,10 @@ static void M_Init(FIXTURE *const fixture)
     Palette_Init();
     p_Palette->tone = 70;
     Score_Init();
-    m_Score.value = 99900;
-    m_Score.delta = 200;
-    m_Score.transferred = 17;
-    m_Score.lives = 4;
+    p_Score->value = 99900;
+    p_Score->delta = 200;
+    p_Score->transferred = 17;
+    p_Score->lives = 4;
 }
 
 static void M_Free(FIXTURE *const fixture)
@@ -95,15 +95,15 @@ TEST(entry_grants_retained_delta_before_palette_pages_and_the_first_frame)
     CHECK_EQ_INT(p_Palette->tone, 70);
     DIALOGUE_SLIDE slide;
     DialogueSlide_BeginEnter(&slide, &fixture.patterns);
-    CHECK_EQ_INT(m_Score.value, 100100);
-    CHECK_EQ_INT(m_Score.delta, 200);
-    CHECK_EQ_INT(m_Score.transferred, 17);
-    CHECK_EQ_INT(m_Score.extends, 1);
-    CHECK_EQ_INT(m_Score.lives, 5);
-    CHECK_EQ_INT(m_Tram.codes[80 + 4], ' ');
-    CHECK_EQ_INT(m_Tram.codes[6 * TRAM_COLUMNS + 58], 0x2157);
-    CHECK_EQ_INT(m_Tram.codes[4 * TRAM_COLUMNS + 58], 0x2157);
-    CHECK_EQ_INT(m_Tram.codes[17 * TRAM_COLUMNS + 70], 0x0256);
+    CHECK_EQ_INT(p_Score->value, 100100);
+    CHECK_EQ_INT(p_Score->delta, 200);
+    CHECK_EQ_INT(p_Score->transferred, 17);
+    CHECK_EQ_INT(p_Score->extends, 1);
+    CHECK_EQ_INT(p_Score->lives, 5);
+    CHECK_EQ_INT(p_Tram->codes[80 + 4], ' ');
+    CHECK_EQ_INT(p_Tram->codes[6 * TRAM_COLUMNS + 58], 0x2157);
+    CHECK_EQ_INT(p_Tram->codes[4 * TRAM_COLUMNS + 58], 0x2157);
+    CHECK_EQ_INT(p_Tram->codes[17 * TRAM_COLUMNS + 70], 0x0256);
     CHECK_EQ_INT(p_Palette->tone, 100);
     CHECK_EQ_INT(g_Video.drawing_page, 1);
     CHECK_EQ_INT(g_Video.visible_page, 0);
@@ -149,8 +149,8 @@ TEST(entry_and_exit_keep_exact_frame_counts_and_restore_only_disabled_tiles)
         CHECK_EQ_INT(g_Grcg->mode, 0);
         CHECK_EQ_INT(g_Grcg->tiles[0], 0);
         CHECK_EQ_INT(g_Grcg->tiles[1], 255);
-        CHECK_EQ_INT(m_Score.value, 100100);
-        CHECK_EQ_INT(m_Score.delta, 200);
+        CHECK_EQ_INT(p_Score->value, 100100);
+        CHECK_EQ_INT(p_Score->delta, 200);
         CHECK(memcmp(&m_Player, &player, sizeof(player)) == 0);
         CHECK(memcmp(&p_Stage->scroll, &scroll, sizeof(scroll)) == 0);
         M_Free(&fixture);

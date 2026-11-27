@@ -2,8 +2,8 @@
 #include "tests/th02/th02_sprites.h"
 #include "th02/background.h"
 #include "th02/background/private.h"
-#include "th02/point_numbers.c"
 #include "th02/point_numbers.h"
+#include "th02/point_numbers_private.h"
 
 #include "core/base/arena.h"
 #include "core/base/memory.h"
@@ -36,61 +36,61 @@ TEST(missing_pointnum_sheet_leaves_font_empty)
 
 TEST(rank_reset_preserves_record_payloads_and_unknown_multiplier_state)
 {
-    memset(&m_PointNumbers, 0x5a, sizeof(m_PointNumbers));
+    memset(p_PointNumbers, 0x5a, sizeof(*p_PointNumbers));
     PointNumbers_Init();
-    CHECK_EQ_INT(m_PointNumbers.color, 0);
-    CHECK_EQ_INT(m_PointNumbers.operation, 0);
-    CHECK_EQ_INT(m_PointNumbers.operand, 0);
+    CHECK_EQ_INT(p_PointNumbers->color, 0);
+    CHECK_EQ_INT(p_PointNumbers->operation, 0);
+    CHECK_EQ_INT(p_PointNumbers->operand, 0);
     for (size_t i = 0; i < POINT_NUMBER_COUNT; i++) {
-        CHECK_EQ_INT(m_PointNumbers.slots[i].state, ENTITY_FREE);
-        CHECK_EQ_INT(m_PointNumbers.slots[i].left, 0);
-        CHECK_EQ_INT(m_PointNumbers.slots[i].top[0], 0);
-        CHECK_EQ_INT(m_PointNumbers.slots[i].top[1], 0);
-        CHECK_EQ_INT(m_PointNumbers.slots[i].value, 0);
-        CHECK_EQ_INT(m_PointNumbers.slots[i].age, 0);
+        CHECK_EQ_INT(p_PointNumbers->slots[i].state, ENTITY_FREE);
+        CHECK_EQ_INT(p_PointNumbers->slots[i].left, 0);
+        CHECK_EQ_INT(p_PointNumbers->slots[i].top[0], 0);
+        CHECK_EQ_INT(p_PointNumbers->slots[i].top[1], 0);
+        CHECK_EQ_INT(p_PointNumbers->slots[i].value, 0);
+        CHECK_EQ_INT(p_PointNumbers->slots[i].age, 0);
     }
     for (int32_t rank = 0; rank < 256; rank++) {
-        memset(&m_PointNumbers, 0xa5, sizeof(m_PointNumbers));
+        memset(p_PointNumbers, 0xa5, sizeof(*p_PointNumbers));
         PointNumbers_ResetStage((uint8_t)rank);
-        CHECK_EQ_INT(m_PointNumbers.color, 15);
+        CHECK_EQ_INT(p_PointNumbers->color, 15);
         CHECK_EQ_INT(
-            m_PointNumbers.operation,
+            p_PointNumbers->operation,
             rank < 2       ? 12
                 : rank < 5 ? 10
                            : 0xa5);
         CHECK_EQ_INT(
-            m_PointNumbers.operand,
+            p_PointNumbers->operand,
             rank < 2       ? 12
                 : rank < 5 ? 1 << (rank - 1)
                            : 0xa5);
         for (size_t i = 0; i < POINT_NUMBER_COUNT; i++) {
-            CHECK_EQ_INT(m_PointNumbers.slots[i].state, ENTITY_FREE);
-            CHECK_EQ_INT(m_PointNumbers.slots[i].left, (int16_t)0xa5a5);
-            CHECK_EQ_INT(m_PointNumbers.slots[i].top[0], (int16_t)0xa5a5);
-            CHECK_EQ_INT(m_PointNumbers.slots[i].top[1], (int16_t)0xa5a5);
-            CHECK_EQ_INT(m_PointNumbers.slots[i].age, 0xa5);
-            CHECK_EQ_INT(m_PointNumbers.slots[i].value, 0xa5a5);
+            CHECK_EQ_INT(p_PointNumbers->slots[i].state, ENTITY_FREE);
+            CHECK_EQ_INT(p_PointNumbers->slots[i].left, (int16_t)0xa5a5);
+            CHECK_EQ_INT(p_PointNumbers->slots[i].top[0], (int16_t)0xa5a5);
+            CHECK_EQ_INT(p_PointNumbers->slots[i].top[1], (int16_t)0xa5a5);
+            CHECK_EQ_INT(p_PointNumbers->slots[i].age, 0xa5);
+            CHECK_EQ_INT(p_PointNumbers->slots[i].value, 0xa5a5);
         }
     }
 }
 
 TEST(add_uses_the_first_free_slot_and_keeps_a_full_bank)
 {
-    memset(&m_PointNumbers, 0xa5, sizeof(m_PointNumbers));
-    const POINT_NUMBERS before = m_PointNumbers;
+    memset(p_PointNumbers, 0xa5, sizeof(*p_PointNumbers));
+    const POINT_NUMBERS before = *p_PointNumbers;
     PointNumbers_Add(-7, 399, 6553);
-    CHECK(memcmp(&m_PointNumbers, &before, sizeof(m_PointNumbers)) == 0);
-    m_PointNumbers.slots[7].state = ENTITY_FREE;
-    m_PointNumbers.slots[9].state = ENTITY_FREE;
+    CHECK(memcmp(p_PointNumbers, &before, sizeof(*p_PointNumbers)) == 0);
+    p_PointNumbers->slots[7].state = ENTITY_FREE;
+    p_PointNumbers->slots[9].state = ENTITY_FREE;
     PointNumbers_Add(-7, 399, 6553);
-    CHECK_EQ_INT(m_PointNumbers.slots[7].state, ENTITY_ACTIVE);
-    CHECK_EQ_INT(m_PointNumbers.slots[7].age, 0);
-    CHECK_EQ_INT(m_PointNumbers.slots[7].left, -7);
-    CHECK_EQ_INT(m_PointNumbers.slots[7].top[0], 399);
-    CHECK_EQ_INT(m_PointNumbers.slots[7].top[1], 399);
-    CHECK_EQ_INT(m_PointNumbers.slots[7].value, 6553);
-    CHECK_EQ_INT(m_PointNumbers.slots[9].state, ENTITY_FREE);
-    CHECK_EQ_INT(m_PointNumbers.color, 0xa5);
+    CHECK_EQ_INT(p_PointNumbers->slots[7].state, ENTITY_ACTIVE);
+    CHECK_EQ_INT(p_PointNumbers->slots[7].age, 0);
+    CHECK_EQ_INT(p_PointNumbers->slots[7].left, -7);
+    CHECK_EQ_INT(p_PointNumbers->slots[7].top[0], 399);
+    CHECK_EQ_INT(p_PointNumbers->slots[7].top[1], 399);
+    CHECK_EQ_INT(p_PointNumbers->slots[7].value, 6553);
+    CHECK_EQ_INT(p_PointNumbers->slots[9].state, ENTITY_FREE);
+    CHECK_EQ_INT(p_PointNumbers->color, 0xa5);
 }
 
 TEST(cleanup_keeps_removed_tops_and_copies_other_nonfree_flags)
@@ -98,18 +98,18 @@ TEST(cleanup_keeps_removed_tops_and_copies_other_nonfree_flags)
     memset(&p_Background->cache, 0, sizeof(p_Background->cache));
     p_Background->cache.mode = TILE_DISABLED;
     PointNumbers_Init();
-    m_PointNumbers.slots[0] =
+    p_PointNumbers->slots[0] =
         (POINT_NUMBER) { .top = { 100, 200 }, .state = ENTITY_REMOVE };
-    m_PointNumbers.slots[1] =
+    p_PointNumbers->slots[1] =
         (POINT_NUMBER) { .top = { 101, 201 }, .state = ENTITY_ACTIVE };
-    m_PointNumbers.slots[2] =
+    p_PointNumbers->slots[2] =
         (POINT_NUMBER) { .top = { 102, 202 }, .state = 255 };
     PointNumbers_Invalidate((PLAYFIELD_PAGES) { 0, 1, 399 });
-    CHECK_EQ_INT(m_PointNumbers.slots[0].state, ENTITY_FREE);
-    CHECK_EQ_INT(m_PointNumbers.slots[0].top[0], 100);
-    CHECK_EQ_INT(m_PointNumbers.slots[1].top[0], 201);
-    CHECK_EQ_INT(m_PointNumbers.slots[2].top[0], 202);
-    CHECK_EQ_INT(m_PointNumbers.slots[2].state, 255);
+    CHECK_EQ_INT(p_PointNumbers->slots[0].state, ENTITY_FREE);
+    CHECK_EQ_INT(p_PointNumbers->slots[0].top[0], 100);
+    CHECK_EQ_INT(p_PointNumbers->slots[1].top[0], 201);
+    CHECK_EQ_INT(p_PointNumbers->slots[2].top[0], 202);
+    CHECK_EQ_INT(p_PointNumbers->slots[2].state, 255);
 }
 
 TEST(update_places_digits_then_zero_and_multiplier_and_preserves_video_state)
@@ -127,14 +127,14 @@ TEST(update_places_digits_then_zero_and_multiplier_and_preserves_video_state)
     font.rows[2][0] = 0x40;
     font.rows[10][0] = 0x20;
     PointNumbers_Init();
-    m_PointNumbers.color = 0x12;
-    m_PointNumbers.operation = 10;
-    m_PointNumbers.operand = 2;
+    p_PointNumbers->color = 0x12;
+    p_PointNumbers->operation = 10;
+    p_PointNumbers->operand = 2;
     PointNumbers_Add(100, 399, 12);
-    m_PointNumbers.slots[0].age = 6;
+    p_PointNumbers->slots[0].age = 6;
     PointNumbers_Update((PLAYFIELD_PAGES) { 1, 1, 0 }, &font);
-    CHECK_EQ_INT(m_PointNumbers.slots[0].age, 7);
-    CHECK_EQ_INT(m_PointNumbers.slots[0].top[1], 399);
+    CHECK_EQ_INT(p_PointNumbers->slots[0].age, 7);
+    CHECK_EQ_INT(p_PointNumbers->slots[0].top[1], 399);
     CHECK_EQ_INT(g_Video.pages[1][399 * 640 + 125], 2);
     CHECK_EQ_INT(g_Video.pages[1][399 * 640 + 132], 2);
     CHECK_EQ_INT(g_Video.pages[1][399 * 640 + 142], 2);
@@ -149,12 +149,12 @@ TEST(update_places_digits_then_zero_and_multiplier_and_preserves_video_state)
     CHECK_EQ_INT(g_Grcg->tiles[0], 0);
     CHECK_EQ_INT(g_Grcg->tiles[1], 255);
     PointNumbers_Update((PLAYFIELD_PAGES) { 1, 1, 0 }, &font);
-    CHECK_EQ_INT(m_PointNumbers.slots[0].top[1], 398);
-    m_PointNumbers.slots[0].age = 25;
-    m_PointNumbers.slots[0].top[1] = INT16_MIN;
+    CHECK_EQ_INT(p_PointNumbers->slots[0].top[1], 398);
+    p_PointNumbers->slots[0].age = 25;
+    p_PointNumbers->slots[0].top[1] = INT16_MIN;
     PointNumbers_Update((PLAYFIELD_PAGES) { 1, 1, 0 }, &font);
-    CHECK_EQ_INT(m_PointNumbers.slots[0].top[1], INT16_MAX);
-    CHECK_EQ_INT(m_PointNumbers.slots[0].state, ENTITY_REMOVE);
-    CHECK_EQ_INT(m_PointNumbers.slots[0].age, 25);
+    CHECK_EQ_INT(p_PointNumbers->slots[0].top[1], INT16_MAX);
+    CHECK_EQ_INT(p_PointNumbers->slots[0].state, ENTITY_REMOVE);
+    CHECK_EQ_INT(p_PointNumbers->slots[0].age, 25);
     Arena_Free(&arena);
 }

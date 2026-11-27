@@ -14,7 +14,7 @@ TEST(console_clear_homes_the_software_cursor_and_keeps_hidden_cells_and_flags)
         0xe5,
     };
     for (size_t mode = 0; mode < ARRAY_SIZE(attributes); mode++) {
-        memset(&m_Tram, 0x99, sizeof(m_Tram));
+        memset(p_Tram, 0x99, sizeof(*p_Tram));
         TRAM_CONSOLE console;
         TramConsole_Init(&console, attributes[mode]);
         CHECK(console.cursor_visible && console.system_line_visible);
@@ -27,9 +27,9 @@ TEST(console_clear_homes_the_software_cursor_and_keeps_hidden_cells_and_flags)
         CHECK_EQ_INT(console.attribute, attributes[mode]);
         CHECK(!console.cursor_visible && !console.system_line_visible);
         for (size_t i = 0; i < TRAM_PLANE_CELLS; i++) {
-            CHECK_EQ_INT(m_Tram.codes[i], i < 2000 ? ' ' : 0x9999);
+            CHECK_EQ_INT(p_Tram->codes[i], i < 2000 ? ' ' : 0x9999);
             CHECK_EQ_INT(
-                m_Tram.attributes[i], i < 2000 ? attributes[mode] : 0x9999);
+                p_Tram->attributes[i], i < 2000 ? attributes[mode] : 0x9999);
         }
     }
 }
@@ -43,7 +43,7 @@ TEST(display_clock_matches_measured_blink_intervals_without_mutating_text)
     bank.rows[1][0] = 0xffff;
     Tram_PutGaiji(8, 0, 1, 0xe3);
     Tram_PutGaiji(10, 0, 1, 0xe1);
-    const TRAM saved = m_Tram;
+    const TRAM saved = *p_Tram;
     TRAM_DISPLAY display;
     TramDisplay_Init(&display, 2);
     display.first_cell = 8;
@@ -69,7 +69,7 @@ TEST(display_clock_matches_measured_blink_intervals_without_mutating_text)
     CHECK_EQ_INT(next, ARRAY_SIZE(transitions));
     CHECK_EQ_INT(display.first_cell, 8);
     CHECK(display.visible);
-    CHECK(memcmp(&m_Tram, &saved, sizeof(m_Tram)) == 0);
+    CHECK(memcmp(p_Tram, &saved, sizeof(*p_Tram)) == 0);
     Mem_Free(pixels);
 }
 
@@ -99,14 +99,14 @@ TEST(visible_fill_keeps_both_plane_tails)
 {
     Tram_Init();
     for (size_t cell = 0; cell < TRAM_PLANE_CELLS; cell++) {
-        CHECK_EQ_INT(m_Tram.codes[cell], 0);
-        CHECK_EQ_INT(m_Tram.attributes[cell], 0);
+        CHECK_EQ_INT(p_Tram->codes[cell], 0);
+        CHECK_EQ_INT(p_Tram->attributes[cell], 0);
     }
-    memset(&m_Tram, 0xa5, sizeof(m_Tram));
+    memset(p_Tram, 0xa5, sizeof(*p_Tram));
     Tram_Fill(0x20, 0x1234);
     for (size_t cell = 0; cell < TRAM_PLANE_CELLS; cell++) {
-        CHECK_EQ_INT(m_Tram.codes[cell], cell < 2000 ? 0x20 : 0xa5a5);
-        CHECK_EQ_INT(m_Tram.attributes[cell], cell < 2000 ? 0x1234 : 0xa5a5);
+        CHECK_EQ_INT(p_Tram->codes[cell], cell < 2000 ? 0x20 : 0xa5a5);
+        CHECK_EQ_INT(p_Tram->attributes[cell], cell < 2000 ? 0x1234 : 0xa5a5);
     }
 }
 
@@ -114,20 +114,20 @@ TEST(gaiji_codes_keep_both_halves_and_spill_across_rows)
 {
     Tram_Init();
     Tram_PutGaiji(79, 0, 0x127f, 0x34e1);
-    CHECK_EQ_INT(m_Tram.codes[79], 0x7f56);
-    CHECK_EQ_INT(m_Tram.codes[80], 0xff56);
-    CHECK_EQ_INT(m_Tram.attributes[79], 0x34e1);
-    CHECK_EQ_INT(m_Tram.attributes[80], 0x34e1);
+    CHECK_EQ_INT(p_Tram->codes[79], 0x7f56);
+    CHECK_EQ_INT(p_Tram->codes[80], 0xff56);
+    CHECK_EQ_INT(p_Tram->attributes[79], 0x34e1);
+    CHECK_EQ_INT(p_Tram->attributes[80], 0x34e1);
     Tram_PutGaiji(79, 24, 128, 0x21);
-    CHECK_EQ_INT(m_Tram.codes[1999], 0x57);
-    CHECK_EQ_INT(m_Tram.codes[2000], 0x8057);
-    CHECK_EQ_INT(m_Tram.attributes[2000], 0x21);
+    CHECK_EQ_INT(p_Tram->codes[1999], 0x57);
+    CHECK_EQ_INT(p_Tram->codes[2000], 0x8057);
+    CHECK_EQ_INT(p_Tram->attributes[2000], 0x21);
     Tram_PutGaiji(0, 0, 0, 0xe1);
-    CHECK_EQ_INT(m_Tram.codes[0], 0x56);
-    CHECK_EQ_INT(m_Tram.codes[1], 0x8056);
+    CHECK_EQ_INT(p_Tram->codes[0], 0x56);
+    CHECK_EQ_INT(p_Tram->codes[1], 0x8056);
     Tram_PutGaiji(2, 0, 255, 0xe1);
-    CHECK_EQ_INT(m_Tram.codes[2], 0x7f57);
-    CHECK_EQ_INT(m_Tram.codes[3], 0xff57);
+    CHECK_EQ_INT(p_Tram->codes[2], 0x7f57);
+    CHECK_EQ_INT(p_Tram->codes[3], 0xff57);
 }
 
 TEST(gaiji_strings_keep_overlap_and_offset_wrap)
@@ -139,40 +139,40 @@ TEST(gaiji_strings_keep_overlap_and_offset_wrap)
         0x0156, 0x8156, 0x0057, 0x8057, 0x7f57, 0xff57,
     };
     for (size_t cell = 0; cell < 6; cell++) {
-        CHECK_EQ_INT(m_Tram.codes[78 + cell], expected[cell]);
-        CHECK_EQ_INT(m_Tram.attributes[78 + cell], 0xabcd);
+        CHECK_EQ_INT(p_Tram->codes[78 + cell], expected[cell]);
+        CHECK_EQ_INT(p_Tram->attributes[78 + cell], 0xabcd);
     }
-    CHECK_EQ_INT(m_Tram.codes[84], 0);
+    CHECK_EQ_INT(p_Tram->codes[84], 0);
     const uint8_t empty[] = { 0 };
-    const TRAM before = m_Tram;
+    const TRAM before = *p_Tram;
     Tram_PutGaijiString(0, 0, empty, 0);
-    CHECK(memcmp(&m_Tram, &before, sizeof(m_Tram)) == 0);
+    CHECK(memcmp(p_Tram, &before, sizeof(*p_Tram)) == 0);
     Tram_PutGaijiString(32767, 0, glyphs, 0x1234);
-    CHECK_EQ_INT(m_Tram.codes[0], 0x8156);
-    CHECK_EQ_INT(m_Tram.codes[1], 0x0057);
-    CHECK_EQ_INT(m_Tram.codes[2], 0x8057);
-    CHECK_EQ_INT(m_Tram.codes[3], 0x7f57);
-    CHECK_EQ_INT(m_Tram.codes[4], 0xff57);
-    CHECK_EQ_INT(m_Tram.attributes[0], 0x1234);
-    CHECK_EQ_INT(m_Tram.attributes[4], 0x1234);
+    CHECK_EQ_INT(p_Tram->codes[0], 0x8156);
+    CHECK_EQ_INT(p_Tram->codes[1], 0x0057);
+    CHECK_EQ_INT(p_Tram->codes[2], 0x8057);
+    CHECK_EQ_INT(p_Tram->codes[3], 0x7f57);
+    CHECK_EQ_INT(p_Tram->codes[4], 0xff57);
+    CHECK_EQ_INT(p_Tram->attributes[0], 0x1234);
+    CHECK_EQ_INT(p_Tram->attributes[4], 0x1234);
     Tram_PutGaiji(4096, 0, 2, 0x4321);
-    CHECK_EQ_INT(m_Tram.attributes[0], 0x0256);
-    CHECK_EQ_INT(m_Tram.attributes[1], 0x8256);
+    CHECK_EQ_INT(p_Tram->attributes[0], 0x0256);
+    CHECK_EQ_INT(p_Tram->attributes[1], 0x8256);
 }
 
 TEST(attribute_boxes_preserve_codes_and_other_cells)
 {
-    memset(&m_Tram, 0xa5, sizeof(m_Tram));
+    memset(p_Tram, 0xa5, sizeof(*p_Tram));
     Tram_FillAttributes(4, 1, 51, 23, 0x0501);
     Tram_FillAttributes(79, 24, 79, 24, 0x8021);
     for (size_t cell = 0; cell < TRAM_PLANE_CELLS; cell++) {
-        CHECK_EQ_INT(m_Tram.codes[cell], 0xa5a5);
+        CHECK_EQ_INT(p_Tram->codes[cell], 0xa5a5);
         const size_t x = cell % 80;
         const size_t y = cell / 80;
         const uint16_t expected = cell == 1999       ? 0x8021
             : x >= 4 && x <= 51 && y >= 1 && y <= 23 ? 0x0501
                                                      : 0xa5a5;
-        CHECK_EQ_INT(m_Tram.attributes[cell], expected);
+        CHECK_EQ_INT(p_Tram->attributes[cell], expected);
     }
 }
 
@@ -199,8 +199,8 @@ TEST(scanout_alternates_custom_halves_and_pairs_normal_wide_glyphs)
         0x0156, 0x8257, 0x8156, 'A', 0x0156, 0x2321, 0x0156, 0x8156,
     };
     for (size_t cell = 0; cell < 8; cell++) {
-        m_Tram.codes[cell] = codes[cell];
-        m_Tram.attributes[cell] = cell == 6 ? 0x81 : 0xe1;
+        p_Tram->codes[cell] = codes[cell];
+        p_Tram->attributes[cell] = cell == 6 ? 0x81 : 0xe1;
     }
     uint8_t *const pixels = Mem_Alloc(640 * 400);
     Tram_Scanout(&bank, &font, 0, true, pixels, 640);
@@ -225,13 +225,13 @@ TEST(scanout_preserves_hidden_reverse_blink_and_cross_cell_lines)
     Tram_Init();
     GAIJI bank = {};
     const TRAM_FONT font = { M_FontRow, nullptr };
-    m_Tram.attributes[0] = 0xe5;
-    m_Tram.codes[1] = 'A';
-    m_Tram.attributes[1] = 0x63;
-    m_Tram.attributes[2] = 0x29;
-    m_Tram.attributes[3] = 0x81;
-    m_Tram.attributes[4] = 0x11;
-    m_Tram.attributes[5] = 0x44;
+    p_Tram->attributes[0] = 0xe5;
+    p_Tram->codes[1] = 'A';
+    p_Tram->attributes[1] = 0x63;
+    p_Tram->attributes[2] = 0x29;
+    p_Tram->attributes[3] = 0x81;
+    p_Tram->attributes[4] = 0x11;
+    p_Tram->attributes[5] = 0x44;
     uint8_t *const pixels = Mem_Alloc(640 * 400);
     Tram_Scanout(&bank, &font, 0, false, pixels, 640);
     for (size_t y = 0; y < 16; y++) {
@@ -267,13 +267,13 @@ TEST(scanout_wraps_text_fetches_and_restarts_halves_at_each_row)
     for (size_t y = 0; y < 16; y++) {
         bank.rows[1][y] = 0x8001;
     }
-    m_Tram.codes[4095] = 0x0156;
-    m_Tram.codes[0] = 0x8156;
-    m_Tram.codes[79] = 0x8156;
-    m_Tram.attributes[4095] = 0xe1;
-    m_Tram.attributes[0] = 0xe1;
-    m_Tram.attributes[79] = 0xe1;
-    const TRAM before = m_Tram;
+    p_Tram->codes[4095] = 0x0156;
+    p_Tram->codes[0] = 0x8156;
+    p_Tram->codes[79] = 0x8156;
+    p_Tram->attributes[4095] = 0xe1;
+    p_Tram->attributes[0] = 0xe1;
+    p_Tram->attributes[79] = 0xe1;
+    const TRAM before = *p_Tram;
     const GAIJI bank_before = bank;
     const TRAM_FONT font = {};
     uint8_t *const pixels = Mem_Alloc(648 * 400);
@@ -288,7 +288,7 @@ TEST(scanout_wraps_text_fetches_and_restarts_halves_at_each_row)
             CHECK_EQ_INT(pixels[y * 648 + x], 0xa5);
         }
     }
-    CHECK(memcmp(&m_Tram, &before, sizeof(m_Tram)) == 0);
+    CHECK(memcmp(p_Tram, &before, sizeof(*p_Tram)) == 0);
     CHECK(memcmp(&bank, &bank_before, sizeof(bank)) == 0);
     Mem_Free(pixels);
 }

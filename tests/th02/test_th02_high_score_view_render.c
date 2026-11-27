@@ -22,7 +22,7 @@ static void M_Init(FIXTURE *const fixture)
     Video_Init(&g_HeapAllocator);
     memset(g_Video.pages[0], 7, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 7, VIDEO_PAGE_SIZE);
-    memset(&m_Tram, 0x5a, sizeof(m_Tram));
+    memset(p_Tram, 0x5a, sizeof(*p_Tram));
     Clip_Reset();
     Grcg_Init();
     Palette_Init();
@@ -61,8 +61,8 @@ TEST(begin_preserves_hidden_memory_and_shows_the_inclusive_purple_rectangle)
             CHECK_EQ_INT(g_Video.pages[page][index], expected);
         }
     }
-    CHECK_EQ_INT(m_Tram.codes[2000], 0x5a5a);
-    CHECK_EQ_INT(m_Tram.attributes[2000], 0x5a5a);
+    CHECK_EQ_INT(p_Tram->codes[2000], 0x5a5a);
+    CHECK_EQ_INT(p_Tram->attributes[2000], 0x5a5a);
     CHECK_EQ_INT(g_Grcg->mode, 0);
     HighScoreViewRender_Flip(1, 0);
     CHECK_EQ_INT(g_Video.drawing_page, 1);
@@ -90,19 +90,19 @@ TEST(table_uses_live_rank_and_preserves_blank_digits_and_raw_dates)
     HighScoreViewRender_Begin(
         &fixture.scores, &fixture.settings, &fixture.assets);
     for (size_t x = 26; x < 42; x++) {
-        CHECK_EQ_INT(m_Tram.codes[7 * 80 + x], 0x5a5a);
+        CHECK_EQ_INT(p_Tram->codes[7 * 80 + x], 0x5a5a);
     }
-    CHECK_EQ_INT(m_Tram.codes[8 * 80 + 40], 0x1f57);
-    CHECK_EQ_INT(m_Tram.codes[9 * 80 + 44], 0x7057);
-    CHECK_EQ_INT(m_Tram.codes[7 * 80 + 56], '2');
-    CHECK_EQ_INT(m_Tram.codes[7 * 80 + 59], '6');
-    CHECK_EQ_INT(m_Tram.codes[7 * 80 + 60], '/');
-    CHECK_EQ_INT(m_Tram.codes[7 * 80 + 61], '0');
-    CHECK_EQ_INT(m_Tram.codes[7 * 80 + 62], '/');
-    CHECK_EQ_INT(m_Tram.codes[7 * 80 + 64], '3');
-    CHECK_EQ_INT(m_Tram.codes[7 * 80 + 65], '1');
-    CHECK_EQ_INT(m_Tram.codes[16 * 80 + 8], 0x2157);
-    CHECK_EQ_INT(m_Tram.codes[16 * 80 + 10], 0x2057);
+    CHECK_EQ_INT(p_Tram->codes[8 * 80 + 40], 0x1f57);
+    CHECK_EQ_INT(p_Tram->codes[9 * 80 + 44], 0x7057);
+    CHECK_EQ_INT(p_Tram->codes[7 * 80 + 56], '2');
+    CHECK_EQ_INT(p_Tram->codes[7 * 80 + 59], '6');
+    CHECK_EQ_INT(p_Tram->codes[7 * 80 + 60], '/');
+    CHECK_EQ_INT(p_Tram->codes[7 * 80 + 61], '0');
+    CHECK_EQ_INT(p_Tram->codes[7 * 80 + 62], '/');
+    CHECK_EQ_INT(p_Tram->codes[7 * 80 + 64], '3');
+    CHECK_EQ_INT(p_Tram->codes[7 * 80 + 65], '1');
+    CHECK_EQ_INT(p_Tram->codes[16 * 80 + 8], 0x2157);
+    CHECK_EQ_INT(p_Tram->codes[16 * 80 + 10], 0x2057);
     CHECK(memcmp(&before, &fixture.scores, sizeof(before)) == 0);
     M_Free(&fixture);
 }

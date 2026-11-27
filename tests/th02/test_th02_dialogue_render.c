@@ -122,23 +122,23 @@ TEST(cache_owns_all_stage_text_and_portraits_after_namespace_close)
         CHECK_EQ_INT(assets.boxes[0].lines[0].source_size, 5);
         CHECK_EQ_INT(assets.boxes[0].lines[1].characters[0].code, 'B');
 
-        memset(&m_Tram, 0xa5, sizeof(m_Tram));
+        memset(p_Tram, 0xa5, sizeof(*p_Tram));
         DIALOGUE_RENDER render = { .assets = &assets };
         const DIALOGUE_VIEW view = DialogueRender_View(&render);
         data.allocations_left = 0;
         view.wipe(view.context);
-        CHECK_EQ_INT(m_Tram.codes[21 * 80 + 14], 0x2101);
-        CHECK_EQ_INT(m_Tram.codes[22 * 80 + 49], 0x2181);
+        CHECK_EQ_INT(p_Tram->codes[21 * 80 + 14], 0x2101);
+        CHECK_EQ_INT(p_Tram->codes[22 * 80 + 49], 0x2181);
         view.text(view.context, 0, 0, 1);
-        CHECK_EQ_INT(m_Tram.codes[21 * 80 + 14], 0x6102);
-        CHECK_EQ_INT(m_Tram.codes[21 * 80 + 15], 0x6182);
+        CHECK_EQ_INT(p_Tram->codes[21 * 80 + 14], 0x6102);
+        CHECK_EQ_INT(p_Tram->codes[21 * 80 + 15], 0x6182);
         view.text(view.context, 0, 0, 2);
-        CHECK_EQ_INT(m_Tram.codes[21 * 80 + 14], 0x2204);
-        CHECK_EQ_INT(m_Tram.codes[21 * 80 + 16], 0x2101);
-        CHECK_EQ_INT(m_Tram.attributes[21 * 80 + 14], 0xe1);
-        CHECK_EQ_INT(m_Tram.codes[21 * 80 + 13], 0xa5a5);
-        CHECK_EQ_INT(m_Tram.codes[22 * 80 + 50], 0xa5a5);
-        CHECK_EQ_INT(m_Tram.codes[4095], 0xa5a5);
+        CHECK_EQ_INT(p_Tram->codes[21 * 80 + 14], 0x2204);
+        CHECK_EQ_INT(p_Tram->codes[21 * 80 + 16], 0x2101);
+        CHECK_EQ_INT(p_Tram->attributes[21 * 80 + 14], 0xe1);
+        CHECK_EQ_INT(p_Tram->codes[21 * 80 + 13], 0xa5a5);
+        CHECK_EQ_INT(p_Tram->codes[22 * 80 + 50], 0xa5a5);
+        CHECK_EQ_INT(p_Tram->codes[4095], 0xa5a5);
         DialogueAssets_Free(&assets);
         DialogueAssets_Free(&assets);
         M_Empty(&assets);
@@ -303,35 +303,35 @@ TEST(continue_digits_preserve_source_reveal_boundaries_and_immutable_text)
         DialogueRender_Continues(&render, 0, digits, (uint16_t)counts[c]);
         const DIALOGUE_VIEW view = DialogueRender_View(&render);
         for (uint16_t bytes = 0; bytes <= 16; bytes++) {
-            memset(&m_Tram, 0xa5, sizeof(m_Tram));
+            memset(p_Tram, 0xa5, sizeof(*p_Tram));
             view.text(view.context, 0, 0, bytes);
             if (bytes > 8) {
                 const TRAM_CHARACTER *const tens =
                     counts[c] >= 10 ? &digits[counts[c] / 10] : &characters[4];
                 const uint16_t code =
                     bytes == 9 ? tens->partial_code : tens->code;
-                CHECK_EQ_INT(m_Tram.codes[21 * 80 + 22], code);
-                CHECK_EQ_INT(m_Tram.codes[21 * 80 + 23], code | 0x80);
+                CHECK_EQ_INT(p_Tram->codes[21 * 80 + 22], code);
+                CHECK_EQ_INT(p_Tram->codes[21 * 80 + 23], code | 0x80);
             } else {
-                CHECK_EQ_INT(m_Tram.codes[21 * 80 + 22], 0xa5a5);
+                CHECK_EQ_INT(p_Tram->codes[21 * 80 + 22], 0xa5a5);
             }
             if (bytes > 10) {
                 const TRAM_CHARACTER *const ones = &digits[counts[c] % 10];
                 const uint16_t code =
                     bytes == 11 ? ones->partial_code : ones->code;
-                CHECK_EQ_INT(m_Tram.codes[21 * 80 + 24], code);
-                CHECK_EQ_INT(m_Tram.codes[21 * 80 + 25], code | 0x80);
+                CHECK_EQ_INT(p_Tram->codes[21 * 80 + 24], code);
+                CHECK_EQ_INT(p_Tram->codes[21 * 80 + 25], code | 0x80);
             } else {
-                CHECK_EQ_INT(m_Tram.codes[21 * 80 + 24], 0xa5a5);
+                CHECK_EQ_INT(p_Tram->codes[21 * 80 + 24], 0xa5a5);
             }
-            CHECK_EQ_INT(m_Tram.codes[21 * 80 + 13], 0xa5a5);
+            CHECK_EQ_INT(p_Tram->codes[21 * 80 + 13], 0xa5a5);
         }
         CHECK(boxes[0].lines[0].characters == characters);
         CHECK_EQ_INT(characters[4].code, 0x2105);
         CHECK_EQ_INT(characters[5].code, 0x2106);
         view.text(view.context, 0, 1, 16);
-        CHECK_EQ_INT(m_Tram.codes[22 * 80 + 22], characters[4].code);
+        CHECK_EQ_INT(p_Tram->codes[22 * 80 + 22], characters[4].code);
         view.text(view.context, 1, 0, 16);
-        CHECK_EQ_INT(m_Tram.codes[21 * 80 + 24], characters[5].code);
+        CHECK_EQ_INT(p_Tram->codes[21 * 80 + 24], characters[5].code);
     }
 }

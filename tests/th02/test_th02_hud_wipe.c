@@ -9,8 +9,8 @@ TEST(wipe_draws_all_cels_with_two_count_waits_and_preserves_border)
     for (unsigned leave = 0; leave < 2; leave++) {
         Tram_Init();
         for (unsigned i = 0; i < TRAM_PLANE_CELLS; i++) {
-            m_Tram.codes[i] = 0x1234;
-            m_Tram.attributes[i] = 0xabcd;
+            p_Tram->codes[i] = 0x1234;
+            p_Tram->attributes[i] = 0xabcd;
         }
         memset(&g_VSync, 0, sizeof(g_VSync));
         g_VSync.count1 = 91;
@@ -40,22 +40,22 @@ TEST(wipe_draws_all_cels_with_two_count_waits_and_preserves_border)
                         1;
                 }
             }
-            CHECK(memcmp(&m_Tram, &expected, sizeof(m_Tram)) == 0);
+            CHECK(memcmp(p_Tram, &expected, sizeof(*p_Tram)) == 0);
             for (unsigned i = 0; i < 4; i++) {
                 CHECK(!Hud_UpdateWipe(&overlay));
             }
             VSyncIrq_VSync();
             CHECK(!Hud_UpdateWipe(&overlay));
-            CHECK(memcmp(&m_Tram, &expected, sizeof(m_Tram)) == 0);
+            CHECK(memcmp(p_Tram, &expected, sizeof(*p_Tram)) == 0);
             VSyncIrq_VSync();
             CHECK_EQ_INT(Hud_UpdateWipe(&overlay), frame == 20);
         }
         CHECK_EQ_INT(g_VSync.count2, 79);
         CHECK_EQ_INT(g_VSync.edges, 147);
         CHECK_EQ_INT(g_VSync.count1, 2);
-        const TRAM final = m_Tram;
+        const TRAM final = *p_Tram;
         CHECK(Hud_UpdateWipe(&overlay));
-        CHECK(memcmp(&m_Tram, &final, sizeof(m_Tram)) == 0);
+        CHECK(memcmp(p_Tram, &final, sizeof(*p_Tram)) == 0);
         CHECK_EQ_INT(overlay.frame, 21);
     }
 }

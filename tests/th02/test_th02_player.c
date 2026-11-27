@@ -91,7 +91,7 @@ TEST(firing_emits_real_shots_before_bomb_and_skips_the_second_cycle)
     m_Shots.weapon.cycle[1] = 0;
     Tram_Init();
     Score_Init();
-    m_Score.bombs = 3;
+    p_Score->bombs = 3;
     memset(p_Performance, 0, sizeof(*p_Performance));
     Bullets_Init();
     memset(p_Background, 0, sizeof(*p_Background));
@@ -113,7 +113,7 @@ TEST(firing_emits_real_shots_before_bomb_and_skips_the_second_cycle)
     CHECK_EQ_INT(m_Bomb.active, 1);
     CHECK_EQ_INT(m_Player.bomb_invincible, 1);
     CHECK_EQ_INT(m_Bomb.stage_bombs, 1);
-    CHECK_EQ_INT(m_Score.bombs, 2);
+    CHECK_EQ_INT(p_Score->bombs, 2);
     CHECK_EQ_INT(p_Performance->total_bombs, 1);
     CHECK_EQ_INT(g_Bullets->slots[0].state, ENTITY_REMOVE);
     CHECK_EQ_INT(g_Bullets->slots[0].position[0].x, 120 * 16);

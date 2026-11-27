@@ -81,7 +81,7 @@ TEST(title_sequence_preserves_demo_branches_and_distinct_waits)
         memset(g_Video.pages[0], 6, VIDEO_PAGE_SIZE);
         memset(g_Video.pages[1], 9, VIDEO_PAGE_SIZE);
 
-        memset(&m_Tram, 0x39, sizeof(m_Tram));
+        memset(p_Tram, 0x39, sizeof(*p_Tram));
         TestClip_Set(0, 0, 639, 399);
 
         Grcg_Init();
@@ -154,9 +154,10 @@ TEST(title_sequence_preserves_demo_branches_and_distinct_waits)
                             const bool open = door_frames >= 39
                                 || (x >= 39 - door_frames
                                     && x <= 40 + door_frames);
-                            CHECK_EQ_INT(m_Tram.codes[y * 80 + x], ' ');
+                            CHECK_EQ_INT(p_Tram->codes[y * 80 + x], ' ');
                             CHECK_EQ_INT(
-                                m_Tram.attributes[y * 80 + x], open ? 0xe1 : 5);
+                                p_Tram->attributes[y * 80 + x],
+                                open ? 0xe1 : 5);
                         }
                     }
                     door_frames++;
@@ -200,8 +201,8 @@ TEST(title_sequence_preserves_demo_branches_and_distinct_waits)
             CHECK_EQ_INT(g_Video.pages[1][i], 9);
         }
         for (size_t i = 2000; i < TRAM_PLANE_CELLS; i++) {
-            CHECK_EQ_INT(m_Tram.codes[i], 0x3939);
-            CHECK_EQ_INT(m_Tram.attributes[i], 0x3939);
+            CHECK_EQ_INT(p_Tram->codes[i], 0x3939);
+            CHECK_EQ_INT(p_Tram->attributes[i], 0x3939);
         }
         m_Title.assets = nullptr;
         const TITLE_EVENTS done = Title_Step();

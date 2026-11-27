@@ -220,7 +220,7 @@ TEST(pillar_cycles_keep_pool_order_scroll_pixels_collision_and_sound)
                     const int32_t values[] = {
                         m_Pillars.current.x,  m_Pillars.current.y,
                         m_Pillars.frames_new, m_Pillars.enabled,
-                        m_Player.hit,         m_Rng.cursor,
+                        m_Player.hit,         p_Rng->cursor,
                         g_Grcg->mode,         g_Video.drawing_page,
                     };
                     for (size_t i = 0; i < ARRAY_SIZE(values); i++) {

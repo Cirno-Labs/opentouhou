@@ -127,18 +127,18 @@ TEST(table_keeps_blank_digits_and_alphabet_for_unqualified_score)
     section->records[3].stage = 127;
     const HIGH_SCORE_SECTION before = *section;
 
-    memset(&m_Tram, 0x5a, sizeof(m_Tram));
+    memset(p_Tram, 0x5a, sizeof(*p_Tram));
     HighScoreEntryRender_Table(section, false, -1);
     for (size_t x = 26; x < 42; x++) {
-        CHECK_EQ_INT(m_Tram.codes[6 * 80 + x], 0x5a5a);
-        CHECK_EQ_INT(m_Tram.attributes[7 * 80 + x], 0x5a5a);
+        CHECK_EQ_INT(p_Tram->codes[6 * 80 + x], 0x5a5a);
+        CHECK_EQ_INT(p_Tram->attributes[7 * 80 + x], 0x5a5a);
     }
-    CHECK_EQ_INT(m_Tram.codes[8 * 80 + 40], 0x1f57);
-    CHECK_EQ_INT(m_Tram.codes[9 * 80 + 44], 0x7057);
-    CHECK_EQ_INT(m_Tram.attributes[6 * 80 + 10], 0xe1);
+    CHECK_EQ_INT(p_Tram->codes[8 * 80 + 40], 0x1f57);
+    CHECK_EQ_INT(p_Tram->codes[9 * 80 + 44], 0x7057);
+    CHECK_EQ_INT(p_Tram->attributes[6 * 80 + 10], 0xe1);
     for (size_t cell = 18 * 80; cell < TRAM_PLANE_CELLS; cell++) {
-        CHECK_EQ_INT(m_Tram.codes[cell], 0x5a5a);
-        CHECK_EQ_INT(m_Tram.attributes[cell], 0x5a5a);
+        CHECK_EQ_INT(p_Tram->codes[cell], 0x5a5a);
+        CHECK_EQ_INT(p_Tram->attributes[cell], 0x5a5a);
     }
     CHECK(memcmp(section, &before, sizeof(before)) == 0);
 }
@@ -150,16 +150,16 @@ TEST(main_and_ending_keep_distinct_header_and_tenth_place_positions)
     for (int ending = 0; ending < 2; ending++) {
         Tram_Init();
         HighScoreEntryRender_Table(&scores.sections[0], ending != 0, 9);
-        CHECK_EQ_INT(m_Tram.codes[4 * 80 + 27 + ending], 0x3957);
-        CHECK_EQ_INT(m_Tram.codes[4 * 80 + 41 + ending], 0x3c57);
-        CHECK_EQ_INT(m_Tram.codes[15 * 80 + 5 - ending], 0x2157);
-        CHECK_EQ_INT(m_Tram.codes[15 * 80 + 7 - ending], 0x2057);
-        CHECK_EQ_INT(m_Tram.attributes[15 * 80 + 10], 0x81);
-        CHECK_EQ_INT(m_Tram.attributes[14 * 80 + 10], 0xe1);
-        CHECK_EQ_INT(m_Tram.attributes[18 * 80 + 10], 0x85);
-        CHECK_EQ_INT(m_Tram.attributes[18 * 80 + 11], 0x85);
-        CHECK_EQ_INT(m_Tram.codes[18 * 80 + 34], 0x3757);
-        CHECK_EQ_INT(m_Tram.codes[18 * 80 + 36], 0x3657);
+        CHECK_EQ_INT(p_Tram->codes[4 * 80 + 27 + ending], 0x3957);
+        CHECK_EQ_INT(p_Tram->codes[4 * 80 + 41 + ending], 0x3c57);
+        CHECK_EQ_INT(p_Tram->codes[15 * 80 + 5 - ending], 0x2157);
+        CHECK_EQ_INT(p_Tram->codes[15 * 80 + 7 - ending], 0x2057);
+        CHECK_EQ_INT(p_Tram->attributes[15 * 80 + 10], 0x81);
+        CHECK_EQ_INT(p_Tram->attributes[14 * 80 + 10], 0xe1);
+        CHECK_EQ_INT(p_Tram->attributes[18 * 80 + 10], 0x85);
+        CHECK_EQ_INT(p_Tram->attributes[18 * 80 + 11], 0x85);
+        CHECK_EQ_INT(p_Tram->codes[18 * 80 + 34], 0x3757);
+        CHECK_EQ_INT(p_Tram->codes[18 * 80 + 36], 0x3657);
     }
 }
 
@@ -169,13 +169,13 @@ TEST(name_cursor_can_write_terminator_glyph_without_clearing_following_cells)
     HighScores_Defaults(&scores);
     scores.sections[0].records[2].name_glyphs[1] = 0;
 
-    memset(&m_Tram, 0x5a, sizeof(m_Tram));
+    memset(p_Tram, 0x5a, sizeof(*p_Tram));
     HighScoreEntryRender_Name(&scores.sections[0], 2, 1);
-    CHECK_EQ_INT(m_Tram.codes[8 * 80 + 12], 0x56);
-    CHECK_EQ_INT(m_Tram.codes[8 * 80 + 13], 0x8056);
-    CHECK_EQ_INT(m_Tram.attributes[8 * 80 + 10], 0x81);
-    CHECK_EQ_INT(m_Tram.attributes[8 * 80 + 12], 0x85);
-    CHECK_EQ_INT(m_Tram.codes[8 * 80 + 14], 0x5a5a);
+    CHECK_EQ_INT(p_Tram->codes[8 * 80 + 12], 0x56);
+    CHECK_EQ_INT(p_Tram->codes[8 * 80 + 13], 0x8056);
+    CHECK_EQ_INT(p_Tram->attributes[8 * 80 + 10], 0x81);
+    CHECK_EQ_INT(p_Tram->attributes[8 * 80 + 12], 0x85);
+    CHECK_EQ_INT(p_Tram->codes[8 * 80 + 14], 0x5a5a);
 }
 
 TEST(controller_updates_the_rendered_name_and_alphabet_without_redrawing_table)
@@ -190,9 +190,9 @@ TEST(controller_updates_the_rendered_name_and_alphabet_without_redrawing_table)
     M_MenuStep(0);
     M_MenuStep(GAME_KEY_RIGHT | GAME_KEY_SHOT);
     CHECK_EQ_INT(scores.sections[0].records[0].name_glyphs[0], 0xab);
-    CHECK_EQ_INT(m_Tram.codes[6 * 80 + 10], 0x2b57);
-    CHECK_EQ_INT(m_Tram.attributes[6 * 80 + 12], 0x85);
-    CHECK_EQ_INT(m_Tram.attributes[18 * 80 + 10], 0xe1);
-    CHECK_EQ_INT(m_Tram.attributes[18 * 80 + 12], 0x85);
-    CHECK_EQ_INT(m_Tram.codes[6 * 80 + 44], 0x7057);
+    CHECK_EQ_INT(p_Tram->codes[6 * 80 + 10], 0x2b57);
+    CHECK_EQ_INT(p_Tram->attributes[6 * 80 + 12], 0x85);
+    CHECK_EQ_INT(p_Tram->attributes[18 * 80 + 10], 0xe1);
+    CHECK_EQ_INT(p_Tram->attributes[18 * 80 + 12], 0x85);
+    CHECK_EQ_INT(p_Tram->codes[6 * 80 + 44], 0x7057);
 }

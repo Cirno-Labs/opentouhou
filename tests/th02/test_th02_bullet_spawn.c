@@ -107,11 +107,11 @@ TEST(pattern_directions_preserve_order_mirroring_and_unknown_codes)
 
 TEST(random_direction_consumes_angle_then_speed_across_cursor_wrap)
 {
-    memset(&m_Rng, 0, sizeof(m_Rng));
-    m_Rng.seed = 123;
-    m_Rng.cursor = 255;
-    m_Rng.ring[255] = 32;
-    m_Rng.ring[0] = 255;
+    memset(p_Rng, 0, sizeof(*p_Rng));
+    p_Rng->seed = 123;
+    p_Rng->cursor = 255;
+    p_Rng->ring[255] = 32;
+    p_Rng->ring[0] = 255;
     const BULLET_DIRECTION direction =
         BulletSpawn_Direction(BULLET_RANDOM_SPEED, 250, 250, INT16_MAX);
     CHECK_EQ_INT(direction.angle, 26);
@@ -119,6 +119,6 @@ TEST(random_direction_consumes_angle_then_speed_across_cursor_wrap)
     CHECK_EQ_INT(direction.next_index, 251);
     CHECK(direction.last);
     CHECK(!direction.aimed);
-    CHECK_EQ_INT(m_Rng.cursor, 1);
-    CHECK_EQ_INT(m_Rng.seed, 123);
+    CHECK_EQ_INT(p_Rng->cursor, 1);
+    CHECK_EQ_INT(p_Rng->seed, 123);
 }

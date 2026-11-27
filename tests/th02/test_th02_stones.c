@@ -114,7 +114,7 @@ TEST(stage_three_midboss_keeps_shared_arrays_and_entrance_hit_ownership)
     M_MidbossUpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank);
     CHECK_EQ_INT(m_Stones.damage[0], 281);
     CHECK_EQ_INT(m_Stones.damage[1], 281);
-    CHECK_EQ_INT(m_Score.delta, 2);
+    CHECK_EQ_INT(p_Score->delta, 2);
     CHECK_EQ_INT(m_Stones.flag[0], 0);
     CHECK_EQ_INT(m_Stones.flag[1], 0);
     CHECK_EQ_INT(m_Stones.midboss_position[0][g_Stage->scroll.back].y, -15);
@@ -126,7 +126,7 @@ TEST(stage_three_midboss_keeps_shared_arrays_and_entrance_hit_ownership)
         &f.patterns, f.session.stage, (uint8_t)f.session.rank);
     CHECK_EQ_INT(m_Stones.flag[0], 1);
     CHECK_EQ_INT(m_Stones.flag[1], 1);
-    CHECK_EQ_INT(m_Score.delta, 40004);
+    CHECK_EQ_INT(p_Score->delta, 40004);
     CHECK_EQ_INT(m_Stones.midboss_rounds, 1);
     const uint32_t frame = g_Stage->world.frame;
     const int32_t session_frame = f.session.frame;
@@ -166,7 +166,7 @@ TEST(stage_three_midboss_clock_reset_changes_the_second_actor_in_call_order)
     CHECK_EQ_INT(m_Stones.midboss_rounds, 4);
     CHECK_EQ_INT(m_Stones.flag[0], 1);
     CHECK_EQ_INT(m_Stones.flag[1], 1);
-    CHECK_EQ_INT(m_Score.delta, 0);
+    CHECK_EQ_INT(p_Score->delta, 0);
     CHECK_EQ_INT(g_Bullets->slots[0].state, ENTITY_ACTIVE);
     CHECK_EQ_INT(g_Bullets->slots[0].angle, 8);
     CHECK_EQ_INT(g_Bullets->slots[0].position[1].x, 60 * 16);
@@ -195,12 +195,12 @@ TEST(stage_three_midboss_uses_real_shot_aging_and_raw_damage)
     M_MidbossUpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank);
     CHECK_EQ_INT(m_Stones.damage[0], 5);
     CHECK_EQ_INT(m_Stones.damage[1], 0);
-    CHECK_EQ_INT(m_Score.delta, 5);
+    CHECK_EQ_INT(p_Score->delta, 5);
     CHECK_EQ_INT(shot->age, 2);
     CHECK_EQ_INT(shot->velocity.y, -16);
     M_MidbossUpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank);
     CHECK_EQ_INT(m_Stones.damage[0], 5);
-    CHECK_EQ_INT(m_Score.delta, 5);
+    CHECK_EQ_INT(p_Score->delta, 5);
     Arena_Free(&f.arena);
 }
 
@@ -271,7 +271,7 @@ TEST(dormant_stones_consume_real_shots_without_accumulating_damage)
     m_Shots.weapon.level = 3;
     CHECK_EQ_INT(
         M_UpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank), 1);
-    CHECK_EQ_INT(m_Score.delta, 5);
+    CHECK_EQ_INT(p_Score->delta, 5);
     CHECK_EQ_INT(shot->age, 2);
     CHECK_EQ_INT(shot->velocity.y, -16);
     CHECK_EQ_INT(m_Stones.damage[0], 0);
@@ -306,7 +306,7 @@ TEST(stones_keep_individual_item_rewards_and_deferred_final_cleanup)
     }
     CHECK_EQ_INT(
         M_UpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank), 1);
-    CHECK_EQ_INT(m_Score.delta, 150005);
+    CHECK_EQ_INT(p_Score->delta, 150005);
     CHECK_EQ_INT(m_Player.invincibility, 200);
     CHECK_EQ_INT(g_Items->slots[0].kind, ITEM_BOMB);
     CHECK_EQ_INT(g_Items->slots[1].kind, ITEM_BIG_POWER);
@@ -326,7 +326,7 @@ TEST(stones_keep_individual_item_rewards_and_deferred_final_cleanup)
     M_InvalidateCore();
     CHECK_EQ_INT(
         M_UpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank), 2);
-    CHECK_EQ_INT(m_Score.delta, 150005);
+    CHECK_EQ_INT(p_Score->delta, 150005);
     CHECK_EQ_INT(m_Stones.flag[4], STONE_REMOVED);
     Arena_Free(&f.arena);
 }
@@ -356,6 +356,6 @@ TEST(stones_cap_north_damage_and_timeout_only_at_a_pattern_boundary)
         M_UpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank), 1);
     CHECK_EQ_INT(m_Stones.pattern, 2);
     CHECK_EQ_INT(m_Stones.flag[4], STONE_KILL);
-    CHECK_EQ_INT(m_Score.delta, 0);
+    CHECK_EQ_INT(p_Score->delta, 0);
     Arena_Free(&f.arena);
 }

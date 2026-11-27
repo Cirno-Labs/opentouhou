@@ -56,7 +56,7 @@ TEST(overlays_and_animation_wait_before_accepting_held_input)
     GameOver_Resume();
     CHECK_EQ_INT(m_GameOver.phase, GAME_OVER_CHOICE);
     CHECK(m_GameOver.yes);
-    CHECK_EQ_INT(m_Tram.attributes[14 * 80 + 24], 0xe5);
+    CHECK_EQ_INT(p_Tram->attributes[14 * 80 + 24], 0xe5);
     CHECK_EQ_INT(GameOver_Update(GAME_KEY_SHOT), GAME_OVER_WAIT);
     CHECK_EQ_INT(M_Frame(GAME_KEY_OK), GAME_OVER_WAIT);
     CHECK_EQ_INT(M_Frame(0), GAME_OVER_WAIT);
@@ -75,7 +75,7 @@ TEST(down_wins_over_up_and_cancel_wins_over_confirmation)
         CHECK_EQ_INT(GameOver_Update(0), GAME_OVER_WAIT);
         CHECK_EQ_INT(M_Frame(GAME_KEY_UP | GAME_KEY_DOWN), GAME_OVER_WAIT);
         CHECK(!m_GameOver.yes);
-        CHECK_EQ_INT(m_Tram.attributes[15 * 80 + 25], 0xe5);
+        CHECK_EQ_INT(p_Tram->attributes[15 * 80 + 25], 0xe5);
         const uint16_t keys = cancel != 0
             ? GAME_KEY_UP | GAME_KEY_SHOT | GAME_KEY_CANCEL
             : GAME_KEY_OK;

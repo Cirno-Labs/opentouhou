@@ -70,7 +70,7 @@ TEST(
     TestBossFight_State()->angle = 77;
     m_Shots.slots[0].state = ENTITY_ACTIVE;
     const PLAYER player = m_Player;
-    const RANDOM_STATE before_random = m_Rng;
+    const RANDOM_STATE before_random = *p_Rng;
     memset(g_Video.pages[0], 5, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
     M_BeginScene(TestBossFight_State(), (uint8_t)f.session.rank);
@@ -97,7 +97,7 @@ TEST(
     CHECK_EQ_INT(m_Shots.slots[0].state, ENTITY_FREE);
     CHECK_EQ_INT(g_Stage->world.frame, 1234);
     CHECK(memcmp(&m_Player, &player, sizeof(player)) == 0);
-    CHECK(memcmp(&m_Rng, &before_random, sizeof(before_random)) == 0);
+    CHECK(memcmp(p_Rng, &before_random, sizeof(before_random)) == 0);
     m_Mima.phase = MIMA_POST;
     m_Mima.flash_cycle = 7;
     m_Mima.pattern_cycles = 17;
@@ -142,7 +142,7 @@ TEST(mima_suspension_preserves_stage_progression)
     p_Stage->world.progression = 1;
     const MIMA mima = m_Mima;
     const BOSS_STATE boss = (*TestBossFight_State());
-    const RANDOM_STATE random = m_Rng;
+    const RANDOM_STATE random = *p_Rng;
     const uint32_t frame = g_Stage->world.frame;
     const int32_t session_frame = f.session.frame;
     for (unsigned attempt = 0; attempt < 2; attempt++) {
@@ -151,7 +151,7 @@ TEST(mima_suspension_preserves_stage_progression)
         CHECK_EQ_INT(m_Flow.phase, STAGE_FLOW_FIGHT);
         CHECK(memcmp(&mima, &m_Mima, sizeof(mima)) == 0);
         CHECK(memcmp(&boss, TestBossFight_State(), sizeof(boss)) == 0);
-        CHECK(memcmp(&random, &m_Rng, sizeof(random)) == 0);
+        CHECK(memcmp(&random, p_Rng, sizeof(random)) == 0);
     }
     m_Mima.phase = MIMA_ATTACK_ONE;
     m_Mima.pattern = 99;
@@ -183,7 +183,7 @@ TEST(mima_real_hits_consume_shots_while_shielded_and_spheres_ignore_damage)
             f.session.reduce_effects),
         BOSS_RUNNING);
     CHECK_EQ_INT(BossFight_State()->damage, 0);
-    CHECK_EQ_INT(m_Score.delta, 5);
+    CHECK_EQ_INT(p_Score->delta, 5);
     CHECK_EQ_INT(shot->age, 2);
     CHECK_EQ_INT(shot->velocity.y, -16);
     m_Mima.damage_enable = 1;
@@ -194,7 +194,7 @@ TEST(mima_real_hits_consume_shots_while_shielded_and_spheres_ignore_damage)
             f.session.reduce_effects),
         BOSS_RUNNING);
     CHECK_EQ_INT(BossFight_State()->damage, 5);
-    CHECK_EQ_INT(m_Score.delta, 10);
+    CHECK_EQ_INT(p_Score->delta, 10);
     Shots_FreeAll();
     m_Bomb.active = 1;
     p_Stage->world.frame = 0;
@@ -207,7 +207,7 @@ TEST(mima_real_hits_consume_shots_while_shielded_and_spheres_ignore_damage)
             f.session.reduce_effects),
         BOSS_RUNNING);
     CHECK_EQ_INT(BossFight_State()->damage, 6);
-    CHECK_EQ_INT(m_Score.delta, 12);
+    CHECK_EQ_INT(p_Score->delta, 12);
     CHECK_EQ_INT(m_Mima.sphere_active[0], 1);
     CHECK_EQ_INT(m_Mima.inactive_spheres, 7);
     Arena_Free(&f.arena);
@@ -224,7 +224,7 @@ TEST(mima_six_thousand_damage_awards_direct_score_without_ending_the_phase)
     m_Mima.damage_enable = 1;
     TestBossFight_State()->phase_frame = 100;
     TestBossFight_State()->damage = 5999;
-    m_Score.value = 123;
+    p_Score->value = 123;
     m_Bomb.active = 1;
     p_Stage->world.frame = 0;
     CHECK_EQ_INT(
@@ -234,8 +234,8 @@ TEST(mima_six_thousand_damage_awards_direct_score_without_ending_the_phase)
         BOSS_RUNNING);
     CHECK_EQ_INT(BossFight_State()->damage, 6000);
     CHECK_EQ_INT(BossFight_State()->defeated, 1);
-    CHECK_EQ_INT(m_Score.value, 500123);
-    CHECK_EQ_INT(m_Score.delta, 1);
+    CHECK_EQ_INT(p_Score->value, 500123);
+    CHECK_EQ_INT(p_Score->delta, 1);
     CHECK_EQ_INT(m_Player.invincibility, 200);
     CHECK_EQ_INT(m_Mima.phase, MIMA_ATTACK_FOUR);
     CHECK_EQ_INT(
@@ -243,8 +243,8 @@ TEST(mima_six_thousand_damage_awards_direct_score_without_ending_the_phase)
             TestBossFight_State(), &g->assets.patterns, (uint8_t)f.session.rank,
             f.session.reduce_effects),
         BOSS_RUNNING);
-    CHECK_EQ_INT(m_Score.value, 500123);
-    CHECK_EQ_INT(m_Score.delta, 1);
+    CHECK_EQ_INT(p_Score->value, 500123);
+    CHECK_EQ_INT(p_Score->delta, 1);
     Arena_Free(&f.arena);
 }
 
@@ -282,7 +282,7 @@ TEST(mima_first_form_wraps_pattern_seven_and_suspends_at_its_real_boundary)
     CHECK_EQ_INT(BossFight_State()->phase_frame, 0);
     const MIMA mima = m_Mima;
     const BOSS_STATE boss = (*TestBossFight_State());
-    const RANDOM_STATE before_random = m_Rng;
+    const RANDOM_STATE before_random = *p_Rng;
     CHECK_EQ_INT(
         M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns, (uint8_t)f.session.rank,
@@ -290,7 +290,7 @@ TEST(mima_first_form_wraps_pattern_seven_and_suspends_at_its_real_boundary)
         BOSS_WAIT);
     CHECK(memcmp(&mima, &m_Mima, sizeof(mima)) == 0);
     CHECK(memcmp(&boss, TestBossFight_State(), sizeof(boss)) == 0);
-    CHECK(memcmp(&before_random, &m_Rng, sizeof(before_random)) == 0);
+    CHECK(memcmp(&before_random, p_Rng, sizeof(before_random)) == 0);
     Arena_Free(&f.arena);
 }
 
@@ -376,15 +376,15 @@ TEST(mima_form_dialogue_resumes_once_or_aborts_before_final_score_commit)
         TestBossFight_State()->phase_frame = 99;
         TestBossFight_State()->damage = 1550;
         m_Talk.runtime.box = 44;
-        m_Score.value = 12345;
-        m_Score.delta = 48;
-        RANDOM_STATE expected_random = m_Rng;
+        p_Score->value = 12345;
+        p_Score->delta = 48;
+        RANDOM_STATE expected_random = *p_Rng;
         const int pattern = expected_random.ring[expected_random.cursor++] % 3;
         const uint32_t world = g_Stage->world.frame;
         const int32_t session_frame = f.session.frame;
         CHECK_EQ_INT(M_MimaController(&f), BOSS_WAIT);
-        CHECK_EQ_INT(m_Score.value, 12393);
-        CHECK_EQ_INT(m_Score.delta, 48);
+        CHECK_EQ_INT(p_Score->value, 12393);
+        CHECK_EQ_INT(p_Score->delta, 48);
         CHECK_EQ_INT(m_Mima.flash_cycle, 3);
         CHECK_EQ_INT(BossFight_State()->hit_flash, 1);
         bool ready = false;
@@ -398,17 +398,17 @@ TEST(mima_form_dialogue_resumes_once_or_aborts_before_final_score_commit)
             CHECK_EQ_INT(g_Stage->world.frame, world);
             CHECK_EQ_INT(f.session.frame, session_frame);
         }
-        CHECK_EQ_INT(m_Score.delta, 48);
+        CHECK_EQ_INT(p_Score->delta, 48);
         if (continued != 0) {
             CHECK(!ready);
             CHECK(m_Mima.ended);
             CHECK_EQ_INT(f.session.stage, 127);
             CHECK_EQ_INT(Gameplay_Update(nullptr), GAMEPLAY_ENDING);
             CHECK_EQ_INT(m_Talk.runtime.box, 49);
-            CHECK_EQ_INT(m_Score.value, 62393);
+            CHECK_EQ_INT(p_Score->value, 62393);
             CHECK_EQ_INT(BossFight_State()->phase_frame, 99);
             CHECK_EQ_INT(g->assets.patterns.next, f.assets.patterns.next);
-            CHECK(memcmp(&m_Rng, &expected_random, sizeof(RANDOM_STATE)) != 0);
+            CHECK(memcmp(p_Rng, &expected_random, sizeof(RANDOM_STATE)) != 0);
         } else {
             CHECK(ready);
             CHECK(!m_Mima.ended);
@@ -430,13 +430,13 @@ TEST(mima_form_dialogue_resumes_once_or_aborts_before_final_score_commit)
             CHECK_EQ_INT(m_Mima.damage_enable, 0);
             CHECK_EQ_INT(m_Talk.runtime.box, 53);
             CHECK_EQ_INT(g->assets.patterns.next, 131);
-            CHECK_EQ_INT(m_Score.value, 12393);
-            CHECK(memcmp(&m_Rng, &expected_random, sizeof(RANDOM_STATE)) == 0);
+            CHECK_EQ_INT(p_Score->value, 12393);
+            CHECK(memcmp(p_Rng, &expected_random, sizeof(RANDOM_STATE)) == 0);
             m_Mima.phase = MIMA_POST;
-            m_Score.value = 23456;
-            m_Score.delta = 73;
+            p_Score->value = 23456;
+            p_Score->delta = 73;
             CHECK_EQ_INT(M_MimaController(&f), BOSS_WAIT);
-            CHECK_EQ_INT(m_Score.value, 23456);
+            CHECK_EQ_INT(p_Score->value, 23456);
             for (unsigned tick = 0; tick < 3000 && !m_Mima.ended; tick++) {
                 g->dialogue_input.shot = (tick / 8) % 2 != 0;
                 VSyncIrq_VSync();
@@ -446,8 +446,8 @@ TEST(mima_form_dialogue_resumes_once_or_aborts_before_final_score_commit)
             CHECK_EQ_INT(f.session.stage, 127);
             CHECK_EQ_INT(Gameplay_Update(nullptr), GAMEPLAY_ENDING);
             CHECK_EQ_INT(m_Talk.runtime.box, 57);
-            CHECK_EQ_INT(m_Score.value, 123456);
-            CHECK_EQ_INT(m_Score.delta, 73);
+            CHECK_EQ_INT(p_Score->value, 123456);
+            CHECK_EQ_INT(p_Score->delta, 73);
         }
         const SCORE score = *g_Score;
         const MIMA mima = m_Mima;

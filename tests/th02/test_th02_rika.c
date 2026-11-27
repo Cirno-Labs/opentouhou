@@ -280,7 +280,7 @@ TEST(default_stage_one_boss_hits_defeats_and_finishes_through_stage_flow)
     CHECK_EQ_INT(g_Stage->world.progression, 1);
     CHECK_EQ_INT(BossFight_State()->damage, 2260);
     CHECK_EQ_INT(BossFight_State()->defeated, 0);
-    CHECK_EQ_INT(m_Score.delta, 1);
+    CHECK_EQ_INT(p_Score->delta, 1);
     SoundEffects_Update();
     TestSound_Check(&sound, 4);
     CHECK_EQ_INT(
@@ -293,7 +293,7 @@ TEST(default_stage_one_boss_hits_defeats_and_finishes_through_stage_flow)
     CHECK_EQ_INT(g_Stage->world.progression, 1);
     CHECK_EQ_INT(BossFight_State()->damage, 2261);
     CHECK_EQ_INT(BossFight_State()->defeated, 1);
-    CHECK_EQ_INT(m_Score.delta, 20002);
+    CHECK_EQ_INT(p_Score->delta, 20002);
     CHECK_EQ_INT(g_Player->invincibility, 200);
     CHECK_EQ_INT(m_Rika.frame, 2);
     CHECK_EQ_INT(g_Sparks->next, next);
@@ -307,7 +307,7 @@ TEST(default_stage_one_boss_hits_defeats_and_finishes_through_stage_flow)
         CHECK_EQ_INT(m_Rika.kill_frame, frame == 80 ? 0 : frame);
     }
     CHECK_EQ_INT(g_Sparks->next, (next + 160) % SPARK_COUNT);
-    CHECK_EQ_INT(m_Score.delta, 20002);
+    CHECK_EQ_INT(p_Score->delta, 20002);
     CHECK_EQ_INT(f.session.frame, 713);
     CHECK_EQ_INT(g_Stage->world.frame, 2);
     p_Stage->world.progression = 2;

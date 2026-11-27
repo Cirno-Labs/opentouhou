@@ -80,7 +80,7 @@ TEST(hit_reads_live_shots_and_adds_scaled_damage_to_the_running_total)
     CHECK(damage > 0);
     CHECK_EQ_INT(total, (int16_t)(32767 + damage * 2));
     CHECK_EQ_INT(shot->age, 2);
-    CHECK_EQ_INT(m_Score.delta, damage);
+    CHECK_EQ_INT(p_Score->delta, damage);
 }
 
 TEST(select_patterns_borrows_the_bank_and_imports_the_optional_palette)

@@ -51,10 +51,10 @@ static uint64_t M_HashState(uint64_t hash)
             hash = M_HashValue(hash, (uint32_t)values[j]);
         }
     }
-    hash = M_HashValue(hash, m_Rng.seed);
-    hash = M_HashValue(hash, m_Rng.cursor);
+    hash = M_HashValue(hash, p_Rng->seed);
+    hash = M_HashValue(hash, p_Rng->cursor);
     for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-        hash = M_HashValue(hash, m_Rng.ring[i]);
+        hash = M_HashValue(hash, p_Rng->ring[i]);
     }
     return hash;
 }
@@ -67,15 +67,15 @@ TEST(stage_init_preserves_records_and_consumes_two_draws_per_spark)
     const BULLET before_bullet = p_Bullets->slots[0];
     const SPARK before_spark = p_Sparks->slots[0];
     Random_Reset();
-    memset(m_Rng.ring, 0x3c, sizeof(m_Rng.ring));
-    m_Rng.cursor = 37;
+    memset(p_Rng->ring, 0x3c, sizeof(p_Rng->ring));
+    p_Rng->cursor = 37;
     p_Sparks->next = 17;
     p_Sparks->acceleration_x = -1;
     Bullets_ResetStage(3, true);
-    CHECK_EQ_INT(m_Rng.seed, UINT32_C(0x7db41981));
-    CHECK_EQ_INT(m_Rng.cursor, 37);
-    CHECK_EQ_INT(m_Rng.ring[0], 0x3c);
-    CHECK_EQ_INT(m_Rng.ring[255], 0x3c);
+    CHECK_EQ_INT(p_Rng->seed, UINT32_C(0x7db41981));
+    CHECK_EQ_INT(p_Rng->cursor, 37);
+    CHECK_EQ_INT(p_Rng->ring[0], 0x3c);
+    CHECK_EQ_INT(p_Rng->ring[255], 0x3c);
     CHECK_EQ_INT(p_Sparks->slots[0].angle, 90);
     CHECK_EQ_INT(p_Sparks->slots[0].base_speed, 2);
     CHECK_EQ_INT(p_Sparks->slots[63].angle, 228);
@@ -219,9 +219,9 @@ TEST(spawn_patterns_layers_pages_and_partial_pools_keep_state_and_rng)
                             }
                             Random_Reset();
                             Random_Seed(0x12345678);
-                            m_Rng.cursor = 255;
+                            p_Rng->cursor = 255;
                             for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-                                m_Rng.ring[i] = (uint8_t)(i ^ 0x5a);
+                                p_Rng->ring[i] = (uint8_t)(i ^ 0x5a);
                             }
                             Bullets_AddPellets(
                                 back, 100, 40, 3, patterns[pattern], 24);
@@ -251,7 +251,7 @@ TEST(pellet_layers_preserve_unwritten_bytes_and_the_other_page)
     m_Player.current = (ENTITY_POINT) { 208, 336 };
     p_Performance->value = 0;
     Bullets_AddPellets(1, 100, 40, 0, BULLET_RING4, 128);
-    CHECK_EQ_INT(m_Rng.cursor, 0);
+    CHECK_EQ_INT(p_Rng->cursor, 0);
     for (size_t i = 0; i < 12; i++) {
         const BULLET *const bullet = &p_Bullets->slots[i];
         CHECK_EQ_INT(bullet->state, ENTITY_ACTIVE);
@@ -280,16 +280,16 @@ TEST(partial_random_volley_consumes_only_allocated_slots)
     p_Bullets->slots[4].state = p_Bullets->slots[149].state = ENTITY_FREE;
     BulletSpawn_Init(3);
     Random_Reset();
-    m_Rng.cursor = 255;
-    m_Rng.ring[255] = 0;
-    m_Rng.ring[0] = 7;
-    m_Rng.ring[1] = 64;
-    m_Rng.ring[2] = 31;
+    p_Rng->cursor = 255;
+    p_Rng->ring[255] = 0;
+    p_Rng->ring[0] = 7;
+    p_Rng->ring[1] = 64;
+    p_Rng->ring[2] = 31;
     Player_Init();
     m_Player.current = (ENTITY_POINT) { 208, 336 };
     p_Performance->value = 0;
     Bullets_AddSprites(0, 100, 40, 3, BULLET_RANDOM_SPEED, 300, 64);
-    CHECK_EQ_INT(m_Rng.cursor, 3);
+    CHECK_EQ_INT(p_Rng->cursor, 3);
     CHECK_EQ_INT(p_Bullets->slots[4].state, ENTITY_ACTIVE);
     CHECK_EQ_INT(p_Bullets->slots[149].state, ENTITY_ACTIVE);
     CHECK_EQ_INT(p_Bullets->slots[5].state, ENTITY_REMOVE);
@@ -312,20 +312,20 @@ TEST(gravity_bypasses_tuning_but_full_and_rejected_spawns_keep_rng)
     CHECK_EQ_INT(p_Bullets->slots[0].speed, 3);
     CHECK_EQ_INT(p_Bullets->slots[0].velocity.x, 3);
     CHECK_EQ_INT(m_Spawn.slow_cycle, 0);
-    CHECK_EQ_INT(m_Rng.cursor, 0);
+    CHECK_EQ_INT(p_Rng->cursor, 0);
     for (size_t i = 0; i < BULLET_COUNT; i++) {
         p_Bullets->slots[i].state = ENTITY_ACTIVE;
     }
     Bullets_AddPellets(0, 100, 40, 0, BULLET_RANDOM_SPEED, 3);
     CHECK_EQ_INT(m_Spawn.slow_cycle, 1);
-    CHECK_EQ_INT(m_Rng.cursor, 0);
+    CHECK_EQ_INT(p_Rng->cursor, 0);
     m_Bomb.active = 1;
     Bullets_AddPellets(0, 100, 40, 0, BULLET_RANDOM_SPEED, 3);
     CHECK_EQ_INT(m_Spawn.slow_cycle, 1);
     m_Bomb.active = 0;
     Bullets_AddPellets(0, 23, 40, 0, BULLET_RANDOM_SPEED, 3);
     CHECK_EQ_INT(m_Spawn.slow_cycle, 1);
-    CHECK_EQ_INT(m_Rng.cursor, 0);
+    CHECK_EQ_INT(p_Rng->cursor, 0);
 }
 
 typedef struct {
@@ -344,7 +344,7 @@ static FRAME_FIXTURE *M_Frame(void)
     Bullets_Init();
     Player_Init();
     Grcg_Init();
-    memset(&m_Rng, 0, sizeof(m_Rng));
+    memset(p_Rng, 0, sizeof(*p_Rng));
     FRAME_FIXTURE *const fixture = Mem_AllocZ(sizeof(*fixture));
     Arena_Init(&fixture->arena, "bullet frame", 1024 * 1024);
     Video_Init(Arena_Allocator(&fixture->arena));

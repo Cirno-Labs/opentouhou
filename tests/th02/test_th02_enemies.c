@@ -47,7 +47,7 @@ static FIXTURE *M_New(void)
     memset(p_Performance, 0, sizeof(*p_Performance));
     Grcg_Init();
     Background_Init();
-    memset(&m_Rng, 0, sizeof(m_Rng));
+    memset(p_Rng, 0, sizeof(*p_Rng));
     FIXTURE *const fixture = Mem_AllocZ(sizeof(*fixture));
     Arena_Init(&fixture->arena, "enemy tests", 1024 * 1024);
     TestSound_Init(&fixture->sound);
@@ -112,7 +112,7 @@ TEST(spawning_keeps_slot_zero_count_bug_and_unwritten_bytes)
     FIXTURE *const fixture = M_New();
     memset(&m_Enemies, 0xa5, sizeof(m_Enemies));
     m_Enemies.count = 0;
-    m_Rng.ring[0] = 73;
+    p_Rng->ring[0] = 73;
     Enemies_Add(0, 100, -20, 0, 1);
     CHECK_EQ_INT(m_Enemies.count, 0);
     CHECK_EQ_INT(m_Enemies.slots[0].age, 73);
@@ -151,7 +151,7 @@ TEST(schedule_uses_exact_row_equality_and_midboss_still_consumes_row)
     CHECK_EQ_INT(m_Enemies.line, 1);
     Enemies_Spawn(&fixture->data, fixture->pages.back, 9, 1);
     CHECK_EQ_INT(m_Enemies.line, 2);
-    CHECK_EQ_INT(m_Rng.cursor, 2);
+    CHECK_EQ_INT(p_Rng->cursor, 2);
     M_Free(fixture);
 }
 
@@ -164,11 +164,11 @@ TEST(missing_declared_rows_keep_spawn_state_without_reading_past_storage)
         fixture->data.line_count = stored;
         m_Enemies.line = (int16_t)stored;
         const ENEMIES before = m_Enemies;
-        const RANDOM_STATE random_before = m_Rng;
+        const RANDOM_STATE random_before = *p_Rng;
         for (int16_t rows = 0; rows < 100; rows++) {
             Enemies_Spawn(&fixture->data, fixture->pages.back, rows, 0);
             CHECK(memcmp(&m_Enemies, &before, sizeof(before)) == 0);
-            CHECK(memcmp(&m_Rng, &random_before, sizeof(random_before)) == 0);
+            CHECK(memcmp(p_Rng, &random_before, sizeof(random_before)) == 0);
         }
     }
     M_Free(fixture);
@@ -225,7 +225,7 @@ TEST(damage_uses_real_shots_items_sparks_score_and_lunatic_return_bullets)
     fixture->rank = 3;
     fixture->formations[0].hp = 1;
     fixture->formations[0].item = ITEM_BOMB + ITEM_POINT;
-    m_Score.delta = 0x1234ffff;
+    p_Score->delta = 0x1234ffff;
     p_Shots->slots[0] = (SHOT) { .state = ENTITY_ACTIVE,
                                  .sprite = 50,
                                  .position = { { 100 * 16, 100 * 16 } } };
@@ -233,7 +233,7 @@ TEST(damage_uses_real_shots_items_sparks_score_and_lunatic_return_bullets)
     M_Update(fixture);
     CHECK_EQ_INT(m_Enemies.slots[0].dying, 1);
     CHECK_EQ_INT(m_Enemies.slots[0].damage, 6);
-    CHECK_EQ_INT(m_Score.delta, 0x12340069);
+    CHECK_EQ_INT(p_Score->delta, 0x12340069);
     CHECK_EQ_INT(g_Items->slots[0].kind, ITEM_POINT);
     CHECK_EQ_INT(g_Items->slots[0].position[0].x, 112);
     CHECK_EQ_INT(g_Sparks->next, 1);
@@ -257,7 +257,7 @@ TEST(invincible_formations_and_script_return_carry_keep_their_order)
     CHECK_EQ_INT(m_Enemies.slots[0].dying, 0);
     SoundEffects_Update();
     TestSound_Check(&fixture->sound, 4);
-    CHECK_EQ_INT(m_Score.delta, 1);
+    CHECK_EQ_INT(p_Score->delta, 1);
     m_Bomb.active = 0;
     fixture->scripts[0].bytes[0] = 0x11;
     M_Add(1, 1);
@@ -380,11 +380,11 @@ static uint64_t M_HashState(uint64_t hash)
     hash = M_HashValue(hash, m_Player.hit);
     hash = M_HashValue(hash, (uint32_t)p_Shots->target.x);
     hash = M_HashValue(hash, (uint32_t)p_Shots->target.y);
-    hash = M_HashValue(hash, (uint32_t)m_Score.delta);
-    hash = M_HashValue(hash, m_Rng.seed);
-    hash = M_HashValue(hash, m_Rng.cursor);
+    hash = M_HashValue(hash, (uint32_t)p_Score->delta);
+    hash = M_HashValue(hash, p_Rng->seed);
+    hash = M_HashValue(hash, p_Rng->cursor);
     for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-        hash = M_HashValue(hash, m_Rng.ring[i]);
+        hash = M_HashValue(hash, p_Rng->ring[i]);
     }
     return hash;
 }
@@ -448,9 +448,9 @@ TEST(script_commands_pages_ranks_and_dying_slots_keep_state_pixels_and_sound)
                 m_Player.current =
                     (ENTITY_POINT) { rank == 2 ? 100 : 300, 100 };
                 m_Player.position[back ^ 1] = m_Player.current;
-                m_Rng.cursor = 255;
+                p_Rng->cursor = 255;
                 for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-                    m_Rng.ring[i] = (uint8_t)(i ^ 0x5a);
+                    p_Rng->ring[i] = (uint8_t)(i ^ 0x5a);
                 }
                 memcpy(
                     fixture->scripts[0].bytes, scripts[script],

@@ -88,32 +88,33 @@ TEST(stage_and_music_titles_follow_separate_world_boundaries)
     for (uint8_t stage = 0; stage < 6; stage++) {
         Tram_Init();
         StageTitles_Begin(&assets, stage, false);
-        CHECK_EQ_INT(m_Tram.codes[12 * 80 + 22], 0);
+        CHECK_EQ_INT(p_Tram->codes[12 * 80 + 22], 0);
         StageTitles_Reveal();
-        CHECK_EQ_INT(m_Tram.attributes[12 * 80 + (stage == 5 ? 16 : 22)], 0xc1);
-        CHECK_EQ_INT(m_Tram.codes[13 * 80 + 18], 'A' + stage);
+        CHECK_EQ_INT(
+            p_Tram->attributes[12 * 80 + (stage == 5 ? 16 : 22)], 0xc1);
+        CHECK_EQ_INT(p_Tram->codes[13 * 80 + 18], 'A' + stage);
         StageTitles_Update(159);
         CHECK(m_Titles.banner_active);
         StageTitles_UpdateMusic();
         CHECK_EQ_INT(m_Titles.music_timer, 2);
-        CHECK_EQ_INT(m_Tram.codes[23 * 80 + 26], 'G' + stage * 2);
+        CHECK_EQ_INT(p_Tram->codes[23 * 80 + 26], 'G' + stage * 2);
         for (unsigned i = 0; i < 157; i++) {
             StageTitles_UpdateMusic();
         }
         CHECK_EQ_INT(m_Titles.music_timer, 159);
-        CHECK_EQ_INT(m_Tram.codes[23 * 80 + 26], 'G' + stage * 2);
+        CHECK_EQ_INT(p_Tram->codes[23 * 80 + 26], 'G' + stage * 2);
         StageTitles_UpdateMusic();
         CHECK_EQ_INT(m_Titles.music_timer, 0);
-        CHECK_EQ_INT(m_Tram.codes[23 * 80 + 26], ' ');
+        CHECK_EQ_INT(p_Tram->codes[23 * 80 + 26], ' ');
         StageTitles_Update(160);
         CHECK(!m_Titles.banner_active);
-        CHECK_EQ_INT(m_Tram.codes[13 * 80 + 18], ' ');
-        m_Tram.codes[13 * 80 + 18] = 'Z';
+        CHECK_EQ_INT(p_Tram->codes[13 * 80 + 18], ' ');
+        p_Tram->codes[13 * 80 + 18] = 'Z';
         StageTitles_Update(160);
-        CHECK_EQ_INT(m_Tram.codes[13 * 80 + 18], 'Z');
+        CHECK_EQ_INT(p_Tram->codes[13 * 80 + 18], 'Z');
         StageTitles_Boss();
         StageTitles_UpdateMusic();
-        CHECK_EQ_INT(m_Tram.codes[23 * 80 + 26], 'H' + stage * 2);
+        CHECK_EQ_INT(p_Tram->codes[23 * 80 + 26], 'H' + stage * 2);
     }
     StageTitles_Free(&assets);
 }
@@ -126,13 +127,13 @@ TEST(demo_keeps_blinking_banner_and_boss_entry_restarts_music_title)
     Tram_Init();
     StageTitles_Begin(&assets, 2, true);
     StageTitles_Reveal();
-    const TRAM before = m_Tram;
+    const TRAM before = *p_Tram;
     StageTitles_UpdateMusic();
     StageTitles_Update(160);
-    CHECK(memcmp(&m_Tram, &before, sizeof(m_Tram)) == 0);
-    CHECK_EQ_INT(m_Tram.attributes[12 * 80 + 18], 0xc3);
+    CHECK(memcmp(p_Tram, &before, sizeof(*p_Tram)) == 0);
+    CHECK_EQ_INT(p_Tram->attributes[12 * 80 + 18], 0xc3);
     StageTitles_Boss();
     StageTitles_UpdateMusic();
-    CHECK_EQ_INT(m_Tram.codes[23 * 80 + 26], 'L');
+    CHECK_EQ_INT(p_Tram->codes[23 * 80 + 26], 'L');
     StageTitles_Free(&assets);
 }

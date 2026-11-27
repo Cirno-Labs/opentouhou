@@ -324,22 +324,22 @@ TEST(main_score_converts_at_registration_and_stays_encoded_through_continue)
     p_Program->scenes.session.rank = 1;
     p_Program->scenes.session.continues_used = 2;
     p_Program->scenes.session.score = 123452;
-    m_Score.value = 12345;
+    p_Score->value = 12345;
     const TH02_INPUT input = {};
     CHECK(M_Step(&input));
-    CHECK_EQ_INT(m_Score.value, 12345);
+    CHECK_EQ_INT(p_Score->value, 12345);
     m_Test.registration =
         (HIGH_SCORE_ENTRY_EVENTS) { HIGH_SCORE_ENTRY_FRAME, false };
     M_Registration(&input, false);
-    CHECK_EQ_INT(m_Score.value, 123452);
+    CHECK_EQ_INT(p_Score->value, 123452);
     CHECK(M_Step(&input));
-    CHECK_EQ_INT(m_Score.value, 123452);
+    CHECK_EQ_INT(p_Score->value, 123452);
     m_Test.registration.result = HIGH_SCORE_ENTRY_COMPLETE;
     CHECK(M_Step(&input));
     CHECK_EQ_INT(p_Program->scenes.scene, TH02_SCENE_GAME_OVER);
-    CHECK_EQ_INT(m_Score.value, 123452);
+    CHECK_EQ_INT(p_Score->value, 123452);
     CHECK(M_Step(&input));
-    CHECK_EQ_INT(m_Score.value, 123452);
+    CHECK_EQ_INT(p_Score->value, 123452);
     g_GameDesc.shutdown();
 }
 
@@ -446,17 +446,17 @@ TEST(ending_handoff_retains_mima_delta_and_commits_only_the_extra_delta)
             p_Program->scenes.session.shot_type = 1;
             p_Program->scenes.session.continues_used = continued;
             Score_Init();
-            m_Score.value = 12345;
-            m_Score.delta = 48;
-            m_Score.transferred = 19;
-            m_Score.lives = 2;
-            m_Score.bombs = 3;
+            p_Score->value = 12345;
+            p_Score->delta = 48;
+            p_Score->transferred = 19;
+            p_Score->lives = 2;
+            p_Score->bombs = 3;
             M_Ending(extra != 0);
             CHECK_EQ_INT(p_Program->scenes.scene, TH02_SCENE_ENDING);
             CHECK(strcmp(m_Test.events, "E") == 0);
-            CHECK_EQ_INT(m_Score.value, extra != 0 ? 12393 : 12345);
-            CHECK_EQ_INT(m_Score.delta, extra != 0 ? 0 : 48);
-            CHECK_EQ_INT(m_Score.transferred, extra != 0 ? 0 : 19);
+            CHECK_EQ_INT(p_Score->value, extra != 0 ? 12393 : 12345);
+            CHECK_EQ_INT(p_Score->delta, extra != 0 ? 0 : 48);
+            CHECK_EQ_INT(p_Score->transferred, extra != 0 ? 0 : 19);
             CHECK_EQ_INT(p_Program->scenes.session.lives, 2);
             CHECK_EQ_INT(p_Program->scenes.session.bombs, 3);
             CHECK_EQ_INT(
@@ -609,9 +609,9 @@ TEST(extra_completion_retains_clear_bits_and_saves_once_at_tick_end)
                 (int16_t)(0x120u | (7u ^ (1u << shot)));
             p_Program->scenes.scores.sections[4].cleared = 0x3456;
             Score_Init();
-            m_Score.value = 500;
-            m_Score.delta = 123;
-            m_Score.transferred = 17;
+            p_Score->value = 500;
+            p_Score->delta = 123;
+            p_Score->transferred = 17;
             p_Program->scenes.scene = TH02_SCENE_BONUS;
             p_Program->audio.sound.active = false;
             m_Test.bonus_done = true;
@@ -624,9 +624,9 @@ TEST(extra_completion_retains_clear_bits_and_saves_once_at_tick_end)
             CHECK_EQ_INT(m_Test.written.sections[4].cleared, 0x3456);
             CHECK_EQ_INT(p_Program->scenes.session.stage, 127);
             CHECK_EQ_INT(p_Program->scenes.scene, TH02_SCENE_ENDING);
-            CHECK_EQ_INT(m_Score.value, 500);
-            CHECK_EQ_INT(m_Score.delta, 0);
-            CHECK_EQ_INT(m_Score.transferred, 0);
+            CHECK_EQ_INT(p_Score->value, 500);
+            CHECK_EQ_INT(p_Score->delta, 0);
+            CHECK_EQ_INT(p_Score->transferred, 0);
             CHECK_EQ_INT(Th02_Failed(), failure != 0);
             if (failure != 0) {
                 const size_t events = m_Test.count;
@@ -660,7 +660,7 @@ TEST(replay_start_enters_the_ending_with_its_resident_values)
         p_Program->scenes.scene = TH02_SCENE_OPENING;
         m_Test.action = MAIN_MENU_START;
         p_Program->audio.sound.active = false;
-        m_Score.value = 999;
+        p_Score->value = 999;
         g_Th02Hooks.on_start = M_EndingStart;
         g_Th02Hooks.arg = &rank;
         const TH02_INPUT input = {};
@@ -670,7 +670,7 @@ TEST(replay_start_enters_the_ending_with_its_resident_values)
         CHECK_EQ_INT(p_Program->scenes.session.rank, ranks[i]);
         CHECK_EQ_INT(p_Program->scenes.session.score, 12345);
         CHECK_EQ_INT(p_Program->scenes.session.continues_used, 3);
-        CHECK_EQ_INT(m_Score.value, 999);
+        CHECK_EQ_INT(p_Score->value, 999);
         CHECK(!p_Program->scenes.save_scores);
         memset(&g_Th02Hooks, 0, sizeof(g_Th02Hooks));
         g_GameDesc.shutdown();

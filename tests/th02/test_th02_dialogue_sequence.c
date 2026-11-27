@@ -35,7 +35,7 @@ static void M_Init(FIXTURE *const fixture)
     memset(g_Video.pages[0], 15, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 15, VIDEO_PAGE_SIZE);
     Clip_Reset();
-    memset(&m_Tram, 0xa5, sizeof(m_Tram));
+    memset(p_Tram, 0xa5, sizeof(*p_Tram));
     PatternBank_Init(&fixture->patterns, &g_HeapAllocator);
     uint8_t pixels[32 * 48];
     memset(pixels, 1, sizeof(pixels));
@@ -60,10 +60,10 @@ static void M_Init(FIXTURE *const fixture)
     Palette_Init();
     p_Palette->tone = 70;
     Score_Init();
-    m_Score.value = 99900;
-    m_Score.delta = 200;
-    m_Score.transferred = 17;
-    m_Score.lives = 4;
+    p_Score->value = 99900;
+    p_Score->delta = 200;
+    p_Score->transferred = 17;
+    p_Score->lives = 4;
 }
 
 static void M_Free(FIXTURE *const fixture)
@@ -125,8 +125,8 @@ TEST(sequence_waits_for_vsync_and_release_press_and_restores_pre_dialogue_pages)
         const DIALOGUE_SEQUENCE waiting = sequence;
         CHECK(!DialogueSequence_Update(&sequence, &input));
         CHECK(memcmp(&waiting, &sequence, sizeof(sequence)) == 0);
-        CHECK_EQ_INT(m_Score.value, 100100);
-        CHECK_EQ_INT(m_Score.delta, 200);
+        CHECK_EQ_INT(p_Score->value, 100100);
+        CHECK_EQ_INT(p_Score->delta, 200);
         unsigned enter_frames = 1;
         while (sequence.phase == DIALOGUE_SEQUENCE_ENTER && enter_frames < 24) {
             VSyncIrq_VSync();
@@ -140,8 +140,8 @@ TEST(sequence_waits_for_vsync_and_release_press_and_restores_pre_dialogue_pages)
         CHECK_EQ_INT(sequence.box.phase, DIALOGUE_CONFIRM_FRAMES);
         CHECK_EQ_INT(runtime.box, 1);
         CHECK_EQ_INT(runtime.keys, GAME_KEY_SHOT);
-        CHECK_EQ_INT(m_Tram.codes[21 * 80 + 14], 'X');
-        CHECK_EQ_INT(m_Tram.codes[22 * 80 + 14], 'X');
+        CHECK_EQ_INT(p_Tram->codes[21 * 80 + 14], 'X');
+        CHECK_EQ_INT(p_Tram->codes[22 * 80 + 14], 'X');
         for (unsigned i = 0; i < 5; i++) {
             VSyncIrq_VSync();
             CHECK(!DialogueSequence_Update(&sequence, &input));
@@ -169,11 +169,11 @@ TEST(sequence_waits_for_vsync_and_release_press_and_restores_pre_dialogue_pages)
         CHECK_EQ_INT(g_Video.drawing_page, post != 0 ? 1 : 0);
         CHECK_EQ_INT(
             p_Background->cache.mode, post != 0 ? TILE_BLACK : TILE_DISABLED);
-        CHECK_EQ_INT(m_Score.value, 100100);
-        CHECK_EQ_INT(m_Score.delta, 200);
-        CHECK_EQ_INT(m_Score.transferred, 17);
-        CHECK_EQ_INT(m_Score.extends, 1);
-        CHECK_EQ_INT(m_Score.lives, 5);
+        CHECK_EQ_INT(p_Score->value, 100100);
+        CHECK_EQ_INT(p_Score->delta, 200);
+        CHECK_EQ_INT(p_Score->transferred, 17);
+        CHECK_EQ_INT(p_Score->extends, 1);
+        CHECK_EQ_INT(p_Score->lives, 5);
         CHECK(memcmp(&m_Player, &player, sizeof(player)) == 0);
         CHECK(memcmp(&p_Stage->scroll, &scroll, sizeof(scroll)) == 0);
         const DIALOGUE_SEQUENCE done = sequence;

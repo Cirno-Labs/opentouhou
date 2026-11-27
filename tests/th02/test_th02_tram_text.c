@@ -44,19 +44,19 @@ TEST(original_text_keeps_unicode_and_source_byte_reveal_boundaries)
     Tram_Init();
     const size_t used = arena.used;
     Tram_PutText(79, 0, &text, 2, 0xabe1);
-    CHECK_EQ_INT(m_Tram.codes[79], 'A');
-    CHECK_EQ_INT(m_Tram.codes[80], 0x6102);
-    CHECK_EQ_INT(m_Tram.codes[81], 0x6182);
-    CHECK_EQ_INT(m_Tram.codes[82], 0);
-    CHECK_EQ_INT(m_Tram.attributes[81], 0xabe1);
+    CHECK_EQ_INT(p_Tram->codes[79], 'A');
+    CHECK_EQ_INT(p_Tram->codes[80], 0x6102);
+    CHECK_EQ_INT(p_Tram->codes[81], 0x6182);
+    CHECK_EQ_INT(p_Tram->codes[82], 0);
+    CHECK_EQ_INT(p_Tram->attributes[81], 0xabe1);
     Tram_PutText(79, 0, &text, UINT16_MAX, 0x21);
-    CHECK_EQ_INT(m_Tram.codes[80], 0x2204);
-    CHECK_EQ_INT(m_Tram.codes[81], 0x2284);
-    CHECK_EQ_INT(m_Tram.codes[82], 0xb1);
-    CHECK_EQ_INT(m_Tram.attributes[82], 0x21);
-    const TRAM before = m_Tram;
+    CHECK_EQ_INT(p_Tram->codes[80], 0x2204);
+    CHECK_EQ_INT(p_Tram->codes[81], 0x2284);
+    CHECK_EQ_INT(p_Tram->codes[82], 0xb1);
+    CHECK_EQ_INT(p_Tram->attributes[82], 0x21);
+    const TRAM before = *p_Tram;
     Tram_PutText(0, 0, &text, 0, 0);
-    CHECK(memcmp(&m_Tram, &before, sizeof(m_Tram)) == 0);
+    CHECK(memcmp(p_Tram, &before, sizeof(*p_Tram)) == 0);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
@@ -130,48 +130,48 @@ TEST(text_writes_keep_the_code_then_attribute_order_at_plane_boundaries)
     TRAM_TEXT text;
     CHECK(Result_Ignore(M_Read(bytes, sizeof(bytes), &arena, &text)));
 
-    memset(&m_Tram, 0xa5, sizeof(m_Tram));
+    memset(p_Tram, 0xa5, sizeof(*p_Tram));
     Tram_PutText(4095, 0, &text, 2, 0x4321);
-    CHECK_EQ_INT(m_Tram.codes[4095], 'A');
-    CHECK_EQ_INT(m_Tram.attributes[0], 0x6102);
-    CHECK_EQ_INT(m_Tram.attributes[1], 0x6182);
-    CHECK_EQ_INT(m_Tram.attributes[4095], 0x4321);
+    CHECK_EQ_INT(p_Tram->codes[4095], 'A');
+    CHECK_EQ_INT(p_Tram->attributes[0], 0x6102);
+    CHECK_EQ_INT(p_Tram->attributes[1], 0x6182);
+    CHECK_EQ_INT(p_Tram->attributes[4095], 0x4321);
     Tram_Init();
     Tram_PutText(32767, 0, &text, UINT16_MAX, 0x21);
-    CHECK_EQ_INT(m_Tram.codes[0], 0x2204);
-    CHECK_EQ_INT(m_Tram.codes[1], 0x2284);
-    CHECK_EQ_INT(m_Tram.codes[2], 'B');
-    CHECK_EQ_INT(m_Tram.attributes[0], 0x21);
-    CHECK_EQ_INT(m_Tram.attributes[2], 0x21);
+    CHECK_EQ_INT(p_Tram->codes[0], 0x2204);
+    CHECK_EQ_INT(p_Tram->codes[1], 0x2284);
+    CHECK_EQ_INT(p_Tram->codes[2], 'B');
+    CHECK_EQ_INT(p_Tram->attributes[0], 0x21);
+    CHECK_EQ_INT(p_Tram->attributes[2], 0x21);
     Arena_Free(&arena);
 }
 
 TEST(single_character_writes_keep_ank_literals_and_wide_cell_attributes)
 {
-    memset(&m_Tram, 0xa5, sizeof(m_Tram));
+    memset(p_Tram, 0xa5, sizeof(*p_Tram));
     const TRAM_CHARACTER space = { .code = ' ' };
     Tram_PutCharacter(39, 24, &space, 0xe1);
-    CHECK_EQ_INT(m_Tram.codes[24 * 80 + 39], ' ');
-    CHECK_EQ_INT(m_Tram.attributes[24 * 80 + 39], 0xe1);
-    CHECK_EQ_INT(m_Tram.codes[24 * 80 + 40], 0xa5a5);
+    CHECK_EQ_INT(p_Tram->codes[24 * 80 + 39], ' ');
+    CHECK_EQ_INT(p_Tram->attributes[24 * 80 + 39], 0xe1);
+    CHECK_EQ_INT(p_Tram->codes[24 * 80 + 40], 0xa5a5);
     const TRAM_CHARACTER nul = {};
     Tram_PutCharacter(0, 0, &nul, 0x21);
-    CHECK_EQ_INT(m_Tram.codes[0], 0);
-    CHECK_EQ_INT(m_Tram.attributes[0], 0x21);
-    CHECK_EQ_INT(m_Tram.codes[1], 0xa5a5);
+    CHECK_EQ_INT(p_Tram->codes[0], 0);
+    CHECK_EQ_INT(p_Tram->attributes[0], 0x21);
+    CHECK_EQ_INT(p_Tram->codes[1], 0xa5a5);
     ARENA arena;
     Arena_Init(&arena, "single imported character", 4096);
     const uint8_t bytes[] = { 0x82, 0xa0 };
     TRAM_TEXT text;
     CHECK(Result_Ignore(M_Read(bytes, sizeof(bytes), &arena, &text)));
     Tram_PutCharacter(79, 0, &text.characters[0], 0x43e1);
-    CHECK_EQ_INT(m_Tram.codes[79], 0x2204);
-    CHECK_EQ_INT(m_Tram.codes[80], 0x2284);
-    CHECK_EQ_INT(m_Tram.attributes[79], 0x43e1);
-    CHECK_EQ_INT(m_Tram.attributes[80], 0x43e1);
+    CHECK_EQ_INT(p_Tram->codes[79], 0x2204);
+    CHECK_EQ_INT(p_Tram->codes[80], 0x2284);
+    CHECK_EQ_INT(p_Tram->attributes[79], 0x43e1);
+    CHECK_EQ_INT(p_Tram->attributes[80], 0x43e1);
     Tram_PutCharacter(32767, 0, &text.characters[0], 0x1234);
-    CHECK_EQ_INT(m_Tram.codes[0], 0x2284);
-    CHECK_EQ_INT(m_Tram.attributes[0], 0x1234);
+    CHECK_EQ_INT(p_Tram->codes[0], 0x2284);
+    CHECK_EQ_INT(p_Tram->attributes[0], 0x1234);
     Arena_Free(&arena);
 }
 
@@ -187,7 +187,7 @@ TEST(single_code_conversion_preserves_extended_character_word_arithmetic)
 
     Tram_Init();
     Tram_PutCharacter(0, 0, &text.characters[0], 0xe1);
-    CHECK_EQ_INT(m_Tram.codes[0], 0x21f7);
-    CHECK_EQ_INT(m_Tram.codes[1], 0x21f7);
+    CHECK_EQ_INT(p_Tram->codes[0], 0x21f7);
+    CHECK_EQ_INT(p_Tram->codes[1], 0x21f7);
     Arena_Free(&arena);
 }

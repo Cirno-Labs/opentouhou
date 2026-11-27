@@ -35,15 +35,15 @@ TEST(body_hits_slow_velocity_shift_large_shots_and_keep_score_high_word)
     Sparks_Init();
     p_Sparks->next = 63;
     Score_Init();
-    m_Score.value = 1234;
-    m_Score.delta = 0x1234fffe;
+    p_Score->value = 1234;
+    p_Score->delta = 0x1234fffe;
     m_Shots.weapon.level = 2;
     const SHOT_HIT_INPUT input = {};
     m_Shots.slots[0] = M_Shot(50, 0);
     m_Shots.slots[1] = M_Shot(120, 0);
     CHECK_EQ_INT(M_Hit(input, 96, 96, 32, 32), 14);
-    CHECK_EQ_INT(m_Score.delta, 0x1234000c);
-    CHECK_EQ_INT(m_Score.value, 1234);
+    CHECK_EQ_INT(p_Score->delta, 0x1234000c);
+    CHECK_EQ_INT(p_Score->value, 1234);
     CHECK_EQ_INT(m_Shots.slots[0].age, 2);
     CHECK_EQ_INT(m_Shots.slots[1].age, 1);
     CHECK_EQ_INT(m_Shots.slots[0].velocity.x, -1);
@@ -91,7 +91,7 @@ TEST(strict_edges_last_three_slots_and_bomb_mask_preserve_their_distinct_rules)
     Player_Init();
     Sparks_Init();
     Score_Init();
-    m_Score.delta = INT32_MAX;
+    p_Score->delta = INT32_MAX;
     m_Shots.weapon.level = 9;
     m_Bomb.active = 7;
     SHOT_HIT_INPUT input = { .bomb_frame_mask = 1 };
@@ -101,7 +101,7 @@ TEST(strict_edges_last_three_slots_and_bomb_mask_preserve_their_distinct_rules)
     m_Shots.slots[1].position[0].y = 120 * 16;
     m_Shots.slots[35] = m_Shots.slots[36] = m_Shots.slots[37] = M_Shot(120, 0);
     CHECK_EQ_INT(M_Hit(input, 96, 96, 32, 32), 1);
-    CHECK_EQ_INT(m_Score.delta, 0x7fff0000);
+    CHECK_EQ_INT(p_Score->delta, 0x7fff0000);
     CHECK_EQ_INT(m_Shots.slots[35].age, 0);
     CHECK_EQ_INT(p_Sparks->next, 0);
     input.frame = 0xffffff01u;
@@ -125,13 +125,13 @@ static uint64_t M_HashValue(uint64_t hash, const uint32_t value)
 
 static uint64_t M_HashState(uint64_t hash)
 {
-    hash = M_HashValue(hash, (uint32_t)m_Score.value);
-    hash = M_HashValue(hash, (uint32_t)m_Score.delta);
+    hash = M_HashValue(hash, (uint32_t)p_Score->value);
+    hash = M_HashValue(hash, (uint32_t)p_Score->delta);
     hash = M_HashValue(hash, p_Sparks->next);
-    hash = M_HashValue(hash, m_Rng.seed);
-    hash = M_HashValue(hash, m_Rng.cursor);
+    hash = M_HashValue(hash, p_Rng->seed);
+    hash = M_HashValue(hash, p_Rng->cursor);
     for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-        hash = M_HashValue(hash, m_Rng.ring[i]);
+        hash = M_HashValue(hash, p_Rng->ring[i]);
     }
     for (size_t i = 0; i < SHOT_COUNT; i++) {
         const SHOT *const shot = &m_Shots.slots[i];
@@ -183,14 +183,14 @@ TEST(hit_levels_pages_masks_and_bounds_preserve_state_and_rng)
                             Score_Init();
                             Random_Reset();
                             Random_Seed(0x23456789);
-                            m_Rng.cursor = 255;
+                            p_Rng->cursor = 255;
                             for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-                                m_Rng.ring[i] = (uint8_t)(i ^ 0x5a);
+                                p_Rng->ring[i] = (uint8_t)(i ^ 0x5a);
                             }
                             m_Shots.weapon.level = level;
                             m_Bomb.active = bombing != 0 ? 7 : 0;
-                            m_Score.value = 1234;
-                            m_Score.delta = 0x1234ffff;
+                            p_Score->value = 1234;
+                            p_Score->delta = 0x1234ffff;
                             p_Sparks->next = 63;
                             for (size_t i = 0; i < SPARK_COUNT; i++) {
                                 p_Sparks->slots[i].angle = (uint8_t)(i * 9);

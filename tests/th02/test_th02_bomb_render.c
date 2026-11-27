@@ -92,20 +92,20 @@ TEST(transition_reaches_row_399_and_text_keeps_outer_cells_and_sheet_padding)
     CHECK_EQ_INT(g_Video.pages[1][383 * 640 + 415], 9);
     CHECK_EQ_INT(g_Video.pages[1][399 * 640 + 416], 9);
     fixture.assets.shot_type = 1;
-    memset(&m_Tram, 0xa5, sizeof(m_Tram));
+    memset(p_Tram, 0xa5, sizeof(*p_Tram));
     memset(fixture.assets.text[17], 0, 288);
     fixture.assets.text[17][0] = 0x10;
     fixture.assets.text[17][275] = 0x01;
     memset(fixture.assets.text[17] + 276, 0xff, 12);
     BombRender_Text(&fixture.assets, 17);
-    CHECK_EQ_INT(m_Tram.codes[84], 0x20);
-    CHECK_EQ_INT(m_Tram.attributes[84], 0x45);
-    CHECK_EQ_INT(m_Tram.attributes[85], 0x45);
-    CHECK_EQ_INT(m_Tram.attributes[86], 0xe1);
-    CHECK_EQ_INT(m_Tram.attributes[23 * 80 + 50], 0x45);
-    CHECK_EQ_INT(m_Tram.attributes[23 * 80 + 51], 0x45);
-    CHECK_EQ_INT(m_Tram.codes[23 * 80 + 52], 0xa5a5);
-    CHECK_EQ_INT(m_Tram.codes[2000], 0xa5a5);
+    CHECK_EQ_INT(p_Tram->codes[84], 0x20);
+    CHECK_EQ_INT(p_Tram->attributes[84], 0x45);
+    CHECK_EQ_INT(p_Tram->attributes[85], 0x45);
+    CHECK_EQ_INT(p_Tram->attributes[86], 0xe1);
+    CHECK_EQ_INT(p_Tram->attributes[23 * 80 + 50], 0x45);
+    CHECK_EQ_INT(p_Tram->attributes[23 * 80 + 51], 0x45);
+    CHECK_EQ_INT(p_Tram->codes[23 * 80 + 52], 0xa5a5);
+    CHECK_EQ_INT(p_Tram->codes[2000], 0xa5a5);
     M_Free(&fixture);
 }
 

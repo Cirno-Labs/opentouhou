@@ -1,8 +1,7 @@
-#include "th02/point_numbers.h"
-
 #include "th02/background.h"
 #include "th02/draw.h"
 #include "th02/grcg.h"
+#include "th02/point_numbers_private.h"
 
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"
@@ -12,6 +11,7 @@
 
 static POINT_NUMBERS m_PointNumbers;
 const POINT_NUMBERS *const g_PointNumbers = &m_PointNumbers;
+POINT_NUMBERS *const p_PointNumbers = &m_PointNumbers;
 
 static void M_Glyph(
     const POINT_NUMBER_FONT *const font, const int16_t left, const int16_t top,

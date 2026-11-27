@@ -43,8 +43,8 @@ static void M_Multiply(
     requests->total_x10 = total_x10;
     requests->digits = digits;
     requests->order[requests->count++] = 30;
-    requests->score_before = m_Score.value;
-    requests->delta_before = m_Score.delta;
+    requests->score_before = p_Score->value;
+    requests->delta_before = p_Score->delta;
 }
 
 TEST(normal_bonus_preserves_request_order_and_awards_existing_delta)
@@ -53,9 +53,9 @@ TEST(normal_bonus_preserves_request_order_and_awards_existing_delta)
     TEST_SOUND sound;
     TestSound_Init(&sound);
     Score_Init();
-    m_Score.value = 99999;
-    m_Score.delta = 7;
-    m_Score.lives = 4;
+    p_Score->value = 99999;
+    p_Score->delta = 7;
+    p_Score->lives = 4;
     const STAGE_BONUS_RUN run = {
         .rank = 1, .point_items = 10, .start_bombs = 3, .start_lives = 3
     };
@@ -66,10 +66,10 @@ TEST(normal_bonus_preserves_request_order_and_awards_existing_delta)
     CHECK_EQ_INT(result.sum, 1250);
     CHECK_EQ_INT(result.amount, 12500);
     CHECK_EQ_INT(result.keys, GAME_KEY_UP);
-    CHECK_EQ_INT(m_Score.delta, 12507);
-    CHECK_EQ_INT(m_Score.value, 112506);
-    CHECK_EQ_INT(m_Score.extends, 1);
-    CHECK_EQ_INT(m_Score.lives, 5);
+    CHECK_EQ_INT(p_Score->delta, 12507);
+    CHECK_EQ_INT(p_Score->value, 112506);
+    CHECK_EQ_INT(p_Score->extends, 1);
+    CHECK_EQ_INT(p_Score->lives, 5);
     CHECK_EQ_INT(requests.sum_x10, 12500);
     CHECK_EQ_INT(requests.total_x10, 125000);
     CHECK_EQ_INT(requests.digits, 6);
@@ -122,21 +122,21 @@ TEST(extra_bonus_uses_low_word_time_and_discards_fractional_tens)
         const STAGE_BONUS_RESULT result = StageBonus_Grant(&run, true, &view);
         CHECK_EQ_INT(result.amount, amounts[i]);
         CHECK_EQ_INT(requests.digits, 7);
-        CHECK_EQ_INT(m_Score.value, amounts[i]);
+        CHECK_EQ_INT(p_Score->value, amounts[i]);
     }
 }
 
 TEST(bonus_keeps_pending_delta_and_transfer_for_repeated_awards)
 {
     Score_Init();
-    m_Score.value = 100;
-    m_Score.delta = 10;
-    m_Score.transferred = 33;
+    p_Score->value = 100;
+    p_Score->delta = 10;
+    p_Score->transferred = 33;
     const STAGE_BONUS_RUN run = {};
     StageBonus_Grant(&run, true, nullptr);
-    CHECK_EQ_INT(m_Score.value, 110);
-    CHECK_EQ_INT(m_Score.delta, 10);
-    CHECK_EQ_INT(m_Score.transferred, 33);
+    CHECK_EQ_INT(p_Score->value, 110);
+    CHECK_EQ_INT(p_Score->delta, 10);
+    CHECK_EQ_INT(p_Score->transferred, 33);
     StageBonus_Grant(&run, true, nullptr);
-    CHECK_EQ_INT(m_Score.value, 120);
+    CHECK_EQ_INT(p_Score->value, 120);
 }

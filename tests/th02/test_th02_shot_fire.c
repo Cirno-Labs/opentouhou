@@ -10,7 +10,7 @@
 
 static void M_Init(const uint8_t type, const uint8_t level)
 {
-    memset(&m_Rng, 0, sizeof(m_Rng));
+    memset(p_Rng, 0, sizeof(*p_Rng));
     Player_Init();
     m_Player.shot_type = type;
     Random_Reset();
@@ -55,14 +55,14 @@ TEST(type_a_uses_free_slots_without_resetting_front_positions_or_frames)
     CHECK_EQ_INT(m_Shots.frames[2], 255);
     CHECK_EQ_INT(m_Shots.weapon.parameter[0], 48);
     CHECK_EQ_INT(m_Shots.option_active, 0);
-    CHECK_EQ_INT(m_Rng.cursor, 0);
+    CHECK_EQ_INT(p_Rng->cursor, 0);
 }
 
 TEST(type_b_level_eight_uses_the_higher_option_velocities)
 {
     M_Init(1, 8);
     M_Emit(0);
-    CHECK_EQ_INT(m_Rng.cursor, 2);
+    CHECK_EQ_INT(p_Rng->cursor, 2);
     CHECK_EQ_INT(m_Shots.slots[4].velocity.y, -54);
     CHECK_EQ_INT(m_Shots.slots[6].velocity.x, -16);
     CHECK_EQ_INT(m_Shots.slots[6].velocity.y, -50);
@@ -96,15 +96,15 @@ TEST(aimed_type_b_preserves_zero_vector_angle_and_ring_wrap)
 {
     M_Init(1, 9);
     m_Shots.target = (ENTITY_POINT) { 100, 132 };
-    m_Rng.cursor = 255;
-    m_Rng.ring[255] = m_Rng.ring[0] = 3;
+    p_Rng->cursor = 255;
+    p_Rng->ring[255] = p_Rng->ring[0] = 3;
     m_Shots.option_active = 1;
     M_Emit(0);
     CHECK_EQ_INT(m_Shots.slots[2].velocity.x, 192);
     CHECK_EQ_INT(m_Shots.slots[2].velocity.y, 0);
     CHECK_EQ_INT(m_Shots.slots[3].velocity.x, -192);
     CHECK_EQ_INT(m_Shots.slots[3].velocity.y, 0);
-    CHECK_EQ_INT(m_Rng.cursor, 1);
+    CHECK_EQ_INT(p_Rng->cursor, 1);
     CHECK_EQ_INT(m_Shots.weapon.parameter[0], 50);
     CHECK_EQ_INT(m_Shots.unused_target_x, 100);
     CHECK_EQ_INT(m_Shots.slots[4].state, ENTITY_FREE);
@@ -194,14 +194,14 @@ static uint64_t M_HashVolley(uint64_t hash)
         m_Shots.unused_target_x,
         m_Shots.option_active,
         m_Shots.option_frames_per_age,
-        m_Rng.cursor,
+        p_Rng->cursor,
     };
     for (size_t i = 0; i < ARRAY_SIZE(fields); i++) {
         hash = M_HashValue(hash, (uint32_t)fields[i]);
     }
-    hash = M_HashValue(hash, m_Rng.seed);
+    hash = M_HashValue(hash, p_Rng->seed);
     for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-        hash = M_HashValue(hash, m_Rng.ring[i]);
+        hash = M_HashValue(hash, p_Rng->ring[i]);
     }
     for (size_t i = 0; i < SHOT_COUNT; i++) {
         const SHOT *const shot = &m_Shots.slots[i];
@@ -237,7 +237,7 @@ TEST(all_shot_types_keep_partial_volley_state_and_random_consumption)
                             M_Init(type, level);
                             Random_Seed(0x12345678);
                             Random_Fill();
-                            m_Rng.cursor = 255;
+                            p_Rng->cursor = 255;
                             m_Shots.weapon.spread = layout == 0 ? -124 : 26;
                             m_Shots.fire_cycle = cycles[cycle];
                             m_Shots.unused_target_x = 77;

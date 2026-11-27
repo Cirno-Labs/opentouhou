@@ -27,7 +27,7 @@ static void M_Init(FIXTURE *const f, const uint8_t stage)
 {
     Sparks_Init();
     memset(p_Palette, 0, sizeof((*p_Palette)));
-    memset(&m_Rng, 0, sizeof(m_Rng));
+    memset(p_Rng, 0, sizeof(*p_Rng));
     memset(f, 0, sizeof(*f));
     Video_Init(&g_HeapAllocator);
     Clip_Reset();
@@ -58,7 +58,7 @@ TEST(weather_waits_for_activation_and_keeps_persistent_state_between_stages)
     const STAGE_EFFECTS before = m_StageEffects;
     M_Update(&f, 0, false, M_Pages(0, 1));
     CHECK(memcmp(&m_StageEffects, &before, sizeof(before)) == 0);
-    CHECK_EQ_INT(m_Rng.cursor, 0);
+    CHECK_EQ_INT(p_Rng->cursor, 0);
     m_StageEffects.storm_frame = 511;
     M_Update(&f, 0, false, M_Pages(0, 1));
     CHECK_EQ_INT(m_StageEffects.storm_frame, 1000);
@@ -82,14 +82,14 @@ TEST(weather_spawns_after_ring_draw_and_cleans_both_page_footprints)
 {
     FIXTURE f;
     M_Init(&f, 1);
-    m_Rng.ring[0] = 0;
-    m_Rng.ring[1] = 1;
+    p_Rng->ring[0] = 0;
+    p_Rng->ring[1] = 1;
     M_Update(&f, 1, false, M_Pages(0, 1));
-    CHECK_EQ_INT(m_Rng.cursor, 0);
+    CHECK_EQ_INT(p_Rng->cursor, 0);
     CHECK_EQ_INT(g_Sparks->acceleration_x, -1);
     M_Update(&f, 1, false, M_Pages(0, 1));
     STAGE_PARTICLE *const p = &m_StageEffects.particles[0];
-    CHECK_EQ_INT(m_Rng.cursor, 2);
+    CHECK_EQ_INT(p_Rng->cursor, 2);
     CHECK_EQ_INT(p->speed, 4);
     CHECK_EQ_INT(p->position[0].x, 300);
     CHECK_EQ_INT(p->position[0].y, 20);
@@ -118,18 +118,18 @@ TEST(full_weather_pool_consumes_spawn_position_without_consuming_speed)
         m_StageEffects.particles[i].position[0] = (ENTITY_POINT) { 500, 16 };
     }
     M_Update(&f, 1, false, M_Pages(0, 1));
-    CHECK_EQ_INT(m_Rng.cursor, 1);
+    CHECK_EQ_INT(p_Rng->cursor, 1);
     m_StageEffects.lightning_frame = 106;
     m_StageEffects.lightning_next = 100;
     M_Update(&f, 1, false, M_Pages(0, 1));
-    CHECK_EQ_INT(m_Rng.cursor, 2);
+    CHECK_EQ_INT(p_Rng->cursor, 2);
     CHECK_EQ_INT(m_StageEffects.lightning_next, 120);
     CHECK_EQ_INT(p_Palette->tone, 100);
     m_StageEffects.lightning_next = 65532;
     m_StageEffects.lightning_frame = 65531;
     m_StageEffects.rain_frame = 0;
     M_Update(&f, 1, false, M_Pages(0, 1));
-    CHECK_EQ_INT(m_Rng.cursor, 2);
+    CHECK_EQ_INT(p_Rng->cursor, 2);
     CHECK_EQ_INT(p_Palette->tone, 100);
     M_Free();
 }
@@ -164,7 +164,7 @@ TEST(vortex_runs_sound_shake_palette_and_slowdown_at_original_boundaries)
     }
     CHECK_EQ_INT(m_StageEffects.vortex_frame, 200);
 
-    CHECK_EQ_INT(m_Rng.cursor, 0);
+    CHECK_EQ_INT(p_Rng->cursor, 0);
     CHECK_EQ_INT(g_Grcg->mode, 0);
     TestSound_Free(&sound);
     M_Free();
@@ -235,7 +235,7 @@ TEST(portal_restores_and_ors_only_intensity_on_back_page_zero)
             CHECK(memcmp(expected, g_Video.pages[0], VIDEO_PAGE_SIZE) == 0);
             CHECK_EQ_INT(m_StageEffects.portal_top, top);
             CHECK_EQ_INT(g_Grcg->mode, 0);
-            CHECK_EQ_INT(m_Rng.cursor, 0);
+            CHECK_EQ_INT(p_Rng->cursor, 0);
             for (unsigned x = 0; x < TILE_COLUMNS; x++) {
                 CHECK_EQ_INT(p_Background->cache.columns[x], 0);
                 for (unsigned y = 0; y < TILE_ROWS; y++) {
@@ -322,10 +322,10 @@ static uint64_t M_HashState(const FIXTURE *const f, uint64_t hash)
             hash = M_HashValue(hash, p_Palette->colors[i][channel]);
         }
     }
-    hash = M_HashValue(hash, m_Rng.seed);
-    hash = M_HashValue(hash, m_Rng.cursor);
+    hash = M_HashValue(hash, p_Rng->seed);
+    hash = M_HashValue(hash, p_Rng->cursor);
     for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-        hash = M_HashValue(hash, m_Rng.ring[i]);
+        hash = M_HashValue(hash, p_Rng->ring[i]);
     }
     return hash;
 }
@@ -360,9 +360,9 @@ TEST(
                                 (ENTITY_POINT) { 500, 16 };
                     }
                 }
-                m_Rng.cursor = 255;
+                p_Rng->cursor = 255;
                 for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-                    m_Rng.ring[i] = (uint8_t)(i ^ 0x5a);
+                    p_Rng->ring[i] = (uint8_t)(i ^ 0x5a);
                 }
                 for (uint32_t frame = 0; frame < 32; frame++) {
                     const uint8_t back = frame & 1;
