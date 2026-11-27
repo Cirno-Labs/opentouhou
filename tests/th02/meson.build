@@ -525,3 +525,15 @@ test(
   ),
   suite: 'unit',
 )
+test(
+  'th02/main',
+  executable(
+    'test_th02_main',
+    'test_th02_main.c',
+    c_args: [layer_include['th02'], layer_include['pc98'], layer_include['shell'], '-I' + meson.current_build_dir() / '..' / '..' / 'src' / 'th02'] + core_include + tests_include,
+    implicit_include_directories: false,
+    link_with: [th02_lib, builtin_libs['th02'], core_io_lib, core_vfs_lib, core_hash_lib, core_audio_lib, core_base_lib],
+    dependencies: [shell_game_dep, pc98_dep, sdl3],
+  ),
+  suite: 'unit',
+)
