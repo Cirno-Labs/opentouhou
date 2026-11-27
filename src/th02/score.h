@@ -73,3 +73,7 @@ void Score_Set(int32_t value);
 
 // Clears delta for a stage or Extra clear, keeping value.
 void Score_ClearDelta(void);
+
+// Adds shot damage to delta's low word, without carry into the high word,
+// as retail's hit test does.
+void Score_AddDamage(int16_t damage);

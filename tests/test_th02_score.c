@@ -281,3 +281,16 @@ TEST(points_and_bonus_add_with_wrap_and_set_and_clear_leave_the_other_field)
     CHECK_EQ_INT(m_Score.value, 500);
     CHECK_EQ_INT(m_Score.delta, 0);
 }
+
+TEST(damage_wraps_in_the_low_word_without_carry)
+{
+    Score_Init();
+    m_Score.delta = 0x1234fffe;
+    Score_AddDamage(14);
+    CHECK_EQ_INT(m_Score.delta, 0x1234000c);
+    m_Score.delta = INT32_MAX;
+    Score_AddDamage(1);
+    CHECK_EQ_INT(m_Score.delta, 0x7fff0000);
+    Score_AddDamage(0);
+    CHECK_EQ_INT(m_Score.delta, 0x7fff0000);
+}
