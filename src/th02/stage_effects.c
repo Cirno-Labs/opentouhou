@@ -1,5 +1,3 @@
-#include "th02/stage_effects.h"
-
 #include "th02/background.h"
 #include "th02/clip.h"
 #include "th02/draw.h"
@@ -8,6 +6,7 @@
 #include "th02/random.h"
 #include "th02/sound_effects.h"
 #include "th02/sparks.h"
+#include "th02/stage_effects_private.h"
 #include "th02/video.h"
 
 #include "core/base/assert.h"
@@ -16,6 +15,7 @@
 #include <string.h>
 
 static STAGE_EFFECTS m_StageEffects;
+STAGE_EFFECTS *const p_StageEffects = &m_StageEffects;
 const STAGE_EFFECTS *const g_StageEffects = &m_StageEffects;
 
 static void M_Lightning(void)
