@@ -14,6 +14,7 @@ th02_lib = static_library(
   'draw/glyphs.c',
   'draw/shapes.c',
   'stage/data.c',
+  'sparks.c',
   'draw/sprites.c',
   'background/assets.c',
   'background/background.c',

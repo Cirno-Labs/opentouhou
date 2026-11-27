@@ -1574,6 +1574,27 @@ if build_games
       suite: 'unit',
     )
   endforeach
+  # These load the built-in sprite sheets from src/th02/sprites.
+  foreach part : ['sparks']
+    test(
+      'th02/' + part,
+      executable(
+        'test_th02_' + part,
+        'test_th02_' + part + '.c',
+        c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+        implicit_include_directories: false,
+        link_with: [
+          th02_lib, core_image_lib, core_io_lib, core_vfs_lib, core_hash_lib,
+          core_base_lib,
+        ],
+        dependencies: [pc98_dep, sdl3],
+      ),
+      suite: 'unit',
+      env: {
+        'TEST_SPRITE_DIR': meson.project_source_root() / 'src' / 'th02' / 'sprites',
+      },
+    )
+  endforeach
   executable(
     'test_th02_presenter_gl',
     'test_th02_presenter_gl.c',
