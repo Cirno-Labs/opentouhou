@@ -8,7 +8,7 @@
 #include "th02/boss/fight.h"
 #include "th02/boss/stones.c"
 #include "th02/bullets/private.h"
-#include "th02/enemies.c"
+#include "th02/enemies_private.h"
 #include "th02/grcg.h"
 #include "th02/items.h"
 #include "th02/miss_private.h"
@@ -215,7 +215,7 @@ TEST(stones_begin_resets_shared_midboss_arrays_and_keeps_retained_history)
     m_Stones.sweep_angle = 80;
     m_Stones.flag[0] = 2;
     m_Stones.damage[0] = 290;
-    m_Enemies.slots[0].state = ENTITY_ACTIVE;
+    p_Enemies->slots[0].state = ENTITY_ACTIVE;
     const int32_t session_frame = f.session.frame;
     M_BeginCore(p_BossState, (uint8_t)f.session.rank);
     CHECK_EQ_INT(g_Stage->world.frame, 12345);
@@ -234,7 +234,7 @@ TEST(stones_begin_resets_shared_midboss_arrays_and_keeps_retained_history)
     CHECK_EQ_INT(m_Stones.kill_frame[4], 17);
     CHECK_EQ_INT(m_Stones.ring_flag[5], 3);
     CHECK_EQ_INT(m_Stones.sweep_angle, 80);
-    CHECK_EQ_INT(m_Enemies.slots[0].state, ENTITY_REMOVE);
+    CHECK_EQ_INT(p_Enemies->slots[0].state, ENTITY_REMOVE);
     CHECK(g_Pillars->enabled);
     CHECK_EQ_INT(g_Pillars->frames_new, 12);
     CHECK_EQ_INT(m_Stones.spread, BULLET_FAN3_WIDE_AIMED);

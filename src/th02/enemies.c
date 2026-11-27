@@ -1,8 +1,7 @@
-#include "th02/enemies.h"
-
 #include "th02/background.h"
 #include "th02/bullets.h"
 #include "th02/draw.h"
+#include "th02/enemies_private.h"
 #include "th02/items.h"
 #include "th02/player.h"
 #include "th02/random.h"
@@ -17,6 +16,7 @@
 #include <string.h>
 
 static ENEMIES m_Enemies;
+ENEMIES *const p_Enemies = &m_Enemies;
 const ENEMIES *const g_Enemies = &m_Enemies;
 
 static uint8_t M_Read(const STAGE_SCRIPT *const script, const int32_t offset)

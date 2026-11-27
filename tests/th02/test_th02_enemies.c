@@ -7,8 +7,8 @@
 #include "th02/background.h"
 #include "th02/background/private.h"
 #include "th02/bullets/private.h"
-#include "th02/enemies.c"
 #include "th02/enemies.h"
+#include "th02/enemies_private.h"
 #include "th02/items.h"
 #include "th02/performance_private.h"
 #include "th02/player.h"
@@ -104,29 +104,29 @@ static void M_Free(FIXTURE *const fixture)
 static void M_Add(const uint8_t slot, const int16_t formation)
 {
     Enemies_Add(0, 100, 100, slot, formation);
-    m_Enemies.count = slot + 1;
+    p_Enemies->count = slot + 1;
 }
 
 TEST(spawning_keeps_slot_zero_count_bug_and_unwritten_bytes)
 {
     FIXTURE *const fixture = M_New();
-    memset(&m_Enemies, 0xa5, sizeof(m_Enemies));
-    m_Enemies.count = 0;
+    memset(p_Enemies, 0xa5, sizeof(*p_Enemies));
+    p_Enemies->count = 0;
     p_Rng->ring[0] = 73;
     Enemies_Add(0, 100, -20, 0, 1);
-    CHECK_EQ_INT(m_Enemies.count, 0);
-    CHECK_EQ_INT(m_Enemies.slots[0].age, 73);
-    CHECK_EQ_INT(m_Enemies.slots[0].velocity_x, (int8_t)0xa5);
-    CHECK_EQ_INT(m_Enemies.slots[0].position[1].x, (int16_t)0xa5a5);
-    CHECK_EQ_INT(m_Enemies.slots[0].bullet_speed, 0xa5);
+    CHECK_EQ_INT(p_Enemies->count, 0);
+    CHECK_EQ_INT(p_Enemies->slots[0].age, 73);
+    CHECK_EQ_INT(p_Enemies->slots[0].velocity_x, (int8_t)0xa5);
+    CHECK_EQ_INT(p_Enemies->slots[0].position[1].x, (int16_t)0xa5a5);
+    CHECK_EQ_INT(p_Enemies->slots[0].bullet_speed, 0xa5);
     Enemies_Add(0, 300, 10, 1, 0);
-    CHECK_EQ_INT(m_Enemies.count, 2);
-    CHECK_EQ_INT(m_Enemies.slots[1].spawned_left, 0);
+    CHECK_EQ_INT(p_Enemies->count, 2);
+    CHECK_EQ_INT(p_Enemies->slots[1].spawned_left, 0);
     Enemies_ResetStage();
-    CHECK_EQ_INT(m_Enemies.line, 0);
-    CHECK_EQ_INT(m_Enemies.count, 2);
-    CHECK_EQ_INT(m_Enemies.slots[0].state, ENTITY_FREE);
-    CHECK_EQ_INT(m_Enemies.slots[0].age, 73);
+    CHECK_EQ_INT(p_Enemies->line, 0);
+    CHECK_EQ_INT(p_Enemies->count, 2);
+    CHECK_EQ_INT(p_Enemies->slots[0].state, ENTITY_FREE);
+    CHECK_EQ_INT(p_Enemies->slots[0].age, 73);
     M_Free(fixture);
 }
 
@@ -140,17 +140,17 @@ TEST(schedule_uses_exact_row_equality_and_midboss_still_consumes_row)
     fixture->lines[1].position = 9;
     fixture->lines[1].formations[0] = 0;
     Enemies_Spawn(&fixture->data, fixture->pages.back, 11, 0);
-    CHECK_EQ_INT(m_Enemies.line, 0);
+    CHECK_EQ_INT(p_Enemies->line, 0);
     Enemies_Spawn(&fixture->data, fixture->pages.back, 10, 0);
-    CHECK_EQ_INT(m_Enemies.line, 1);
-    CHECK_EQ_INT(m_Enemies.slots[0].position[0].x, 24);
-    CHECK_EQ_INT(m_Enemies.slots[1].position[0].x, 400);
-    CHECK_EQ_INT(m_Enemies.slots[1].position[0].y, -16);
-    CHECK_EQ_INT(m_Enemies.count, 2);
+    CHECK_EQ_INT(p_Enemies->line, 1);
+    CHECK_EQ_INT(p_Enemies->slots[0].position[0].x, 24);
+    CHECK_EQ_INT(p_Enemies->slots[1].position[0].x, 400);
+    CHECK_EQ_INT(p_Enemies->slots[1].position[0].y, -16);
+    CHECK_EQ_INT(p_Enemies->count, 2);
     Enemies_Spawn(&fixture->data, fixture->pages.back, 10, 0);
-    CHECK_EQ_INT(m_Enemies.line, 1);
+    CHECK_EQ_INT(p_Enemies->line, 1);
     Enemies_Spawn(&fixture->data, fixture->pages.back, 9, 1);
-    CHECK_EQ_INT(m_Enemies.line, 2);
+    CHECK_EQ_INT(p_Enemies->line, 2);
     CHECK_EQ_INT(p_Rng->cursor, 2);
     M_Free(fixture);
 }
@@ -162,12 +162,12 @@ TEST(missing_declared_rows_keep_spawn_state_without_reading_past_storage)
     fixture->data.lines = nullptr;
     for (uint16_t stored = 0; stored <= 2; stored++) {
         fixture->data.line_count = stored;
-        m_Enemies.line = (int16_t)stored;
-        const ENEMIES before = m_Enemies;
+        p_Enemies->line = (int16_t)stored;
+        const ENEMIES before = *p_Enemies;
         const RANDOM_STATE random_before = *p_Rng;
         for (int16_t rows = 0; rows < 100; rows++) {
             Enemies_Spawn(&fixture->data, fixture->pages.back, rows, 0);
-            CHECK(memcmp(&m_Enemies, &before, sizeof(before)) == 0);
+            CHECK(memcmp(p_Enemies, &before, sizeof(before)) == 0);
             CHECK(memcmp(p_Rng, &random_before, sizeof(random_before)) == 0);
         }
     }
@@ -180,17 +180,17 @@ TEST(invalidation_frees_after_marking_and_rebuilds_count)
     M_Add(0, 0);
     M_Add(24, 0);
     p_Background->cache.mode = TILE_IMAGES;
-    m_Enemies.slots[0].state = ENTITY_REMOVE;
-    m_Enemies.slots[24].state = 255;
-    m_Enemies.slots[24].position[1] = (ENTITY_POINT) { 120, 130 };
+    p_Enemies->slots[0].state = ENTITY_REMOVE;
+    p_Enemies->slots[24].state = 255;
+    p_Enemies->slots[24].position[1] = (ENTITY_POINT) { 120, 130 };
     Enemies_Invalidate((PLAYFIELD_PAGES) { 0, 1, 0 });
-    CHECK_EQ_INT(m_Enemies.slots[0].state, ENTITY_FREE);
-    CHECK_EQ_INT(m_Enemies.slots[24].position[0].x, 120);
-    CHECK_EQ_INT(m_Enemies.count, 25);
+    CHECK_EQ_INT(p_Enemies->slots[0].state, ENTITY_FREE);
+    CHECK_EQ_INT(p_Enemies->slots[24].position[0].x, 120);
+    CHECK_EQ_INT(p_Enemies->count, 25);
     CHECK_EQ_INT(p_Background->cache.columns[4], 1);
     Enemies_RemoveAll();
-    CHECK_EQ_INT(m_Enemies.count, 0);
-    CHECK_EQ_INT(m_Enemies.slots[24].state, ENTITY_REMOVE);
+    CHECK_EQ_INT(p_Enemies->count, 0);
+    CHECK_EQ_INT(p_Enemies->slots[24].state, ENTITY_REMOVE);
     M_Free(fixture);
 }
 
@@ -205,17 +205,17 @@ TEST(scripts_emit_real_bullets_then_wait_and_write_both_tile_pages)
     CHECK_EQ_INT(p_Bullets->slots[0].state, ENTITY_ACTIVE);
     CHECK_EQ_INT(p_Bullets->slots[0].position[0].x, 1600);
     CHECK_EQ_INT(p_Bullets->slots[0].velocity.x, 64);
-    CHECK_EQ_INT(m_Enemies.slots[0].position[0].x, 99);
-    CHECK_EQ_INT(m_Enemies.slots[0].position[0].y, 102);
-    CHECK_EQ_INT(m_Enemies.slots[0].script_ip, 7);
+    CHECK_EQ_INT(p_Enemies->slots[0].position[0].x, 99);
+    CHECK_EQ_INT(p_Enemies->slots[0].position[0].y, 102);
+    CHECK_EQ_INT(p_Enemies->slots[0].script_ip, 7);
     CHECK_EQ_INT(p_Background->cache.images[2][4], 9);
     CHECK_EQ_INT(p_Background->scroll.copy_top, 0);
     CHECK_EQ_INT(p_Background->scroll.copy_height, 16);
     CHECK_EQ_INT(g_Video.drawing_page, 0);
     M_Update(fixture);
-    CHECK_EQ_INT(m_Enemies.slots[0].script_ip, 11);
+    CHECK_EQ_INT(p_Enemies->slots[0].script_ip, 11);
     M_Update(fixture);
-    CHECK_EQ_INT(m_Enemies.slots[0].state, ENTITY_REMOVE);
+    CHECK_EQ_INT(p_Enemies->slots[0].state, ENTITY_REMOVE);
     M_Free(fixture);
 }
 
@@ -231,8 +231,8 @@ TEST(damage_uses_real_shots_items_sparks_score_and_lunatic_return_bullets)
                                  .position = { { 100 * 16, 100 * 16 } } };
     M_Add(0, 0);
     M_Update(fixture);
-    CHECK_EQ_INT(m_Enemies.slots[0].dying, 1);
-    CHECK_EQ_INT(m_Enemies.slots[0].damage, 6);
+    CHECK_EQ_INT(p_Enemies->slots[0].dying, 1);
+    CHECK_EQ_INT(p_Enemies->slots[0].damage, 6);
     CHECK_EQ_INT(p_Score->delta, 0x12340069);
     CHECK_EQ_INT(g_Items->slots[0].kind, ITEM_POINT);
     CHECK_EQ_INT(g_Items->slots[0].position[0].x, 112);
@@ -242,7 +242,7 @@ TEST(damage_uses_real_shots_items_sparks_score_and_lunatic_return_bullets)
     TestSound_Check(&fixture->sound, 3);
     M_Update(fixture);
     CHECK_EQ_INT(g_Sparks->next, 9);
-    CHECK_EQ_INT(m_Enemies.slots[0].wait_frame, 1);
+    CHECK_EQ_INT(p_Enemies->slots[0].wait_frame, 1);
     M_Free(fixture);
 }
 
@@ -253,19 +253,19 @@ TEST(invincible_formations_and_script_return_carry_keep_their_order)
     p_Bomb->active = 1;
     M_Add(0, 0);
     M_Update(fixture);
-    CHECK_EQ_INT(m_Enemies.slots[0].damage, 0);
-    CHECK_EQ_INT(m_Enemies.slots[0].dying, 0);
+    CHECK_EQ_INT(p_Enemies->slots[0].damage, 0);
+    CHECK_EQ_INT(p_Enemies->slots[0].dying, 0);
     SoundEffects_Update();
     TestSound_Check(&fixture->sound, 4);
     CHECK_EQ_INT(p_Score->delta, 1);
     p_Bomb->active = 0;
     fixture->scripts[0].bytes[0] = 0x11;
     M_Add(1, 1);
-    m_Enemies.slots[1].dying = 1;
-    m_Enemies.slots[1].age = 42;
+    p_Enemies->slots[1].dying = 1;
+    p_Enemies->slots[1].age = 42;
     M_Update(fixture);
-    CHECK_EQ_INT(m_Enemies.slots[1].wait_frame, 0);
-    CHECK_EQ_INT(m_Enemies.slots[1].age, 42);
+    CHECK_EQ_INT(p_Enemies->slots[1].wait_frame, 0);
+    CHECK_EQ_INT(p_Enemies->slots[1].age, 42);
     M_Free(fixture);
 }
 
@@ -279,8 +279,8 @@ TEST(player_collision_uses_front_x_and_current_y_without_testing_protection)
     p_Player->hit = 255;
     M_Update(fixture);
     CHECK_EQ_INT(p_Player->hit, 1);
-    CHECK_EQ_INT(m_Enemies.slots[0].dying, 1);
-    CHECK_EQ_INT(m_Enemies.slots[0].wait_frame, 0);
+    CHECK_EQ_INT(p_Enemies->slots[0].dying, 1);
+    CHECK_EQ_INT(p_Enemies->slots[0].wait_frame, 0);
     SoundEffects_Update();
     TestSound_Check(&fixture->sound, -1);
     CHECK_EQ_INT(p_Shots->target.x, 108);
@@ -289,7 +289,7 @@ TEST(player_collision_uses_front_x_and_current_y_without_testing_protection)
     p_Player->hit = 255;
     M_Update(fixture);
     CHECK_EQ_INT(p_Player->hit, 255);
-    CHECK_EQ_INT(m_Enemies.slots[0].dying, 0);
+    CHECK_EQ_INT(p_Enemies->slots[0].dying, 0);
     M_Free(fixture);
 }
 
@@ -304,10 +304,10 @@ static uint64_t M_HashValue(uint64_t hash, const uint32_t value)
 
 static uint64_t M_HashState(uint64_t hash)
 {
-    hash = M_HashValue(hash, m_Enemies.count);
-    hash = M_HashValue(hash, (uint32_t)m_Enemies.line);
+    hash = M_HashValue(hash, p_Enemies->count);
+    hash = M_HashValue(hash, (uint32_t)p_Enemies->line);
     for (size_t i = 0; i < ENEMY_COUNT; i++) {
-        const ENEMY *const enemy = &m_Enemies.slots[i];
+        const ENEMY *const enemy = &p_Enemies->slots[i];
         const int32_t values[] = {
             enemy->position[0].x,
             enemy->position[0].y,
@@ -462,17 +462,17 @@ TEST(script_commands_pages_ranks_and_dying_slots_keep_state_pixels_and_sound)
                 for (uint8_t slot = 0; slot < 3; slot++) {
                     Enemies_Add(
                         back, 100 + slot * 32, 100, slot, slot == 0 ? 0 : 1);
-                    m_Enemies.slots[slot].position[back ^ 1] =
+                    p_Enemies->slots[slot].position[back ^ 1] =
                         (ENTITY_POINT) { 32, 32 };
                 }
-                m_Enemies.count = 3;
-                m_Enemies.slots[0].age = 255;
-                m_Enemies.slots[0].velocity_x = 3;
-                m_Enemies.slots[0].velocity_y = -3;
-                m_Enemies.slots[0].bullet_pattern = BULLET_SINGLE;
-                m_Enemies.slots[0].bullet_speed = 64;
-                m_Enemies.slots[1].dying = 1;
-                m_Enemies.slots[1].wait_frame = 23;
+                p_Enemies->count = 3;
+                p_Enemies->slots[0].age = 255;
+                p_Enemies->slots[0].velocity_x = 3;
+                p_Enemies->slots[0].velocity_y = -3;
+                p_Enemies->slots[0].bullet_pattern = BULLET_SINGLE;
+                p_Enemies->slots[0].bullet_speed = 64;
+                p_Enemies->slots[1].dying = 1;
+                p_Enemies->slots[1].wait_frame = 23;
                 if (rank == 1) {
                     p_Shots->slots[0] = (SHOT) {
                         .state = ENTITY_ACTIVE,
