@@ -1537,7 +1537,7 @@ executable(
 )
 
 if build_games
-  foreach part : ['input', 'tram', 'hud', 'hud_wipe', 'draw', 'shapes', 'sprites_opaque', 'sprites_zoom', 'sprites_plane', 'sprites_rect', 'sprites_tiny', 'sprites', 'clip', 'video', 'tiny', 'patterns', 'performance']
+  foreach part : ['input', 'tram', 'hud', 'hud_wipe', 'score', 'draw', 'shapes', 'sprites_opaque', 'sprites_zoom', 'sprites_plane', 'sprites_rect', 'sprites_tiny', 'sprites', 'clip', 'video', 'tiny', 'patterns', 'performance']
     test(
       'th02/' + part,
       executable(
