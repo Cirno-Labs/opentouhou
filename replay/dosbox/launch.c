@@ -88,7 +88,7 @@ static RESULT M_CheckOut(const RUN *const run)
 // section.
 static RESULT M_WriteConfig(
     const DOSBOX_PROGRAM *const program, const char *const base,
-    const char *const path)
+    const char *const path, const char *const font)
 {
     READER reader;
     MUST(Reader_OpenFile(&reader, base));
@@ -104,6 +104,13 @@ static RESULT M_WriteConfig(
     }
     if (IS_OK(result)) {
         fwrite(text, 1, size, file);
+        if (font != nullptr) {
+            fprintf(
+                file,
+                "\n[pc98]\npc-98 try font rom = false\n"
+                "pc-98 anex86 font = %s\n",
+                font);
+        }
         fprintf(file, "\n[autoexec]\nC:\n");
         for (size_t i = 0; i < program->command_count; i++) {
             fprintf(file, "%s\n", program->commands[i]);
@@ -151,11 +158,15 @@ static RESULT M_Launch(
     FAIL_IF(exe_dir == nullptr, "cannot find the backend program");
     const char *const library = Path_Join(allocator, exe_dir, program->library);
     const char *const base = Path_Join(allocator, exe_dir, M_CONFIG);
+    const char *const font = program->font != nullptr
+        ? Path_Join(allocator, exe_dir, program->font)
+        : nullptr;
+    FAIL_IF(font != nullptr && !File_Exists(font), "Missing font %s", font);
 
     char dir[] = "/tmp/dosbox-XXXXXX";
     FAIL_IF(mkdtemp(dir) == nullptr, "cannot make a temporary directory");
     const char *const config = Path_Join(allocator, dir, M_CONFIG);
-    RESULT result = M_WriteConfig(program, base, config);
+    RESULT result = M_WriteConfig(program, base, config, font);
     if (IS_OK(result)) {
         const char **const args =
             Arena_AllocArrZ(arena, (size_t)argc + 7, sizeof(char *));

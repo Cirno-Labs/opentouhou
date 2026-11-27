@@ -54,6 +54,9 @@ typedef struct {
     // Names the library next to the backend program. dosbox-x.conf lies
     // there too.
     const char *library;
+    // Selects a generated Anex86 font beside the backend program, or nullptr
+    // for the emulator's default font.
+    const char *font;
 } DOSBOX_PROGRAM;
 
 typedef enum {
