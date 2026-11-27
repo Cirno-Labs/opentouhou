@@ -1,23 +1,26 @@
-#include "th02/scores.h"
+#include "th02/high_scores/format.h"
 
 #include "test.h"
 
-static uint8_t *M_Encode(const SCORE_SECTION *const section, size_t *const size)
+static uint8_t *M_Encode(
+    const HIGH_SCORE_SECTION *const section, size_t *const size)
 {
     WRITER writer;
     Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
-    const bool success = Result_Ignore(Scores_WriteSection(&writer, section));
+    const bool success =
+        Result_Ignore(HighScores_WriteSection(&writer, section));
     uint8_t *bytes = success ? Writer_TakeBuffer(&writer, size) : nullptr;
     Result_Ignore(Writer_Close(&writer));
     return bytes;
 }
 
 static RESULT M_Read(
-    const uint8_t *const bytes, const size_t size, SCORE_SECTION *const out)
+    const uint8_t *const bytes, const size_t size,
+    HIGH_SCORE_SECTION *const out)
 {
     READER reader;
     Reader_OpenBuffer(&reader, bytes, size, nullptr);
-    const RESULT result = Scores_ReadSection(&reader, out);
+    const RESULT result = HighScores_ReadSection(&reader, out);
     Reader_Close(&reader);
     return result;
 }
@@ -25,32 +28,33 @@ static RESULT M_Read(
 static void M_RepairOuterSum(uint8_t *const bytes)
 {
     uint32_t sum = 0;
-    for (size_t i = 0; i < SCORES_SECTION_SIZE - 4; i++) {
+    for (size_t i = 0; i < HIGH_SCORES_SECTION_SIZE - 4; i++) {
         sum += (uint8_t)(bytes[i] - 0x12);
     }
     for (size_t i = 0; i < 4; i++) {
-        bytes[SCORES_SECTION_SIZE - 4 + i] = sum >> (i * 8);
+        bytes[HIGH_SCORES_SECTION_SIZE - 4 + i] = sum >> (i * 8);
     }
 }
 
 TEST(normal_clears_require_no_continues_and_unlock_extra_after_all_shots)
 {
-    SCORES scores;
-    Scores_Defaults(&scores);
-    const SCORES before = scores;
+    HIGH_SCORES scores;
+    HighScores_Defaults(&scores);
+    const HIGH_SCORES before = scores;
     for (uint8_t shot = 0; shot < 3; shot++) {
-        CHECK_EQ_INT(Scores_RecordClear(&scores, shot, false, 1), -1);
-        CHECK_EQ_INT(Scores_RecordClear(&scores, shot, false, UINT16_MAX), -1);
+        CHECK_EQ_INT(HighScores_RecordClear(&scores, shot, false, 1), -1);
+        CHECK_EQ_INT(
+            HighScores_RecordClear(&scores, shot, false, UINT16_MAX), -1);
     }
     CHECK(memcmp(&scores, &before, sizeof(scores)) == 0);
     const int16_t markers[] = { 318, 118, 218 };
     for (uint8_t shot = 0; shot < 3; shot++) {
         scores.sections[shot].cleared = -1;
-        CHECK_EQ_INT(Scores_RecordClear(&scores, shot, false, 0), shot);
+        CHECK_EQ_INT(HighScores_RecordClear(&scores, shot, false, 0), shot);
         CHECK_EQ_INT(scores.sections[shot].cleared, markers[shot]);
-        CHECK_EQ_INT(Scores_RecordClear(&scores, shot, false, 0), shot);
-        SCORE_CLEARS clears;
-        Scores_GetClears(&scores, &clears);
+        CHECK_EQ_INT(HighScores_RecordClear(&scores, shot, false, 0), shot);
+        HIGH_SCORE_CLEARS clears;
+        HighScores_GetClears(&scores, &clears);
         CHECK(clears.game[shot]);
         CHECK(clears.extra_unlocked == (shot == 2));
         CHECK(
@@ -61,45 +65,47 @@ TEST(normal_clears_require_no_continues_and_unlock_extra_after_all_shots)
     }
     CHECK(
         memcmp(
-            &scores.sections[3], &before.sections[3], 2 * sizeof(SCORE_SECTION))
+            &scores.sections[3], &before.sections[3],
+            2 * sizeof(HIGH_SCORE_SECTION))
         == 0);
 }
 
 TEST(extra_clear_keeps_unrelated_bits_and_round_trips_through_score_codec)
 {
-    SCORES scores;
-    Scores_Defaults(&scores);
+    HIGH_SCORES scores;
+    HighScores_Defaults(&scores);
     scores.sections[3].cleared = (int16_t)0xa5f8;
-    const SCORES before = scores;
+    const HIGH_SCORES before = scores;
     for (uint8_t shot = 0; shot < 3; shot++) {
-        CHECK_EQ_INT(Scores_RecordClear(&scores, shot, true, UINT16_MAX), 3);
+        CHECK_EQ_INT(
+            HighScores_RecordClear(&scores, shot, true, UINT16_MAX), 3);
         CHECK_EQ_INT(
             (uint16_t)scores.sections[3].cleared,
             0xa5f8 | ((1u << (shot + 1)) - 1));
     }
-    const SCORES completed = scores;
-    CHECK_EQ_INT(Scores_RecordClear(&scores, 2, true, 0), 3);
+    const HIGH_SCORES completed = scores;
+    CHECK_EQ_INT(HighScores_RecordClear(&scores, 2, true, 0), 3);
     CHECK(memcmp(&scores, &completed, sizeof(scores)) == 0);
-    SCORE_CLEARS clears;
-    Scores_GetClears(&scores, &clears);
+    HIGH_SCORE_CLEARS clears;
+    HighScores_GetClears(&scores, &clears);
     CHECK(!clears.extra_unlocked);
     for (size_t shot = 0; shot < 3; shot++) {
         CHECK(clears.extra[shot]);
         CHECK(!clears.game[shot]);
     }
-    for (size_t rank = 0; rank < SCORES_SECTIONS; rank++) {
+    for (size_t rank = 0; rank < HIGH_SCORES_SECTIONS; rank++) {
         if (rank != 3) {
             CHECK(
                 memcmp(
                     &scores.sections[rank], &before.sections[rank],
-                    sizeof(SCORE_SECTION))
+                    sizeof(HIGH_SCORE_SECTION))
                 == 0);
         }
     }
     size_t size;
     uint8_t *const bytes = M_Encode(&scores.sections[3], &size);
     CHECK(bytes != nullptr);
-    SCORE_SECTION decoded;
+    HIGH_SCORE_SECTION decoded;
     CHECK(Result_Ignore(M_Read(bytes, size, &decoded)));
     CHECK_EQ_INT((uint16_t)decoded.cleared, 0xa5ff);
     CHECK(
@@ -112,7 +118,7 @@ TEST(extra_clear_keeps_unrelated_bits_and_round_trips_through_score_codec)
 
 TEST(score_sections_keep_original_arrays_obfuscation_and_wrapped_score_sum)
 {
-    SCORE_SECTION section = { .cleared = 318 };
+    HIGH_SCORE_SECTION section = { .cleared = 318 };
     section.records[0].score = section.records[1].score = INT32_MAX;
     section.records[2].score = -1;
     section.records[0].name_glyphs[0] = 0xfe;
@@ -122,11 +128,11 @@ TEST(score_sections_keep_original_arrays_obfuscation_and_wrapped_score_sum)
     section.records[0].day = 21;
     section.records[0].month = 11;
     section.records[0].shot_type = 2;
-    const SCORE_SECTION before = section;
+    const HIGH_SCORE_SECTION before = section;
     size_t size;
     uint8_t *const bytes = M_Encode(&section, &size);
     CHECK(bytes != nullptr);
-    CHECK_EQ_INT(size, SCORES_SECTION_SIZE);
+    CHECK_EQ_INT(size, HIGH_SCORES_SECTION_SIZE);
     CHECK_EQ_INT(bytes[0], 0x50);
     CHECK_EQ_INT(bytes[1], 0x13);
     CHECK_EQ_INT(bytes[42], 0x0f);
@@ -137,7 +143,7 @@ TEST(score_sections_keep_original_arrays_obfuscation_and_wrapped_score_sum)
     CHECK_EQ_INT(bytes[131], 11 + 0x12);
     CHECK_EQ_INT(bytes[168], 2 + 0x12);
     CHECK(memcmp(&section, &before, sizeof(section)) == 0);
-    SCORE_SECTION decoded;
+    HIGH_SCORE_SECTION decoded;
     CHECK(Result_Ignore(M_Read(bytes, size, &decoded)));
     CHECK_EQ_INT(decoded.cleared, 318);
     CHECK_EQ_INT(decoded.records[0].score, INT32_MAX);
@@ -152,20 +158,20 @@ TEST(score_sections_keep_original_arrays_obfuscation_and_wrapped_score_sum)
 
 TEST(score_integrity_checks_each_inner_sum_even_when_outer_sum_is_valid)
 {
-    SCORE_SECTION section = {};
+    HIGH_SCORE_SECTION section = {};
     size_t size;
     uint8_t *const bytes = M_Encode(&section, &size);
     const size_t offsets[] = { 42, 116, 127, 178 };
     for (size_t i = 0; i < ARRAY_SIZE(offsets); i++) {
-        uint8_t changed[SCORES_SECTION_SIZE];
+        uint8_t changed[HIGH_SCORES_SECTION_SIZE];
         memcpy(changed, bytes, sizeof(changed));
         changed[offsets[i]]++;
         if (i < 3) {
             M_RepairOuterSum(changed);
         }
-        SCORE_SECTION out;
+        HIGH_SCORE_SECTION out;
         memset(&out, 0xa5, sizeof(out));
-        const SCORE_SECTION before = out;
+        const HIGH_SCORE_SECTION before = out;
         CHECK(!Result_Ignore(M_Read(changed, sizeof(changed), &out)));
         CHECK(memcmp(&out, &before, sizeof(out)) == 0);
     }
@@ -175,30 +181,30 @@ TEST(score_integrity_checks_each_inner_sum_even_when_outer_sum_is_valid)
 TEST(
     score_file_reads_five_sections_leaves_trailing_bytes_and_rejects_truncation)
 {
-    SCORES scores = {};
-    for (size_t i = 0; i < SCORES_SECTIONS; i++) {
+    HIGH_SCORES scores = {};
+    for (size_t i = 0; i < HIGH_SCORES_SECTIONS; i++) {
         scores.sections[i].records[0].score = 1000 + (int32_t)i;
     }
     WRITER writer;
     Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
-    CHECK(Result_Ignore(Scores_Write(&writer, &scores)));
+    CHECK(Result_Ignore(HighScores_Write(&writer, &scores)));
     Writer_WriteU8(&writer, 0x7a);
     size_t size;
     uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);
     CHECK(Result_Ignore(Writer_Close(&writer)));
-    CHECK_EQ_INT(size, SCORES_SECTIONS * SCORES_SECTION_SIZE + 1);
+    CHECK_EQ_INT(size, HIGH_SCORES_SECTIONS * HIGH_SCORES_SECTION_SIZE + 1);
     READER reader;
     Reader_OpenBuffer(&reader, bytes, size, nullptr);
-    SCORES out;
-    CHECK(Result_Ignore(Scores_Read(&reader, &out)));
+    HIGH_SCORES out;
+    CHECK(Result_Ignore(HighScores_Read(&reader, &out)));
     CHECK_EQ_INT(Reader_Tell(&reader), size - 1);
     CHECK_EQ_INT(Reader_ReadU8(&reader), 0x7a);
     CHECK_EQ_INT(out.sections[4].records[0].score, 1004);
     Reader_Close(&reader);
     Reader_OpenBuffer(&reader, bytes, size - 2, nullptr);
     memset(&out, 0xa5, sizeof(out));
-    const SCORES before = out;
-    CHECK(!Result_Ignore(Scores_Read(&reader, &out)));
+    const HIGH_SCORES before = out;
+    CHECK(!Result_Ignore(HighScores_Read(&reader, &out)));
     CHECK(memcmp(&out, &before, sizeof(out)) == 0);
     Reader_Close(&reader);
     Mem_Free(bytes);
@@ -206,21 +212,21 @@ TEST(
 
 TEST(clear_flags_use_shot_specific_rank_fields_and_exact_clear_constants)
 {
-    SCORES scores = {};
+    HIGH_SCORES scores = {};
     scores.sections[0].cleared = 318;
     scores.sections[1].cleared = 118;
     scores.sections[2].cleared = 218;
     scores.sections[3].cleared = -1;
     scores.sections[4].cleared = 0;
-    SCORE_CLEARS clears;
-    Scores_GetClears(&scores, &clears);
+    HIGH_SCORE_CLEARS clears;
+    HighScores_GetClears(&scores, &clears);
     CHECK(clears.extra_unlocked);
     CHECK(clears.game[0] && clears.game[1] && clears.game[2]);
     CHECK(clears.extra[0] && clears.extra[1] && clears.extra[2]);
     scores.sections[1].cleared = 119;
     scores.sections[3].cleared = 0x102;
     scores.sections[4].cleared = -1;
-    Scores_GetClears(&scores, &clears);
+    HighScores_GetClears(&scores, &clears);
     CHECK(!clears.extra_unlocked);
     CHECK(clears.game[0] && !clears.game[1] && clears.game[2]);
     CHECK(!clears.extra[0] && clears.extra[1] && !clears.extra[2]);
@@ -228,9 +234,9 @@ TEST(clear_flags_use_shot_specific_rank_fields_and_exact_clear_constants)
 
 TEST(factory_scores_reset_all_five_tables_and_emit_identical_valid_sections)
 {
-    SCORES scores;
+    HIGH_SCORES scores;
     memset(&scores, 0xa5, sizeof(scores));
-    Scores_Defaults(&scores);
+    HighScores_Defaults(&scores);
     CHECK_EQ_INT(scores.sections[0].records[0].score, 10000);
     CHECK_EQ_INT(scores.sections[4].records[9].score, 1000);
     CHECK_EQ_INT(scores.sections[4].records[9].stage, 1);
@@ -239,29 +245,30 @@ TEST(factory_scores_reset_all_five_tables_and_emit_identical_valid_sections)
     CHECK(
         memcmp(scores.sections[0].records[0].name_glyphs, name, sizeof(name))
         == 0);
-    SCORE_CLEARS clears;
-    Scores_GetClears(&scores, &clears);
+    HIGH_SCORE_CLEARS clears;
+    HighScores_GetClears(&scores, &clears);
     CHECK(!clears.extra_unlocked);
     for (size_t shot = 0; shot < 3; shot++) {
         CHECK(!clears.game[shot] && !clears.extra[shot]);
     }
     WRITER writer;
     Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
-    CHECK(Result_Ignore(Scores_Write(&writer, &scores)));
+    CHECK(Result_Ignore(HighScores_Write(&writer, &scores)));
     size_t size;
     uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);
     CHECK(Result_Ignore(Writer_Close(&writer)));
-    CHECK_EQ_INT(size, SCORES_SECTIONS * SCORES_SECTION_SIZE);
-    for (size_t rank = 1; rank < SCORES_SECTIONS; rank++) {
+    CHECK_EQ_INT(size, HIGH_SCORES_SECTIONS * HIGH_SCORES_SECTION_SIZE);
+    for (size_t rank = 1; rank < HIGH_SCORES_SECTIONS; rank++) {
         CHECK(
             memcmp(
-                bytes, bytes + rank * SCORES_SECTION_SIZE, SCORES_SECTION_SIZE)
+                bytes, bytes + rank * HIGH_SCORES_SECTION_SIZE,
+                HIGH_SCORES_SECTION_SIZE)
             == 0);
     }
     READER reader;
     Reader_OpenBuffer(&reader, bytes, size, nullptr);
-    SCORES loaded;
-    CHECK(Result_Ignore(Scores_Read(&reader, &loaded)));
+    HIGH_SCORES loaded;
+    CHECK(Result_Ignore(HighScores_Read(&reader, &loaded)));
     CHECK_EQ_INT(loaded.sections[4].records[9].score, 1000);
     CHECK_EQ_INT(loaded.sections[4].records[9].stage, 1);
     Reader_Close(&reader);

@@ -1,14 +1,14 @@
 #include "th02_tram_fixture.h"
 #include "th02_palette_fixture.h"
 #include "th02_clip_fixture.h"
-#include "th02/score_view/render.h"
+#include "th02/high_score_view/render.h"
 
 #include "test.h"
 
 typedef struct {
-    SCORES scores;
+    HIGH_SCORES scores;
     TH02_SETTINGS settings;
-    SCORE_VIEW_ASSETS assets;
+    HIGH_SCORE_VIEW_ASSETS assets;
 } FIXTURE;
 
 static void M_Init(FIXTURE *const fixture)
@@ -24,7 +24,7 @@ static void M_Init(FIXTURE *const fixture)
     Grcg_Init();
     Palette_Init();
     m_Palette.tone = 50;
-    Scores_Defaults(&fixture->scores);
+    HighScores_Defaults(&fixture->scores);
     for (int i = 0; i < 16; i++) {
         fixture->assets.palette[i] = (GFX_COLOR) { i * 17, 0, 0, 255 };
     }
@@ -39,7 +39,8 @@ TEST(begin_preserves_hidden_memory_and_shows_the_inclusive_purple_rectangle)
 {
     FIXTURE fixture;
     M_Init(&fixture);
-    ScoreViewRender_Begin(&fixture.scores, &fixture.settings, &fixture.assets);
+    HighScoreViewRender_Begin(
+        &fixture.scores, &fixture.settings, &fixture.assets);
     CHECK_EQ_INT(g_Video.drawing_page, 0);
     CHECK_EQ_INT(g_Video.visible_page, 1);
     CHECK_EQ_INT(m_Palette.tone, 50);
@@ -60,10 +61,10 @@ TEST(begin_preserves_hidden_memory_and_shows_the_inclusive_purple_rectangle)
     CHECK_EQ_INT(m_Tram.codes[2000], 0x5a5a);
     CHECK_EQ_INT(m_Tram.attributes[2000], 0x5a5a);
     CHECK_EQ_INT(g_Grcg->mode, 0);
-    ScoreViewRender_Flip(1, 0);
+    HighScoreViewRender_Flip(1, 0);
     CHECK_EQ_INT(g_Video.drawing_page, 1);
     CHECK_EQ_INT(g_Video.visible_page, 0);
-    ScoreViewRender_End();
+    HighScoreViewRender_End();
     CHECK_EQ_INT(g_Clip->left, 0);
     CHECK_EQ_INT(g_Clip->right, 639);
     CHECK_EQ_INT(g_Clip->bottom, 399);
@@ -75,15 +76,16 @@ TEST(table_uses_live_rank_and_preserves_blank_digits_and_raw_dates)
     FIXTURE fixture;
     M_Init(&fixture);
     fixture.settings.difficulty = 2;
-    SCORE_SECTION *const section = &fixture.scores.sections[2];
+    HIGH_SCORE_SECTION *const section = &fixture.scores.sections[2];
     section->records[0].score = 0;
     section->records[1].score = -1;
     section->records[2].stage = 127;
     section->records[0].year = 2026;
     section->records[0].month = 255;
     section->records[0].day = 31;
-    const SCORES before = fixture.scores;
-    ScoreViewRender_Begin(&fixture.scores, &fixture.settings, &fixture.assets);
+    const HIGH_SCORES before = fixture.scores;
+    HighScoreViewRender_Begin(
+        &fixture.scores, &fixture.settings, &fixture.assets);
     for (size_t x = 26; x < 42; x++) {
         CHECK_EQ_INT(m_Tram.codes[7 * 80 + x], 0x5a5a);
     }

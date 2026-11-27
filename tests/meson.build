@@ -1624,10 +1624,10 @@ if build_games
     suite: 'unit',
   )
   test(
-    'th02/score_entry',
+    'th02/high_score_entry',
     executable(
-      'test_th02_score_entry',
-      'test_th02_score_entry.c',
+      'test_th02_high_score_entry',
+      'test_th02_high_score_entry.c',
       c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
       implicit_include_directories: false,
       link_with: [th02_lib, core_io_lib, core_base_lib],
@@ -1636,10 +1636,10 @@ if build_games
     suite: 'unit',
   )
   test(
-    'th02/score_entry_logic',
+    'th02/high_score_entry_logic',
     executable(
-      'test_th02_score_entry_logic',
-      'test_th02_score_entry_logic.c',
+      'test_th02_high_score_entry_logic',
+      'test_th02_high_score_entry_logic.c',
       c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
       implicit_include_directories: false,
       link_with: [th02_lib, core_io_lib, core_base_lib],
@@ -1648,10 +1648,10 @@ if build_games
     suite: 'unit',
   )
   test(
-    'th02/score_view',
+    'th02/high_score_view',
     executable(
-      'test_th02_score_view',
-      'test_th02_score_view.c',
+      'test_th02_high_score_view',
+      'test_th02_high_score_view.c',
       c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
       implicit_include_directories: false,
       link_with: [th02_lib, core_base_lib],
@@ -1660,10 +1660,10 @@ if build_games
     suite: 'unit',
   )
   test(
-    'th02/score_view_render',
+    'th02/high_score_view_render',
     executable(
-      'test_th02_score_view_render',
-      'test_th02_score_view_render.c',
+      'test_th02_high_score_view_render',
+      'test_th02_high_score_view_render.c',
       c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
       implicit_include_directories: false,
       link_with: [th02_lib, core_io_lib, core_base_lib],
@@ -1789,7 +1789,7 @@ if build_games
       suite: 'unit',
     )
   endforeach
-  foreach part : ['tram_text', 'gaiji', 'palette', 'map', 'mpn', 'scores']
+  foreach part : ['tram_text', 'gaiji', 'palette', 'map', 'mpn']
     test(
       'th02/' + part,
       executable(
@@ -1803,6 +1803,34 @@ if build_games
       suite: 'unit',
     )
   endforeach
+  test(
+    'th02/high_scores_format',
+    executable(
+      'test_th02_high_scores_format',
+      'test_th02_high_scores_format.c',
+      c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+      implicit_include_directories: false,
+      link_with: [th02_lib, core_io_lib, core_base_lib],
+      dependencies: [sdl3],
+    ),
+    suite: 'unit',
+  )
+  test(
+    'th02/high_scores_file',
+    executable(
+      'test_th02_high_scores_file',
+      'test_th02_high_scores_file.c',
+      c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+      implicit_include_directories: false,
+      link_with: [th02_lib, core_vfs_lib, core_io_lib, core_base_lib],
+      dependencies: [sdl3],
+    ),
+    suite: 'unit',
+    env: {
+      'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th02' / 'high_scores_file',
+    },
+  )
+
   test(
     'th02/settings',
     executable(
