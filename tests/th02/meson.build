@@ -326,6 +326,7 @@ foreach part : [
   'player_render',
   'bullet_spawn',
   'pillars',
+  'stage_effects',
   'enemies',
   'shot_select',
   'shot_select_render',

@@ -3,6 +3,7 @@ th02_lib = static_library(
   'audio.c',
   'audio_clock.c',
   'clip.c',
+  'stage_effects.c',
   'gaiji.c',
   'vsync_irq.c',
   'wait.c',
