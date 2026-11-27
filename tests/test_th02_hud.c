@@ -1,8 +1,10 @@
+#include "th02_score_fixture.h"
 #include "th02_tram_fixture.h"
 #include "th02/gaiji.h"
 #include "th02/hud.h"
 
 #include "test.h"
+#include "th02_sound.h"
 
 TEST(hud_score_keeps_first_quotient_and_separate_continue_cell)
 {
@@ -69,4 +71,33 @@ TEST(numbers_skip_leading_zeros_and_show_the_last_only_when_asked)
     Hud_Number(10, 2, 3, 0, TRAM_WHITE, true);
     const uint16_t zero = ((GAIJI_DIGIT_0 - 128) << 8) | 0x57;
     CHECK_EQ_INT(m_Tram.codes[2 * TRAM_COLUMNS + 14], zero);
+}
+
+TEST(hud_full_draw_preserves_score_state_and_extend_sound_waits_for_update)
+{
+    memset(&m_Tram, 0xa5, sizeof(m_Tram));
+    Score_Init();
+    m_Score.value = 99999;
+    m_Score.delta = 1;
+    m_Score.lives = 4;
+    m_Score.bombs = 2;
+    m_Score.highest_continues = 7;
+    const SCORE before = m_Score;
+    CHECK_EQ_INT(Hud_Put(g_Score, 3, 4, 80), 9);
+    CHECK(memcmp(&m_Score, &before, sizeof(m_Score)) == 0);
+    CHECK_EQ_INT(m_Tram.codes[22 * 80 + 57], 0x2e57);
+    CHECK_EQ_INT(m_Tram.attributes[22 * 80 + 57], 0x41);
+    CHECK_EQ_INT(m_Tram.codes[6 * 80 + 70], 0x2357);
+    CHECK_EQ_INT(m_Tram.codes[4 * 80 + 70], 0x2757);
+    TEST_SOUND sound;
+    TestSound_Init(&sound);
+    Score_Update(false);
+    CHECK_EQ_INT(m_Tram.codes[17 * 80 + 70], 0x256);
+    TestSound_Check(&sound, -1);
+    SoundEffects_Update();
+    TestSound_Check(&sound, 8);
+    TestSound_Free(&sound);
+    CHECK_EQ_INT(m_Tram.codes[6 * 80 + 58], 0x2157);
+    CHECK_EQ_INT(m_Tram.codes[6 * 80 + 70], 0x2357);
+    CHECK_EQ_INT(m_Tram.codes[4 * 80 + 70], 0x2757);
 }
