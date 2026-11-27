@@ -330,6 +330,10 @@ foreach part : [
   'enemies',
   'shot_select',
   'shot_select_render',
+  'dialogue_box',
+  'dialogue_render',
+  'dialogue_sequence',
+  'dialogue_slide',
 ]
   test(
     'th02/' + part,
