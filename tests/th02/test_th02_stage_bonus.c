@@ -5,6 +5,8 @@
 #include "th02/stage_bonus/logic.h"
 #include "th02/tram.h"
 
+#include <string.h>
+
 typedef struct {
     int16_t rows[10];
     int16_t points;

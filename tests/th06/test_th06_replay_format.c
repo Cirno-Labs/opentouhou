@@ -3,6 +3,10 @@
 #include "th06/replay/format.h"
 
 #include "core/base/memory.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
+
+#include <string.h>
 
 #define M_FIXTURE_SIZE 120
 

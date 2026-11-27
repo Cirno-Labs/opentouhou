@@ -12,6 +12,8 @@
 #include "th02/shots.h"
 #include "th02/sparks.h"
 
+#include <string.h>
+
 typedef struct {
     uint8_t start_bombs;
     TEST_PLAYER_GRAPHICS graphics;

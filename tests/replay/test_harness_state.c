@@ -3,8 +3,12 @@
 #include "tests/test.h"
 
 #include "core/base/memory.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
 
-// The columns of m_TestGame: score, lives, x and the HASH bullets.
+#include <string.h>
+
+// The columns of g_TestGame: score, lives, x and the HASH bullets.
 #define M_WIDTH 4
 
 typedef struct {
@@ -27,7 +31,7 @@ static M_FILE M_Write(const uint32_t count)
 {
     WRITER writer;
     Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
-    STATE_WRITER *const state = State_OpenWriter(&writer, &m_TestGame);
+    STATE_WRITER *const state = State_OpenWriter(&writer, &g_TestGame);
     for (uint32_t i = 0; i < count; i++) {
         uint32_t frame;
         uint32_t row[M_WIDTH];
@@ -52,14 +56,14 @@ static bool M_ReadsBack(const M_FILE *const file, const uint32_t count)
 {
     READER reader;
     Reader_OpenBuffer(&reader, file->bytes, file->size, "state.bin");
-    STATE_READER *const state = State_OpenReader(&reader, &m_TestGame, count);
+    STATE_READER *const state = State_OpenReader(&reader, &g_TestGame, count);
     bool same = true;
     uint32_t running = 0;
     for (uint32_t i = 0; i < count; i++) {
         uint32_t frame;
         uint32_t row[M_WIDTH];
         M_Row(i, &frame, row);
-        running = State_RunningHash(&m_TestGame, running, frame, row);
+        running = State_RunningHash(&g_TestGame, running, frame, row);
         STATE_ROW read;
         if (!State_ReadRow(state, &read)) {
             same = false;
@@ -119,7 +123,7 @@ static uint8_t M_ModeOf(uint32_t (*const value)(uint32_t i))
 {
     WRITER writer;
     Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
-    STATE_WRITER *const state = State_OpenWriter(&writer, &m_TestGame);
+    STATE_WRITER *const state = State_OpenWriter(&writer, &g_TestGame);
     const uint32_t count = 100;
     for (uint32_t i = 0; i < count; i++) {
         const uint32_t row[M_WIDTH] = { value(i), 0, 0, 0 };
@@ -135,7 +139,7 @@ static uint8_t M_ModeOf(uint32_t (*const value)(uint32_t i))
 
     READER reader;
     Reader_OpenBuffer(&reader, bytes, size, "state.bin");
-    STATE_READER *const read = State_OpenReader(&reader, &m_TestGame, count);
+    STATE_READER *const read = State_OpenReader(&reader, &g_TestGame, count);
     for (uint32_t i = 0; i < count; i++) {
         STATE_ROW row;
         CHECK(State_ReadRow(read, &row) && row.values[0] == value(i));
@@ -181,7 +185,7 @@ static bool M_ReadsScore(const uint8_t *const score, const size_t size)
     length += sizeof(rest);
     READER reader;
     Reader_OpenBuffer(&reader, bytes, length, "state.bin");
-    STATE_READER *const state = State_OpenReader(&reader, &m_TestGame, 1);
+    STATE_READER *const state = State_OpenReader(&reader, &g_TestGame, 1);
     STATE_ROW row;
     bool read = State_ReadRow(state, &row);
     read = Result_Ignore(State_CloseReader(state)) && read;
@@ -218,11 +222,11 @@ TEST(state_hash_changes_with_a_list_hash)
 {
     const uint32_t row[M_WIDTH] = { 1, 2, 3, 4 };
     const uint32_t other[M_WIDTH] = { 1, 2, 3, 5 };
-    const uint32_t a = State_RunningHash(&m_TestGame, 0, 7, row);
-    CHECK(a != State_RunningHash(&m_TestGame, 0, 7, other));
-    CHECK(a != State_RunningHash(&m_TestGame, 1, 7, row));
-    CHECK(a != State_RunningHash(&m_TestGame, 0, 8, row));
-    CHECK_EQ_INT(a, State_RunningHash(&m_TestGame, 0, 7, row));
+    const uint32_t a = State_RunningHash(&g_TestGame, 0, 7, row);
+    CHECK(a != State_RunningHash(&g_TestGame, 0, 7, other));
+    CHECK(a != State_RunningHash(&g_TestGame, 1, 7, row));
+    CHECK(a != State_RunningHash(&g_TestGame, 0, 8, row));
+    CHECK_EQ_INT(a, State_RunningHash(&g_TestGame, 0, 7, row));
 }
 
 TEST(state_of_bad_data_fails)

@@ -1,6 +1,12 @@
 #include "tests/test.h"
 #include "th02/high_scores/format.h"
 
+#include "core/base/memory.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
+
+#include <string.h>
+
 static uint8_t *M_Encode(
     const HIGH_SCORE_SECTION *const section, size_t *const size)
 {

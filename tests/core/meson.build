@@ -62,7 +62,7 @@ test(
     'test_archive_hdi',
     'test_archive_hdi.c',
     implicit_include_directories: false,
-    link_with: [core_archive_lib, core_io_lib, core_base_lib],
+    link_with: [core_archive_lib, core_io_lib, core_base_lib, hdi_builder_lib],
     dependencies: [sdl3],
   ),
   suite: ['unit', 'core'],
@@ -74,7 +74,10 @@ test(
     'test_archive_zip',
     'test_archive_zip.c',
     implicit_include_directories: false,
-    link_with: [core_archive_lib, core_hash_lib, core_io_lib, core_base_lib],
+    link_with: [
+      core_archive_lib, core_hash_lib, core_io_lib, core_base_lib,
+      zip_builder_lib,
+    ],
     dependencies: [zlib, sdl3],
   ),
   env: {'TEST_DIR': tests_tmp / 'archive_zip'},
@@ -94,7 +97,8 @@ foreach part : [
       'test_json_' + part,
       'test_json_' + part + '.c',
       implicit_include_directories: false,
-      link_with: [core_json_lib, core_base_lib],
+      link_with: [core_json_lib, core_base_lib]
+        + (part != 'parse' ? [test_json_lib] : []),
     ),
     suite: ['unit', 'core'],
   )
@@ -216,7 +220,10 @@ if build_games
       'test_audio_zip.c',
       '../audio_backend_fake.c',
       implicit_include_directories: false,
-      link_with: [core_audio_lib, core_archive_lib, core_hash_lib, core_io_lib, core_base_lib],
+      link_with: [
+        core_audio_lib, core_archive_lib, core_hash_lib, core_io_lib, core_base_lib,
+        zip_builder_lib,
+      ],
       dependencies: [sdl3, zlib, avcodec, avutil, avformat, swresample, cc_libm],
     ),
     suite: 'unit',
@@ -331,6 +338,7 @@ if build_games
       implicit_include_directories: false,
       link_with: [
         core_patch_lib, core_json_lib, core_vfs_lib, core_io_lib, core_base_lib,
+        test_json_lib,
       ],
       dependencies: [sdl3],
     ),
@@ -386,7 +394,7 @@ if build_games
       implicit_include_directories: false,
       link_with: [
         core_patch_lib, core_json_lib, core_vfs_lib, core_image_lib, core_io_lib,
-        core_base_lib,
+        core_base_lib, test_fonts_lib,
       ],
       dependencies: [sdl3],
     ),
@@ -533,7 +541,7 @@ if build_games
         implicit_include_directories: false,
         link_with: [
           core_patch_lib, core_json_lib, core_vfs_lib, core_text_lib,
-          core_image_lib, core_io_lib, core_base_lib,
+          core_image_lib, core_io_lib, core_base_lib, test_fonts_lib,
         ],
         dependencies: [sdl3_ttf, sdl3, text_system, cc_libm],
       ),
@@ -553,7 +561,10 @@ if build_games
       'test_font_registry',
       'test_font_registry.c',
       implicit_include_directories: false,
-      link_with: [core_text_lib, core_image_lib, core_io_lib, core_base_lib],
+      link_with: [
+        core_text_lib, core_image_lib, core_io_lib, core_base_lib,
+        test_fonts_lib,
+      ],
       dependencies: [sdl3_ttf, sdl3, cc_libm],
     ),
     suite: 'unit',

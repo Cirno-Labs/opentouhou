@@ -13,6 +13,8 @@
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/base/utils.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
 #include "stg/replay_files.h"
 
 #include <stdio.h>

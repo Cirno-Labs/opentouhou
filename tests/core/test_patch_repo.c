@@ -2,7 +2,11 @@
 #include "tests/test.h"
 #include "tests/test_dir.h"
 
+#include "core/base/memory.h"
+#include "core/base/string.h"
 #include "core/patch/repo.h"
+
+#include <string.h>
 
 #define M_ARENA_SIZE ((size_t)64 * 1024 * 1024)
 

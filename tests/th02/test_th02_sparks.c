@@ -7,6 +7,9 @@
 #include "th02/sparks.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+
+#include <string.h>
 
 TEST(loads_pre_shifted_mask_words_from_sparks_sheet)
 {

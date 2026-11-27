@@ -4,6 +4,7 @@
 #include "core/base/arena.h"
 
 #include <limits.h>
+#include <string.h>
 
 static void M_Init(ARENA *const arena)
 {

@@ -7,6 +7,11 @@
 #include "th02/stage.h"
 #include "th02/stage/private.h"
 
+#include "core/base/memory.h"
+#include "core/io/reader.h"
+
+#include <string.h>
+
 typedef struct {
     VFS_SOURCE base;
     TEST_ALLOCATOR *readers;

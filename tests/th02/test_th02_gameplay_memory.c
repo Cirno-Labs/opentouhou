@@ -3,6 +3,9 @@
 #include "th02/video.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+
+#include <string.h>
 
 static void M_Begin(const int32_t height)
 {

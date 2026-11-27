@@ -8,6 +8,8 @@
 #include "th02/player.h"
 #include "th02/random.h"
 
+#include <string.h>
+
 TEST(spawn_checks_keep_order_and_easy_slow_cycle)
 {
     Bullets_Init();

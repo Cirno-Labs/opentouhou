@@ -1,10 +1,14 @@
 #include "tests/test.h"
 #include "tests/test_dir.h"
 
+#include "core/base/memory.h"
 #include "core/config.h"
 #include "core/ini.h"
 #include "shell/game.h"
 #include "shell/game/entry.h"
+
+#include <SDL3/SDL.h>
+#include <string.h>
 
 typedef struct {
     int32_t value;

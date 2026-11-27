@@ -7,6 +7,8 @@
 #include "th06/replay/format.h"
 
 #include "core/base/memory.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
 #include "stg/replay_files.h"
 
 #include <string.h>

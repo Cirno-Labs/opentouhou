@@ -3,6 +3,8 @@
 
 #include "pc98/zun/master_rng.h"
 
+#include <string.h>
+
 typedef struct {
     MUSIC_POLYGONS *state;
     MATH16_VECTOR first[16];

@@ -16,6 +16,7 @@
 #include "core/io/file.h"
 #include "core/io/writer.h"
 #include "core/patch.h"
+#include "core/text/font_registry.h"
 #include "stg/rng.h"
 #include "stg/translation.h"
 

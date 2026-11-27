@@ -2,6 +2,8 @@
 #include "tests/test.h"
 #include "tests/test_dir.h"
 
+#include "core/base/memory.h"
+#include "core/base/string.h"
 #include "core/patch/manager.h"
 
 #include <stdarg.h>

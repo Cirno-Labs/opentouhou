@@ -3,6 +3,8 @@
 #include "th01/input.c"
 #include "th01/input.h"
 
+#include "core/base/memory.h"
+
 static INPUT_BINDING M_Binding(const char *const name)
 {
     INPUT_BINDING result = {};

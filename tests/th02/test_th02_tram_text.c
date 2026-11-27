@@ -2,6 +2,9 @@
 #include "tests/th02/th02_tram_fixture.h"
 
 #include "core/base/arena.h"
+#include "core/io/reader.h"
+
+#include <string.h>
 
 static RESULT M_Read(
     const uint8_t *const bytes, const size_t size, ARENA *const arena,

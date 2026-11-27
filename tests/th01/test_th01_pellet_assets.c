@@ -2,6 +2,8 @@
 #include "tests/th01/th01_sprites.h"
 #include "th01/pellet_assets.h"
 
+#include "core/base/memory.h"
+
 #include <string.h>
 
 TEST(missing_sheets_leave_assets_empty)

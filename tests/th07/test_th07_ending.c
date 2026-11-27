@@ -20,6 +20,7 @@
 #include "core/io/file.h"
 #include "core/patch.h"
 
+#include <stdio.h>
 #include <string.h>
 
 RNG g_Rng;

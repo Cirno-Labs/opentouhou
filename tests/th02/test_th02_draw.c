@@ -5,6 +5,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 TEST(sprite_cleanup_controls_the_next_box_fill)
 {
     ARENA arena;

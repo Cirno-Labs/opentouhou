@@ -2,8 +2,13 @@
 #include "tests/test_allocator.h"
 #include "tests/test_dir.h"
 
+#include "core/base/memory.h"
+#include "core/io/file.h"
+#include "core/io/reader.h"
 #include "pc98/pmd/data.h"
 #include "pc98/pmd/effect.h"
+
+#include <string.h>
 
 #define M_BANK_SIZE (259 + 3 * 26 + 2)
 

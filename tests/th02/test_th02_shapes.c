@@ -4,6 +4,9 @@
 #include "th02/grcg.c"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+
+#include <string.h>
 
 TEST(rmw_orders_endpoints_and_clips_inclusive_edges)
 {

@@ -4,6 +4,11 @@
 #include "tests/th02/th02_palette_fixture.h"
 #include "th02/ending/images.h"
 
+#include "core/base/memory.h"
+#include "core/io/reader.h"
+
+#include <string.h>
+
 typedef struct {
     const char *path;
     uint8_t *bytes;

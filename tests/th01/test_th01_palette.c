@@ -3,6 +3,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 static void M_Init(ARENA *const arena, PALETTE_STATE *const state)
 {
     Arena_Init(arena, "palette test", 1024 * 1024);

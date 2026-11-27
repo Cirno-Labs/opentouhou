@@ -2,6 +2,10 @@
 
 #include "core/base/log.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 static char m_Output[4096];
 
 // Sends the standard error stream to a file, so that a test can read back

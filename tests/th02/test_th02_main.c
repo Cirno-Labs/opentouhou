@@ -65,6 +65,8 @@ static void M_TestBeginProgram(void);
 #include "th02/program/assets.c"
 #include "th02/program/audio.c"
 #include "th02/program/scenes.c"
+
+#include <string.h>
 #undef Ending_Begin
 #undef StageBonus_Update
 #undef Ending_Update

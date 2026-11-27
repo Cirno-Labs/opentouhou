@@ -3,6 +3,9 @@
 #include "th02/ending/text.h"
 
 #include "core/base/arena.h"
+#include "core/io/reader.h"
+
+#include <string.h>
 
 typedef struct {
     size_t calls;

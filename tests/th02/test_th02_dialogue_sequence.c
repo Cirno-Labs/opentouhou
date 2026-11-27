@@ -11,6 +11,9 @@
 #include "th02/stage/private.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+
+#include <string.h>
 
 typedef struct {
     ARENA arena;

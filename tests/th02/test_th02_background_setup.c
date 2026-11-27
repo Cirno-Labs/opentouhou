@@ -6,6 +6,9 @@
 #include "th02/video.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+
+#include <string.h>
 
 TEST(source_strip_initial_rows_and_full_redraw_keep_the_unfilled_last_row)
 {

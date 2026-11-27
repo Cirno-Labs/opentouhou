@@ -3,6 +3,8 @@
 
 #include "core/archive.h"
 #include "core/base/cp932.h"
+#include "core/base/memory.h"
+#include "core/io/reader.h"
 #include "core/io/writer.h"
 #include "stg/lzss.h"
 #include "stg/pbg4.h"

@@ -1,6 +1,9 @@
 #include "tests/test.h"
 
+#include "core/base/memory.h"
 #include "core/image.h"
+
+#include <string.h>
 
 static IMAGE M_Make2x2(
     const uint8_t p0[4], const uint8_t p1[4], const uint8_t p2[4],

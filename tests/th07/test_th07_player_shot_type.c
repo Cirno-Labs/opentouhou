@@ -5,6 +5,7 @@
 #include "th07/player/shot_type.h"
 
 #include "core/base/memory.h"
+#include "core/io/reader.h"
 
 #include <string.h>
 

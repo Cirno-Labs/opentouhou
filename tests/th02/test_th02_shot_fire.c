@@ -6,6 +6,8 @@
 #include "th02/random.h"
 #include "th02/shots.h"
 
+#include <string.h>
+
 static void M_Init(const uint8_t type, const uint8_t level)
 {
     memset(&m_Rng, 0, sizeof(m_Rng));

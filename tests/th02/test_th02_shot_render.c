@@ -7,6 +7,9 @@
 #include "th02/shots.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+
+#include <string.h>
 
 TEST(shot_body_option_and_big_hit_wrap_and_clear_on_the_drawing_page)
 {

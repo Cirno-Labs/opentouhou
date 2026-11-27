@@ -3,6 +3,10 @@
 
 #include "core/base/arena.h"
 #include "core/io/file.h"
+#include "core/io/reader.h"
+
+#include <stdio.h>
+#include <string.h>
 
 static uint8_t M_Color(const size_t pixel)
 {

@@ -3,6 +3,8 @@
 #include "tests/th02/th02_sound.h"
 #include "tests/th02/th02_tram_fixture.h"
 
+#include <string.h>
+
 TEST(score_transfer_keeps_step_until_empty_and_resets_on_the_following_update)
 {
     memset(&m_Score, 0xa5, sizeof(m_Score));

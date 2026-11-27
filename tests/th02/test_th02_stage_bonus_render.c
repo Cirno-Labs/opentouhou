@@ -6,6 +6,8 @@
 #include "th02/hud.h"
 #include "th02/stage_bonus/render.h"
 
+#include <string.h>
+
 TEST(overlay_wipe_preserves_hud_borders_and_plane_tails)
 {
     memset(&m_Tram, 0x5a, sizeof(m_Tram));

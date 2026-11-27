@@ -4,6 +4,11 @@
 #include "th02/stage/titles.c"
 #include "th02/tram.h"
 
+#include "core/base/memory.h"
+#include "core/io/reader.h"
+
+#include <string.h>
+
 static void M_MakeText(
     const uint8_t *const bytes, const size_t size,
     const ALLOCATOR *const allocator, TRAM_TEXT *const out)

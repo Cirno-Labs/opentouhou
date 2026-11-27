@@ -6,6 +6,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 TEST(cache_reset_keeps_ring_and_dirty_bytes)
 {
     memset(&p_Background->cache, 0xa5, sizeof(p_Background->cache));

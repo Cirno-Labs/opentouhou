@@ -2,7 +2,12 @@
 #include "tests/test_dir.h"
 #include "th02/settings.h"
 
+#include "core/base/memory.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
 #include "core/vfs.h"
+
+#include <string.h>
 
 static void M_Check(const TH02_SETTINGS *actual, const TH02_SETTINGS *expected)
 {

@@ -9,9 +9,12 @@
 
 #include "core/base/memory.h"
 #include "core/io/file.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
 #include "shell/null.h"
 #include "stg/replay_files.h"
 
+#include <SDL3/SDL.h>
 #include <string.h>
 
 GAME_MANAGER g_GameManager;

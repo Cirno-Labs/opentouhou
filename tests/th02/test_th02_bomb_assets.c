@@ -4,6 +4,12 @@
 #include "th02/bomb/assets.h"
 #include "th02/bomb/tail.h"
 
+#include "core/base/memory.h"
+#include "core/io/reader.h"
+
+#include <stdlib.h>
+#include <string.h>
+
 typedef struct {
     const char *path;
     uint8_t *bytes;

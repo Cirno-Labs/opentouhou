@@ -4,6 +4,10 @@
 #include "tests/th02/th02_tram_fixture.h"
 #include "th02/high_score_view/render.h"
 
+#include "core/base/memory.h"
+
+#include <string.h>
+
 typedef struct {
     HIGH_SCORES scores;
     TH02_SETTINGS settings;

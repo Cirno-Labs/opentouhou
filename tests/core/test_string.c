@@ -4,6 +4,8 @@
 #include "core/base/memory.h"
 #include "core/base/string.h"
 
+#include <string.h>
+
 TEST(dup_copies_the_text)
 {
     const char *const text = "東方";

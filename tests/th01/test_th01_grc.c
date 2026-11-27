@@ -3,6 +3,10 @@
 
 #include "core/base/arena.h"
 #include "core/io/file.h"
+#include "core/io/reader.h"
+
+#include <stdio.h>
+#include <string.h>
 
 static size_t M_File(uint8_t *const bytes, const int32_t count)
 {

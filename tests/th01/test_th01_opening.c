@@ -4,6 +4,9 @@
 #include "th01/opening.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+
+#include <string.h>
 
 static void M_Init(ARENA *const arena, OPENING_ASSETS *const assets)
 {

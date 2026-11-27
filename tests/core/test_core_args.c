@@ -4,6 +4,7 @@
 #include "core/base/memory.h"
 
 #include <stdarg.h>
+#include <stdio.h>
 
 typedef struct {
     const char *game;

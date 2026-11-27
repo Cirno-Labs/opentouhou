@@ -6,6 +6,9 @@
 #include "th02/point_numbers.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+
+#include <string.h>
 
 TEST(font_is_owned_and_copied_from_pointnum_sheet)
 {

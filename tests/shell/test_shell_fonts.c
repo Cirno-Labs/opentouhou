@@ -2,7 +2,10 @@
 #include "tests/test_dir.h"
 #include "tests/test_fonts.h"
 
+#include "core/base/memory.h"
+#include "core/io/file.h"
 #include "core/text.h"
+#include "core/text/font_registry.h"
 #include "core/vfs.h"
 #include "shell/game/fonts.h"
 

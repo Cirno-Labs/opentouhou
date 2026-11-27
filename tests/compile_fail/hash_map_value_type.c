@@ -1,6 +1,7 @@
 // Compiles as it is, and fails to compile with BREAK defined, because it
 // then reads a map's value through a pointer to another type.
 #include "core/base/hash_map.h"
+#include "core/base/memory.h"
 
 typedef struct {
     int32_t texture;
@@ -10,9 +11,7 @@ typedef struct {
     int32_t id;
 } SPRITE;
 
-int32_t M_Use(void);
-
-int32_t M_Use(void)
+static int32_t Use(void)
 {
     HASH_MAP(int32_t, FONT) fonts;
     HashMap_Init(&fonts, &g_HeapAllocator);

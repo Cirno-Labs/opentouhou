@@ -19,6 +19,7 @@
 #include "core/gfx.h"
 #include "core/image.h"
 #include "core/io/file.h"
+#include "core/io/writer.h"
 
 #include <string.h>
 

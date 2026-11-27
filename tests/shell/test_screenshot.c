@@ -1,10 +1,14 @@
 #include "tests/test.h"
 #include "tests/test_dir.h"
 
+#include "core/base/memory.h"
 #include "core/gfx.h"
 #include "core/io/file.h"
 #include "core/io/path.h"
+#include "core/io/reader.h"
 #include "shell/game/screenshot.h"
+
+#include <string.h>
 
 #define CHECK_OK(expression_) CHECK(Result_Log((expression_), LOG_LEVEL_ERROR))
 

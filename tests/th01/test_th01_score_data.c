@@ -2,7 +2,9 @@
 #include "tests/test_dir.h"
 #include "th01/score_data.h"
 
+#include "core/base/memory.h"
 #include "core/hash/sha256.h"
+#include "core/io/reader.h"
 
 #include <limits.h>
 #include <string.h>

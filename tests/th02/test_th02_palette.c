@@ -2,6 +2,10 @@
 #include "tests/th02/th02_palette_fixture.h"
 #include "th02/palette.h"
 
+#include "core/io/reader.h"
+
+#include <string.h>
+
 TEST(stock_colors_match_pc98_index_bits)
 {
     Palette_Init();

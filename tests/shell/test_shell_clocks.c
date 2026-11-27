@@ -1,8 +1,11 @@
 #include "tests/test.h"
 #include "tests/test_dir.h"
 
+#include "core/base/memory.h"
 #include "shell/game.h"
 #include "shell/game/entry.h"
+
+#include <SDL3/SDL.h>
 
 typedef struct {
     bool unused;

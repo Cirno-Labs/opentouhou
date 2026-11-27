@@ -1,3 +1,4 @@
+#include "tests/test.h"
 #include "tests/th02/th02_gameplay_fixture.h"
 #include "tests/th02/th02_player_fixture.h"
 #include "tests/th02/th02_random_fixture.h"
@@ -7,10 +8,14 @@
 #include "th02/bullets/private.h"
 #include "th02/performance.c"
 
+#include "core/base/memory.h"
+
+#include <string.h>
+
 TEST(stage_four_midboss_entry_targets_old_position_and_moves_page_zero)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     f.session.stage = 3;
     p_Stage->scroll.back = 1;
@@ -40,7 +45,7 @@ TEST(stage_four_midboss_entry_targets_old_position_and_moves_page_zero)
 TEST(stage_four_midboss_kill_requires_a_new_hit_inside_the_rolled_y_band)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     f.session.stage = 3;
     p_Stage->scroll.line = 48;
@@ -92,7 +97,7 @@ TEST(stage_four_midboss_kill_requires_a_new_hit_inside_the_rolled_y_band)
 TEST(stage_four_second_midboss_enters_right_and_drops_a_life)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     f.session.stage = 3;
     m_Marisa.direction = -1;
@@ -120,7 +125,7 @@ TEST(stage_four_second_midboss_enters_right_and_drops_a_life)
 TEST(stage_four_midboss_timeout_does_not_award_and_stops_before_hit_testing)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     f.session.stage = 3;
     p_Stage->scroll.line = 0;
@@ -161,7 +166,7 @@ static void M_MarisaPatterns(FIXTURE *const f)
 TEST(marisa_flash_uses_masks_and_keeps_shifted_edge_pixels)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MarisaPatterns(&f);
     GAMEPLAY *const game = TestGameplay_State();
     Video_AccessPage(1);
@@ -193,7 +198,7 @@ TEST(marisa_flash_uses_masks_and_keeps_shifted_edge_pixels)
 TEST(marisa_orb_clear_ignores_x_clip_and_keeps_bytebox_row_traversal)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MarisaPatterns(&f);
     GAMEPLAY *const game = TestGameplay_State();
     Marisa_Place(TestBossFight_State());
@@ -235,7 +240,7 @@ TEST(marisa_orb_clear_ignores_x_clip_and_keeps_bytebox_row_traversal)
 TEST(marisa_particles_spawn_move_and_retain_the_pool_across_begin)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MarisaPatterns(&f);
     GAMEPLAY *const game = TestGameplay_State();
     Marisa_Place(TestBossFight_State());
@@ -281,7 +286,7 @@ TEST(marisa_particles_spawn_move_and_retain_the_pool_across_begin)
 TEST(marisa_particle_cleanup_copies_pages_and_frees_skipped_slots)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MarisaPatterns(&f);
     Marisa_Place(TestBossFight_State());
     Marisa_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
@@ -319,7 +324,7 @@ TEST(marisa_particle_cleanup_copies_pages_and_frees_skipped_slots)
 TEST(marisa_particles_cull_before_drawing_and_move_skipped_slots)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MarisaPatterns(&f);
     GAMEPLAY *const game = TestGameplay_State();
     Marisa_Place(TestBossFight_State());
@@ -362,7 +367,7 @@ TEST(marisa_particles_cull_before_drawing_and_move_skipped_slots)
 TEST(marisa_begin_preserves_world_and_retained_orb_history)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MarisaPatterns(&f);
     f.session.stage = 3;
     p_Stage->world.frame = 9216;
@@ -391,7 +396,7 @@ TEST(marisa_begin_preserves_world_and_retained_orb_history)
     CHECK_EQ_INT(m_Marisa.fan, BULLET_FAN5_MEDIUM_AIMED);
     CHECK_EQ_INT(m_Marisa.edge_count, 4);
     f.stage.stage = (uint8_t)f.session.stage;
-    M_Start(&f);
+    TestGameplay_Start(&f);
     CHECK_EQ_INT(m_Marisa.bit_flash[0], 0);
     CHECK_EQ_INT(m_Marisa.defeat_frame, 0);
     CHECK_EQ_INT(m_Marisa.drift_toggle, 2);
@@ -403,7 +408,7 @@ TEST(marisa_begin_preserves_world_and_retained_orb_history)
 TEST(marisa_orbs_count_hit_calls_and_keep_real_shot_aging)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MarisaPatterns(&f);
     GAMEPLAY *const game = TestGameplay_State();
     f.session.stage = 3;
@@ -453,7 +458,7 @@ TEST(marisa_orbs_count_hit_calls_and_keep_real_shot_aging)
 TEST(marisa_bomb_masks_and_body_multiplier_keep_distinct_damage_gates)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MarisaPatterns(&f);
     GAMEPLAY *const game = TestGameplay_State();
     f.session.stage = 3;
@@ -504,7 +509,7 @@ TEST(marisa_bomb_masks_and_body_multiplier_keep_distinct_damage_gates)
 TEST(marisa_real_lethal_hit_runs_one_hundred_defeat_updates)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MarisaPatterns(&f);
     GAMEPLAY *const game = TestGameplay_State();
     f.session.stage = 3;
@@ -550,7 +555,7 @@ TEST(marisa_real_lethal_hit_runs_one_hundred_defeat_updates)
 TEST(marisa_edge_stars_read_random_position_before_speed)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MarisaPatterns(&f);
     GAMEPLAY *const game = TestGameplay_State();
     f.session.stage = 3;
@@ -589,7 +594,7 @@ TEST(marisa_edge_stars_read_random_position_before_speed)
 TEST(marisa_borrows_banks_and_imports_logical_palettes_without_showing_them)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MarisaPatterns(&f);
     MARISA_ASSETS assets = {};
     PatternBank_Init(&assets.summon, &g_HeapAllocator);

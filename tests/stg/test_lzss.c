@@ -1,7 +1,10 @@
 #include "tests/pbg3_builder.h"
 #include "tests/test.h"
 
+#include "core/base/memory.h"
 #include "core/hash/crc32.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
 #include "stg/lzss.h"
 
 #include <string.h>

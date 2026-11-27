@@ -3,6 +3,10 @@
 
 #include "core/archive.h"
 #include "core/archive/hdi.h"
+#include "core/base/memory.h"
+#include "core/io/reader.h"
+
+#include <string.h>
 
 #define M_TEXT "Every package holds the game and othpatch. "
 

@@ -5,6 +5,8 @@
 #include "th01/missiles.h"
 #include "th01/player.c"
 
+#include "core/base/memory.h"
+
 #include <string.h>
 
 TEST(pool_and_spawn_history)

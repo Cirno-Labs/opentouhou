@@ -19,6 +19,8 @@
 #include "core/base/string.h"
 #include "core/image.h"
 #include "core/io/file.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
 #include "stg/translation.h"
 
 #include <string.h>

@@ -13,6 +13,7 @@
 #include "th01/shots.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
 
 #include <string.h>
 

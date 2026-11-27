@@ -5,6 +5,8 @@
 #include "th07/files.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+#include "core/io/reader.h"
 #include "core/json.h"
 #include "core/patch.h"
 #include "core/vfs.h"

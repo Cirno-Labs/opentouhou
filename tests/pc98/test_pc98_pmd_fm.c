@@ -2,6 +2,8 @@
 
 #include "pc98/pmd/registers.h"
 
+#include <string.h>
+
 TEST(program_caches_instrument_and_clears_keys_for_muted_voices)
 {
     PMD_FM voice;

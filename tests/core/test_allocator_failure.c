@@ -2,6 +2,8 @@
 
 #include "core/base/memory.h"
 
+#include <stdlib.h>
+
 int main(void)
 {
     TEST_ALLOCATOR test;

@@ -6,6 +6,9 @@
 #include "core/base/memory.h"
 #include "core/base/string.h"
 
+#include <stdio.h>
+#include <string.h>
+
 static PATCH_FETCH M_Fetch(const char *const url)
 {
     PATCH_FETCH fetch = { .url = url };

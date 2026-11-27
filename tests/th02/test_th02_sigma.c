@@ -1,3 +1,4 @@
+#include "tests/test.h"
 #include "tests/th02/th02_boss_hp.h"
 #include "tests/th02/th02_gameplay_fixture.h"
 #include "tests/th02/th02_player_fixture.h"
@@ -8,10 +9,14 @@
 #include "th02/bullets/private.h"
 #include "th02/performance.c"
 
+#include "core/base/memory.h"
+
+#include <string.h>
+
 TEST(extra_tile_midboss_runs_three_waves_and_ends_without_damage_or_rewards)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     p_Stage->scroll.back = 1;
     p_Stage->scroll.front = 0;
     TestBossFight_State()->phase_frame = 0;
@@ -55,7 +60,7 @@ TEST(extra_tile_midboss_emits_with_live_scroll_performance_and_bomb_state)
 {
     for (int bombing = 0; bombing < 2; bombing++) {
         FIXTURE f;
-        M_Init(&f);
+        TestGameplay_FixtureInit(&f);
         p_Stage->scroll.back = 1;
         p_Stage->scroll.front = 0;
         p_Stage->scroll.line = 399;
@@ -103,7 +108,7 @@ TEST(extra_tile_midboss_emits_with_live_scroll_performance_and_bomb_state)
 TEST(sigma_entry_borrows_cached_sprites_and_resets_only_its_owned_state)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const g = TestGameplay_State();
     SIGMA_ASSETS assets = {};
     PatternBank_Init(&assets.patterns, &g_HeapAllocator);
@@ -193,7 +198,7 @@ TEST(sigma_entry_borrows_cached_sprites_and_resets_only_its_owned_state)
     SigmaAssets_Free(&assets);
     CHECK_EQ_INT(assets.patterns.next, 0);
     Clip_Reset();
-    M_Start(&f);
+    TestGameplay_Start(&f);
     const SIGMA empty = {};
     CHECK(memcmp(&m_Sigma, &empty, sizeof(empty)) == 0);
     Arena_Free(&f.arena);
@@ -202,7 +207,7 @@ TEST(sigma_entry_borrows_cached_sprites_and_resets_only_its_owned_state)
 TEST(sigma_background_carries_back_position_and_clears_only_the_playfield)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     p_Stage->scroll.front = 0;
     p_Stage->scroll.back = 1;
     TestBossFight_State()->position[0] = (ENTITY_POINT) { 111, 88 };
@@ -232,7 +237,7 @@ TEST(sigma_background_carries_back_position_and_clears_only_the_playfield)
 TEST(sigma_live_hit_draws_the_hit_sprite_then_restores_its_pattern)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const g = TestGameplay_State();
     p_Stage->scroll.back = 1;
     p_Stage->scroll.front = 0;
@@ -269,7 +274,7 @@ TEST(sigma_live_hit_draws_the_hit_sprite_then_restores_its_pattern)
 TEST(sigma_defeat_awards_directly_and_excludes_its_animation_from_fight_time)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const g = TestGameplay_State();
     p_Stage->scroll.back = 1;
     p_Stage->scroll.front = 0;
@@ -321,7 +326,7 @@ TEST(sigma_defeat_awards_directly_and_excludes_its_animation_from_fight_time)
 TEST(sigma_circles_advance_on_background_and_change_hit_radius_before_testing)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const g = TestGameplay_State();
     p_Stage->scroll.back = 0;
     p_Stage->scroll.front = 1;
@@ -380,7 +385,7 @@ TEST(sigma_circles_advance_on_background_and_change_hit_radius_before_testing)
 TEST(sigma_sweep_reads_x_before_speed_and_keeps_the_frame_start_origin)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const g = TestGameplay_State();
     p_Stage->scroll.back = 1;
     p_Stage->scroll.front = 0;
@@ -417,7 +422,7 @@ TEST(sigma_sweep_reads_x_before_speed_and_keeps_the_frame_start_origin)
 TEST(sigma_dot_rings_apply_live_scroll_after_the_unrolled_point_guard)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const g = TestGameplay_State();
     p_Stage->scroll.back = 1;
     p_Stage->scroll.front = 0;
@@ -441,7 +446,7 @@ TEST(sigma_dot_rings_apply_live_scroll_after_the_unrolled_point_guard)
 TEST(sigma_hp_hook_reapplies_at_phase_resets_and_uses_final_defeat_threshold)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     TEST_BOSS_HP hp;
     TestBossHp_Begin(&hp);
     BOSS_STATE *const boss = TestBossFight_State();

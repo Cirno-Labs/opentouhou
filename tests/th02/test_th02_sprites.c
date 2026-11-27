@@ -3,6 +3,9 @@
 #include "th02/draw/sprites.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+
+#include <string.h>
 
 static void M_Init(ARENA *const arena, PATTERN_BANK *const bank)
 {

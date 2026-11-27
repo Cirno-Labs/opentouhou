@@ -4,8 +4,12 @@
 #include "th02/music/assets.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+#include "core/io/reader.h"
 #include "pc98/pmd.h"
 #include "pc98/pmd/data.h"
+
+#include <string.h>
 
 #define M_SIZE 161
 

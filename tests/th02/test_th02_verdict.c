@@ -4,6 +4,9 @@
 #include "th02/ending/verdict.c"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+
+#include <string.h>
 
 typedef struct {
     ARENA arena;

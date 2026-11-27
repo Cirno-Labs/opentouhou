@@ -3,6 +3,10 @@
 
 #include "core/base/arena.h"
 #include "core/io/file.h"
+#include "core/io/reader.h"
+
+#include <stdio.h>
+#include <string.h>
 
 #define M_SIZE (22 + 5 * 250)
 

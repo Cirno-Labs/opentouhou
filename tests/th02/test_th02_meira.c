@@ -1,3 +1,4 @@
+#include "tests/test.h"
 #include "tests/th02/th02_gameplay_fixture.h"
 #include "tests/th02/th02_player_fixture.h"
 #include "tests/th02/th02_random_fixture.h"
@@ -6,6 +7,8 @@
 #include "th02/boss/meira.c"
 #include "th02/bullets/private.h"
 #include "th02/performance.c"
+
+#include <string.h>
 
 static void M_MeiraStep(FIXTURE *const f, const int16_t frame)
 {
@@ -49,7 +52,7 @@ static void M_MeiraFlight(FIXTURE *const f)
 TEST(stage_two_midboss_enters_through_modules_and_activates_lightning)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     f.session.stage = 1;
     Stage_Begin(1, f.session.reduce_effects);
@@ -95,7 +98,7 @@ TEST(
     stage_two_midboss_counts_early_hits_once_but_keeps_raw_score_and_shot_aging)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     TestBossFight_State()->position[0] = TestBossFight_State()->position[1] =
         (ENTITY_POINT) { 192, 64 };
@@ -129,7 +132,7 @@ TEST(
 TEST(stage_two_midboss_defeat_clears_shared_flag_after_three_sprite_bursts)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     f.session.stage = 1;
     TestBossFight_State()->position[0] = TestBossFight_State()->position[1] =
@@ -180,7 +183,7 @@ TEST(stage_two_midboss_defeat_clears_shared_flag_after_three_sprite_bursts)
 TEST(stage_two_midboss_chase_bullets_read_live_performance_page_and_bomb)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     f.session.rank = 1;
     BulletSpawn_Init(1);
@@ -214,7 +217,7 @@ TEST(stage_two_midboss_chase_bullets_read_live_performance_page_and_bomb)
 TEST(stage_two_midboss_timeout_waits_for_no_hit_without_award_or_sound)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     TEST_SOUND sound;
     TestSound_Init(&sound);
@@ -245,7 +248,7 @@ TEST(stage_two_midboss_timeout_waits_for_no_hit_without_award_or_sound)
 TEST(meira_entry_preserves_clocks_flowers_and_attack_history)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     f.session.stage = 1;
     p_Stage->world.frame = 900;
@@ -296,7 +299,7 @@ TEST(meira_entry_preserves_clocks_flowers_and_attack_history)
     Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
     CHECK(m_Midboss.active);
     f.stage.stage = (uint8_t)f.session.stage;
-    M_Start(&f);
+    TestGameplay_Start(&f);
     CHECK_EQ_INT(m_Meira.kill_frame, 0);
     CHECK_EQ_INT(m_Meira.flower_fire_i, 0);
     CHECK_EQ_INT(m_Meira.flowers[0].flag, ENTITY_FREE);
@@ -308,7 +311,7 @@ TEST(meira_entry_preserves_clocks_flowers_and_attack_history)
 TEST(meira_changes_phase_only_after_the_source_pattern_completes)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     TestBossFight_State()->sprite = 141;
     Meira_Place(TestBossFight_State());
@@ -363,7 +366,7 @@ TEST(meira_changes_phase_only_after_the_source_pattern_completes)
 TEST(meira_lethal_hit_runs_flowers_and_clears_only_after_96_defeat_updates)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     M_MeiraDash(&f, 1);
     const MEIRA_FLOWER *const flower = &m_Meira.flowers[0];
@@ -418,7 +421,7 @@ TEST(meira_lethal_hit_runs_flowers_and_clears_only_after_96_defeat_updates)
 TEST(meira_flowers_keep_easy_parity_wrap_and_deferred_cleanup)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     for (unsigned expired = 0; expired < 255; expired++) {
         M_MeiraDash(&f, 1);
@@ -465,7 +468,7 @@ TEST(meira_flowers_keep_easy_parity_wrap_and_deferred_cleanup)
 TEST(meira_trail_cleanup_requires_both_coordinates_to_differ)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     TestBossFight_State()->sprite = 141;
     Meira_Place(TestBossFight_State());
     M_MeiraFlight(&f);

@@ -16,6 +16,7 @@
 #include "core/patch.h"
 #include "stg/rng.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #define M_NO_PATCH SIZE_MAX

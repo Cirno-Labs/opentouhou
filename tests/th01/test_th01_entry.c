@@ -4,6 +4,7 @@
 #include "shell/game/entry.h"
 
 #include <SDL3/SDL.h>
+#include <string.h>
 
 SDL_AppResult SDL_AppIterate(void *appstate);
 

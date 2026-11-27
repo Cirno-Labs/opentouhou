@@ -4,6 +4,8 @@
 #include "th01/shots.c"
 #include "th01/shots.h"
 
+#include "core/base/memory.h"
+
 #include <string.h>
 
 TEST(requires_shot_image_before_ticks)

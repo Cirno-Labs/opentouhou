@@ -4,6 +4,8 @@
 #include "th01/orb.h"
 #include "th01/rng.h"
 
+#include "core/base/memory.h"
+
 #include <string.h>
 
 static ORB M_Orb(void)

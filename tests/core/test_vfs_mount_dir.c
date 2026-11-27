@@ -2,10 +2,13 @@
 #include "tests/test_allocator.h"
 #include "tests/test_dir.h"
 
+#include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
+#include "core/io/reader.h"
 #include "core/vfs.h"
 
+#include <SDL3/SDL.h>
 #include <string.h>
 
 static void M_Create(const char *const path, const char *const content)

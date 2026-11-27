@@ -3,6 +3,8 @@
 #include "core/base/arena.h"
 #include "pc98/pmd/drums.h"
 
+#include <string.h>
+
 typedef struct {
     SSG_EFFECT_BANK bank;
     SSG_EFFECTS effects;

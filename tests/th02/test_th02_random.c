@@ -2,6 +2,8 @@
 #include "tests/th02/th02_random_fixture.h"
 #include "th02/random.h"
 
+#include <string.h>
+
 TEST(reset_and_direct_generation_match_master_lib)
 {
     memset(&m_Rng, 0xa5, sizeof(m_Rng));

@@ -3,6 +3,9 @@
 
 #include "core/base/arena.h"
 #include "core/base/hash_map.h"
+#include "core/base/memory.h"
+
+#include <stdio.h>
 
 typedef struct {
     int32_t font;

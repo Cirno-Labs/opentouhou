@@ -4,12 +4,14 @@
 #include "core/audio/backend.h"
 #include "core/base/memory.h"
 #include "core/base/utils.h"
+#include "core/io/reader.h"
 #include "core/io/writer.h"
 
 #include <SDL3/SDL.h>
 #include <float.h>
 #include <math.h>
 #include <stdatomic.h>
+#include <string.h>
 
 #define WAIT_MILLISECONDS 5000
 #define TAU 6.283185307179586

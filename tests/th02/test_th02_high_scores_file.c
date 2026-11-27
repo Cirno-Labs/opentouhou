@@ -2,6 +2,12 @@
 #include "tests/test_dir.h"
 #include "th02/high_scores/file.h"
 
+#include "core/base/memory.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
+
+#include <string.h>
+
 typedef struct {
     VFS *original;
     VFS *user;

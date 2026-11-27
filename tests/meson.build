@@ -41,6 +41,45 @@ foreach name, lib : external_libs
   set_variable(name, declare_dependency(dependencies: [get_variable(name), test_deps]))
 endforeach
 
+# The harness (the case registry, the failure counter and main, tests/
+# test.h), the directory helper (test_dir.h) and the counting allocator
+# (test_allocator.h) go into every test, so this folds them into
+# core_base_lib, which every test links: a test that needs the font,
+# JSON, zip or hdi helpers below links their own small library on top.
+test_lib = static_library(
+  'test_lib',
+  'test.c',
+  'test_allocator.c',
+  'test_dir.c',
+  implicit_include_directories: false,
+)
+core_base_lib = static_library(
+  'test_core_base_lib', link_whole: [core_base_lib, test_lib],
+)
+
+test_fonts_lib = static_library(
+  'test_fonts_lib',
+  'test_fonts.c',
+  implicit_include_directories: false,
+  dependencies: [sdl3],
+)
+test_json_lib = static_library(
+  'test_json_lib',
+  'test_json.c',
+  implicit_include_directories: false,
+)
+zip_builder_lib = static_library(
+  'zip_builder_lib',
+  'zip_builder.c',
+  implicit_include_directories: false,
+  dependencies: [zlib],
+)
+hdi_builder_lib = static_library(
+  'hdi_builder_lib',
+  'hdi_builder.c',
+  implicit_include_directories: false,
+)
+
 # A test's TEST_DIR or XDG_DATA_HOME must stay under tests/tmp/ (see
 # test_dir.h), which this gives areas in their own subdirectory in place of
 # meson.current_build_dir() / 'tmp'.

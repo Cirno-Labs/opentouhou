@@ -11,6 +11,8 @@
 #include "th02/player.h"
 #include "th02/point_numbers.c"
 
+#include <string.h>
+
 typedef struct {
     TEST_PLAYER_GRAPHICS graphics;
     POINT_NUMBER_FONT font;

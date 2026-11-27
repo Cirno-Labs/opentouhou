@@ -3,6 +3,8 @@
 #include "th02/audio_clock.h"
 #include "th02/sound_effects.h"
 
+#include <string.h>
+
 TEST(original_priority_matrix_reaches_the_driver_at_the_update_boundary)
 {
     TEST_SOUND sound;

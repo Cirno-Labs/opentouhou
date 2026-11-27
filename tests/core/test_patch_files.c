@@ -6,6 +6,7 @@
 #include "core/base/arena.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
+#include "core/io/reader.h"
 #include "core/json.h"
 #include "core/patch.h"
 #include "core/vfs.h"
@@ -202,7 +203,7 @@ static void M_Dump(
     const JSON_VALUE *const value, char *const buffer, const size_t size)
 {
     size_t used = 0;
-    M_TestJsonDump(value, buffer, size, &used);
+    TestJson_DumpValue(value, buffer, size, &used);
 }
 
 TEST(json_files_merge_in_patch_order_with_the_build_last)

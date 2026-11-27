@@ -16,6 +16,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 typedef struct {
     ARENA arena;
 
@@ -39,7 +41,7 @@ static inline BOSS_STATE *TestBossFight_State(void)
     return p_BossState;
 }
 
-static inline void M_Start(FIXTURE *const fixture)
+static inline void TestGameplay_Start(FIXTURE *const fixture)
 {
     Gameplay_Begin(
         &fixture->session, &fixture->assets, &fixture->music, nullptr, 123456,
@@ -48,12 +50,12 @@ static inline void M_Start(FIXTURE *const fixture)
         &fixture->stage, &fixture->assets.patterns, &fixture->bomb);
 }
 
-static inline void M_Init(FIXTURE *const fixture)
+static inline void TestGameplay_FixtureInit(FIXTURE *const fixture)
 {
     TestStageFlow_Boss(nullptr);
     TestBossExplosion_Observe(nullptr);
     SoundEffects_Init(nullptr);
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset((PALETTE_STATE *)g_Palette, 0, sizeof(*g_Palette));
     Grcg_Init();
     Tram_Init();
     memset(&g_VSync, 0, sizeof(g_VSync));
@@ -103,10 +105,10 @@ static inline void M_Init(FIXTURE *const fixture)
         (MPN) { .count = 2, .pixels = fixture->pixels };
     fixture->stage.data.map = fixture->order;
     fixture->stage.data.map_count = 3;
-    M_Start(fixture);
+    TestGameplay_Start(fixture);
 }
 
-static inline STAGE_FLOW_RESULT M_FlowEnter(FIXTURE *const f)
+static inline STAGE_FLOW_RESULT TestGameplay_FlowEnter(FIXTURE *const f)
 {
     GAMEPLAY *const game = TestGameplay_State();
     const BOSS_MUSIC music = {
@@ -119,7 +121,7 @@ static inline STAGE_FLOW_RESULT M_FlowEnter(FIXTURE *const f)
         &game->dialogue_input);
 }
 
-static inline STAGE_FLOW_RESULT M_FlowUpdate(FIXTURE *const f)
+static inline STAGE_FLOW_RESULT TestGameplay_FlowUpdate(FIXTURE *const f)
 {
     GAMEPLAY *const game = TestGameplay_State();
     const BOSS_MUSIC music = {
@@ -132,7 +134,7 @@ static inline STAGE_FLOW_RESULT M_FlowUpdate(FIXTURE *const f)
         &game->dialogue_input);
 }
 
-static inline STAGE_FLOW_RESULT M_FlowEnd(FIXTURE *const f)
+static inline STAGE_FLOW_RESULT TestGameplay_FlowEnd(FIXTURE *const f)
 {
     GAMEPLAY *const game = TestGameplay_State();
     const BOSS_MUSIC music = {
@@ -145,7 +147,7 @@ static inline STAGE_FLOW_RESULT M_FlowEnd(FIXTURE *const f)
         &game->dialogue_input);
 }
 
-static inline void M_FinishReveal(
+static inline void TestGameplay_FinishReveal(
     FIXTURE *const f, const TH02_INPUT *const input)
 {
     CHECK_EQ_INT(TestGameplay_State()->phase, GAMEPLAY_REVEAL);

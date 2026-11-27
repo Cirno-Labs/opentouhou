@@ -2,6 +2,7 @@
 
 #include "tests/test.h"
 
+#include "core/base/memory.h"
 #include "core/vfs.h"
 
 #include <stdlib.h>

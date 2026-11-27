@@ -6,6 +6,7 @@
 #include "th01/score_data.h"
 #include "th01/settings.h"
 
+#include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
 #include "core/vfs.h"

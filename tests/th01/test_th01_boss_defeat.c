@@ -11,6 +11,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 typedef struct {
     PALETTE target;
     PTN miko;

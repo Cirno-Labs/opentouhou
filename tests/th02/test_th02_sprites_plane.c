@@ -3,6 +3,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 TEST(source_planes_and_selected_destination_bits_are_independent)
 {
     ARENA arena;

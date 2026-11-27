@@ -13,6 +13,8 @@
 #include "th02/stage.h"
 #include "th02/stage/private.h"
 
+#include <string.h>
+
 TEST(init_clears_state_and_sets_the_default_angle)
 {
     BOSS_STATE boss;

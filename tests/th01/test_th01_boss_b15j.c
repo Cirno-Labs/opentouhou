@@ -19,8 +19,11 @@
 #include "th01/vsync_irq.c"
 
 #include "core/base/arena.h"
+#include "core/io/reader.h"
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
+
+#include <string.h>
 
 static void M_BossSetup(const B15J_ASSETS *const assets, const PTN *const miko)
 {

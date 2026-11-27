@@ -5,6 +5,14 @@
 
 #include "core/archive.h"
 #include "core/archive/zip.h"
+#include "core/base/memory.h"
+#include "core/hash/crc32.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
+
+#include <SDL3/SDL.h>
+#include <string.h>
+#include <zlib.h>
 
 #define M_TEXT "Every package holds the game and othpatch. "
 
@@ -413,15 +421,15 @@ static ZIP_BUILDER_ARCHIVE M_LargeZip(const size_t size)
         result.data + directory, small.data + small.size - directory_size - 22,
         directory_size + 22);
     uint8_t *cursor = result.data + 14;
-    M_ZipPut32(&cursor, crc);
-    M_ZipPut32(&cursor, (uint32_t)packed_size);
-    M_ZipPut32(&cursor, (uint32_t)size);
+    ZipBuilder_Put32(&cursor, crc);
+    ZipBuilder_Put32(&cursor, (uint32_t)packed_size);
+    ZipBuilder_Put32(&cursor, (uint32_t)size);
     cursor = result.data + directory + 16;
-    M_ZipPut32(&cursor, crc);
-    M_ZipPut32(&cursor, (uint32_t)packed_size);
-    M_ZipPut32(&cursor, (uint32_t)size);
+    ZipBuilder_Put32(&cursor, crc);
+    ZipBuilder_Put32(&cursor, (uint32_t)packed_size);
+    ZipBuilder_Put32(&cursor, (uint32_t)size);
     cursor = result.data + result.size - 6;
-    M_ZipPut32(&cursor, (uint32_t)directory);
+    ZipBuilder_Put32(&cursor, (uint32_t)directory);
     Mem_Free(small.data);
     Allocator_Free(&g_HeapAllocator, packed, packed_size);
     return result;
@@ -471,7 +479,7 @@ TEST(streaming_rejects_wrong_sizes_and_releases_checkpoints)
         const uint32_t size = damage == 0 ? (uint32_t)entry.size - 1
             : damage == 1 ? (uint32_t)entry.size + 1
                           : (uint32_t)(directory - 30 - strlen(entry.name) - 1);
-        M_ZipPut32(&cursor, size);
+        ZipBuilder_Put32(&cursor, size);
         TEST_ALLOCATOR allocator;
         TestAllocator_Init(&allocator);
         READER input;
@@ -501,7 +509,7 @@ TEST(whole_entry_limit_is_checked_before_allocation)
     ZIP_BUILDER_ARCHIVE built = ZipBuilder_Build(&entry, 1);
     const size_t directory = built.size - 22 - 46 - strlen(entry.name);
     uint8_t *cursor = built.data + directory + 24;
-    M_ZipPut32(&cursor, (uint32_t)ZIP_MAX_ENTRY_SIZE + 1);
+    ZipBuilder_Put32(&cursor, (uint32_t)ZIP_MAX_ENTRY_SIZE + 1);
     TEST_ALLOCATOR allocator;
     TestAllocator_Init(&allocator);
     READER input;

@@ -4,6 +4,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 TEST(zoom_ignores_coverage_and_treats_color_zero_as_transparent)
 {
     ARENA arena;

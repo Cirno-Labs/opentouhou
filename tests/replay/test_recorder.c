@@ -2,12 +2,15 @@
 #include "tests/test.h"
 #include "tests/test_dir.h"
 
+#include "core/base/memory.h"
 #include "core/base/utils.h"
+#include "core/io/reader.h"
 #include "core/vfs.h"
 #include "shell/game/files.h"
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define M_TRAP 10
 #define M_TRAP_FRAME 153

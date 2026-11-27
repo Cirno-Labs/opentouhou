@@ -10,6 +10,10 @@
 #include "th02/sparks.h"
 #include "th02/stage_effects.c"
 
+#include "core/base/memory.h"
+
+#include <string.h>
+
 typedef struct {
     uint8_t slowdown;
 } FIXTURE;

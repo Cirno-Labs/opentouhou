@@ -1,3 +1,4 @@
+#include "core/base/memory.h"
 #include "core/io/writer.h"
 
 #include <stdlib.h>

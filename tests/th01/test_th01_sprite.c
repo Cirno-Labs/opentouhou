@@ -2,6 +2,8 @@
 #include "th01/shape.h"
 #include "th01/sprite.h"
 
+#include "core/base/memory.h"
+
 #include <string.h>
 
 static uint8_t m_Expected[VIDEO_PAGE_SIZE];

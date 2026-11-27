@@ -3,8 +3,14 @@
 #include "tests/test.h"
 #include "tests/test_dir.h"
 
+#include "core/base/memory.h"
 #include "core/image/decode.h"
 #include "core/image/encode.h"
+#include "core/io/file.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
+
+#include <string.h>
 
 #define M_ARENA_SIZE (1024 * 1024)
 
@@ -20,7 +26,7 @@ static void M_Expect(ARENA *const arena, M_EXPECTED *const out)
 {
     WRITER writer;
     Writer_OpenBuffer(&writer, Arena_Allocator(arena), nullptr);
-    STATE_WRITER *const state = State_OpenWriter(&writer, &m_TestGame);
+    STATE_WRITER *const state = State_OpenWriter(&writer, &g_TestGame);
     State_WriteRow(state, 0, (const uint32_t[]) { 1, 2, 3, 4 });
     State_WriteRow(state, 1, (const uint32_t[]) { 5, 2, 3, 4 });
     CHECK(Result_Ignore(State_CloseWriter(state)));
@@ -28,7 +34,7 @@ static void M_Expect(ARENA *const arena, M_EXPECTED *const out)
     const uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);
     Result_Ignore(Writer_Close(&writer));
     Reader_OpenBuffer(&out->reader, bytes, size, "state.bin");
-    out->state = State_OpenReader(&out->reader, &m_TestGame, 2);
+    out->state = State_OpenReader(&out->reader, &g_TestGame, 2);
 }
 
 static void M_Close(M_EXPECTED *const expected)
@@ -44,7 +50,7 @@ TEST(equal_rows_match)
     M_EXPECTED expected;
     M_Expect(&arena, &expected);
     STATE_COMPARE *const compare =
-        Compare_OpenState(expected.state, &m_TestGame, &arena);
+        Compare_OpenState(expected.state, &g_TestGame, &arena);
     Compare_StateRow(compare, 0, (const uint32_t[]) { 1, 2, 3, 4 });
     Compare_StateRow(compare, 1, (const uint32_t[]) { 5, 2, 3, 4 });
     STATE_DIFF diff;
@@ -62,7 +68,7 @@ TEST(the_first_difference_keeps_both_rows)
     M_EXPECTED expected;
     M_Expect(&arena, &expected);
     STATE_COMPARE *const compare =
-        Compare_OpenState(expected.state, &m_TestGame, &arena);
+        Compare_OpenState(expected.state, &g_TestGame, &arena);
     Compare_StateRow(compare, 0, (const uint32_t[]) { 1, 2, 3, 4 });
     Compare_StateRow(compare, 1, (const uint32_t[]) { 5, 2, 9, 4 });
     Compare_StateRow(compare, 2, (const uint32_t[]) { 5, 2, 9, 4 });
@@ -88,7 +94,7 @@ TEST(a_list_hash_differs_in_the_running_hash_and_at_the_check)
     M_EXPECTED expected;
     M_Expect(&arena, &expected);
     STATE_COMPARE *const compare =
-        Compare_OpenState(expected.state, &m_TestGame, &arena);
+        Compare_OpenState(expected.state, &g_TestGame, &arena);
     Compare_StateRow(compare, 0, (const uint32_t[]) { 1, 2, 3, 7 });
     Compare_StateRow(compare, 1, (const uint32_t[]) { 5, 2, 3, 7 });
     STATE_DIFF diff;
@@ -113,7 +119,7 @@ TEST(missing_rows_differ)
     M_EXPECTED expected;
     M_Expect(&arena, &expected);
     STATE_COMPARE *const compare =
-        Compare_OpenState(expected.state, &m_TestGame, &arena);
+        Compare_OpenState(expected.state, &g_TestGame, &arena);
     Compare_StateRow(compare, 0, (const uint32_t[]) { 1, 2, 3, 4 });
     STATE_DIFF diff;
     Compare_CloseState(compare, &diff);

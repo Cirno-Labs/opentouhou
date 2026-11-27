@@ -8,6 +8,10 @@
     #include "tests/patch_builder.h"
 #endif
 
+#include "core/base/memory.h"
+#include "core/base/string.h"
+#include "core/text/font_registry.h"
+
 #include <SDL3/SDL.h>
 #include <math.h>
 #include <string.h>
@@ -65,13 +69,13 @@ static void M_Shutdown(void)
 static uint8_t *M_Table(uint8_t *const data, const char *const tag)
 {
     const uint8_t *const directory = memcmp(data, "ttcf", 4) == 0
-        ? data + M_TestFontsReadBe(data + 12)
+        ? data + TestFonts_ReadU32Be(data + 12)
         : data;
     const int32_t count = directory[4] << 8 | directory[5];
     for (int32_t i = 0; i < count; i++) {
         const uint8_t *const record = directory + 12 + i * 16;
         if (memcmp(record, tag, 4) == 0) {
-            return data + M_TestFontsReadBe(record + 8);
+            return data + TestFonts_ReadU32Be(record + 8);
         }
     }
     return nullptr;

@@ -3,6 +3,8 @@
 #include "tests/test.h"
 #include "th02/hooks.h"
 
+#include <string.h>
+
 typedef struct {
     int16_t thresholds[16];
     size_t count;

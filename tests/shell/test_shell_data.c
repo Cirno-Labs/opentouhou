@@ -4,8 +4,12 @@
 #include "tests/zip_builder.h"
 
 #include "core/archive/zip.h"
+#include "core/base/memory.h"
+#include "core/io/reader.h"
 #include "core/vfs.h"
 #include "shell/data.h"
+
+#include <string.h>
 
 static void M_CheckRoot(
     const ZIP_BUILDER_ENTRY *const entries, const int count,

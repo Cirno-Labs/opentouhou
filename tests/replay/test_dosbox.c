@@ -4,6 +4,8 @@
 
 #include "core/base/utils.h"
 
+#include <string.h>
+
 // Drives the dosbox backend's library with a fake emulator: a guest that
 // waits like Borland's frame_delay on a counter of its IRQ 2 handler, and
 // the sites of the other kinds reached one at a time.

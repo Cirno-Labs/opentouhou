@@ -1,6 +1,10 @@
 #include "tests/test.h"
 #include "th02/patterns.h"
 
+#include "core/base/memory.h"
+
+#include <string.h>
+
 typedef struct {
     size_t allocations;
     size_t frees;

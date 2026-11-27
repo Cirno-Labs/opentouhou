@@ -3,6 +3,10 @@
 #include "tests/th02/th02_palette_fixture.h"
 #include "th02/ending/credits.c"
 
+#include "core/base/memory.h"
+
+#include <string.h>
+
 typedef struct {
     ENDING_ASSETS assets;
     DRAW_TEXT_GLYPH glyph;

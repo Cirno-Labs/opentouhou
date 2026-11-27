@@ -1,6 +1,8 @@
 #include "tests/test.h"
 #include "th02/dialogue.h"
 
+#include <string.h>
+
 typedef struct {
     uint16_t bytes[128];
     uint8_t lines[128];

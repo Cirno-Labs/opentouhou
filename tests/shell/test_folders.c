@@ -7,6 +7,7 @@
 #include "shell/folders.h"
 
 #include <SDL3/SDL.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
     #define M_SEPARATOR "\\"

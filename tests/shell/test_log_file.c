@@ -3,10 +3,13 @@
 
 #include "core/base/log.h"
 #include "core/base/memory.h"
+#include "core/base/string.h"
+#include "core/io/file.h"
 #include "shell/log_file.h"
 
 #include <SDL3/SDL.h>
 #include <stdio.h>
+#include <string.h>
 
 // Returns the text of the log at path, or nullptr when it cannot be read.
 // stdio reads it as text, so a line ends with "\n" on every platform, and

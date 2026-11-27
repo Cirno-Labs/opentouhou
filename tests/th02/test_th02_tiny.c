@@ -1,6 +1,10 @@
 #include "tests/test.h"
 #include "th02/patterns.h"
 
+#include "core/base/memory.h"
+
+#include <string.h>
+
 TEST(tiny_records_sort_colors_and_grow_storage_when_needed)
 {
     PATTERN_BANK bank;

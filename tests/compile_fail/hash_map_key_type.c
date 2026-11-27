@@ -1,6 +1,7 @@
 // Compiles as it is, and fails to compile with BREAK defined, because it
 // then gives a map a key of another type.
 #include "core/base/hash_map.h"
+#include "core/base/memory.h"
 
 typedef struct {
     int32_t font;
@@ -11,9 +12,7 @@ typedef struct {
     int32_t id;
 } SPRITE;
 
-int32_t M_Use(void);
-
-int32_t M_Use(void)
+static int32_t Use(void)
 {
     HASH_MAP(FONT_KEY, int32_t) cache;
     HashMap_Init(&cache, &g_HeapAllocator);

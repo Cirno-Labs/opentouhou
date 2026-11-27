@@ -1,5 +1,6 @@
 #include "tests/input_backend_fake.h"
 
+#include "core/base/memory.h"
 #include "core/input.h"
 
 #include <stdlib.h>

@@ -2,6 +2,9 @@
 #include "th01/ptn.h"
 
 #include "core/base/arena.h"
+#include "core/io/reader.h"
+
+#include <string.h>
 
 #define M_HEADER_SIZE 54
 #define M_IMAGE_SIZE 513

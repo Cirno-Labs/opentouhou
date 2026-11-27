@@ -1,6 +1,7 @@
 // Compiles as it is, and fails to compile with BREAK defined, because it
 // then passes an array an item of another type.
 #include "core/base/array.h"
+#include "core/base/memory.h"
 
 typedef struct {
     int32_t id;
@@ -10,9 +11,7 @@ typedef struct {
     float x;
 } POINT;
 
-void M_Use(void);
-
-void M_Use(void)
+static void Use(void)
 {
     ARRAY(SPRITE) sprites;
     Array_Init(&sprites, &g_HeapAllocator);

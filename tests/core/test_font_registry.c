@@ -1,7 +1,9 @@
 #include "tests/test.h"
 #include "tests/test_fonts.h"
 
+#include "core/base/memory.h"
 #include "core/text.h"
+#include "core/text/font_registry.h"
 #include "core/text/private.h"
 
 #include <string.h>
@@ -29,7 +31,7 @@ static uint8_t *M_Table(uint8_t *const data, const char *const tag)
     for (int32_t i = 0; i < count; i++) {
         const uint8_t *const record = data + 12 + i * 16;
         if (memcmp(record, tag, 4) == 0) {
-            return data + M_TestFontsReadBe(record + 8);
+            return data + TestFonts_ReadU32Be(record + 8);
         }
     }
     CHECK(false);

@@ -7,6 +7,7 @@ test(
     c_args: ['-DSDL_MAIN_HANDLED'],
     implicit_include_directories: false,
     dependencies: [sdl3],
+    link_with: test_lib,
   ),
   suite: 'unit',
 )
@@ -42,7 +43,10 @@ test(
     'test_th01_text',
     'test_th01_text.c',
     implicit_include_directories: false,
-    link_with: [th01_lib, core_text_lib, core_image_lib, core_io_lib, core_base_lib],
+    link_with: [
+      th01_lib, core_text_lib, core_image_lib, core_io_lib, core_base_lib,
+      test_fonts_lib,
+    ],
     dependencies: [pc98_dep, sdl3_ttf, sdl3, cc_libm],
   ),
   env: {'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts'},

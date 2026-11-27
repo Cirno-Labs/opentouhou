@@ -1,10 +1,9 @@
 // Compiles as it is, and fails to compile with BREAK defined, because it
 // then passes an array a slice of another element type.
 #include "core/base/array.h"
+#include "core/base/memory.h"
 
-void M_Use(void);
-
-void M_Use(void)
+static void Use(void)
 {
     ARRAY(int32_t) values;
     Array_Init(&values, &g_HeapAllocator);

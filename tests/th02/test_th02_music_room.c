@@ -2,6 +2,8 @@
 #include "tests/th02/th02_music_room.c"
 #include "th02/input.h"
 
+#include <string.h>
+
 typedef struct {
     TEST_MUSIC_VIEW view;
     MUSIC_ROOM_AUDIO_REQUEST audio[8];

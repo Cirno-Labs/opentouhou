@@ -11,6 +11,8 @@
 
 #include "tests/test.h"
 
+#include <stdio.h>
+
 #if (defined(__x86_64__) || defined(__i386__))                                 \
     && (defined(__GNUC__) || defined(__clang__))
 
