@@ -1537,7 +1537,30 @@ executable(
 )
 
 if build_games
-  foreach part : ['input', 'tram', 'hud', 'hud_wipe', 'score', 'draw', 'shapes', 'sprites_opaque', 'sprites_zoom', 'sprites_plane', 'sprites_rect', 'sprites_tiny', 'sprites', 'clip', 'video', 'tiny', 'patterns', 'performance']
+  foreach part : [
+      'input',
+      'tram',
+      'hud',
+      'hud_wipe',
+      'score',
+      'draw',
+      'shapes',
+      'sprites_opaque',
+      'sprites_zoom',
+      'sprites_plane',
+      'sprites_rect',
+      'sprites_tiny',
+      'sprites',
+      'clip',
+      'video',
+      'tiny',
+      'patterns',
+      'performance',
+      'background',
+      'background_scroll',
+      'background_setup',
+      'background_render',
+  ]
     test(
       'th02/' + part,
       executable(
@@ -1811,6 +1834,18 @@ if build_games
       c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
       implicit_include_directories: false,
       link_with: [th02_lib, core_io_lib, core_base_lib],
+      dependencies: [sdl3],
+    ),
+    suite: 'unit',
+  )
+  test(
+    'th02/background_assets',
+    executable(
+      'test_th02_background_assets',
+      'test_th02_background_assets.c',
+      c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+      implicit_include_directories: false,
+      link_with: [th02_lib, core_vfs_lib, core_io_lib, core_base_lib],
       dependencies: [sdl3],
     ),
     suite: 'unit',
