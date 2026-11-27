@@ -13,6 +13,8 @@ th02_lib = static_library(
   'boss/mima/logic.c',
   'boss/mima/transition.c',
   'boss/rika.c',
+  'boss/sigma/assets.c',
+  'boss/sigma/logic.c',
   'boss/stones.c',
   'boss/scene.c',
   'boss/strategy.c',
