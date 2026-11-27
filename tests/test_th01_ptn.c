@@ -184,7 +184,8 @@ TEST(assets_share_the_caller_arena_and_release_together)
     Arena_Init(&arena, "PTN assets", 4096);
     uint8_t bytes[M_HEADER_SIZE + M_IMAGE_SIZE];
     const size_t size = M_File(bytes, 1);
-    PTN first, second;
+    PTN first;
+    PTN second;
     CHECK(Result_Ignore(M_Load(bytes, size, Arena_Allocator(&arena), &first)));
     CHECK(Result_Ignore(M_Load(bytes, size, Arena_Allocator(&arena), &second)));
     memset(bytes, 0, sizeof(bytes));

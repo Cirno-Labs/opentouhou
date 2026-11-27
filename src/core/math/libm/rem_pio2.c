@@ -28,10 +28,19 @@ int otm_RemPio2(double x, double *y)
         double f;
         uint64_t i;
     } u = { x };
-    double_t z, w, t, r, fn;
-    double tx[3], ty[2];
+    double_t z;
+    double_t w;
+    double_t t;
+    double_t r;
+    double_t fn;
+    double tx[3];
+    double ty[2];
     uint32_t ix;
-    int sign, n, ex, ey, i;
+    int sign;
+    int n;
+    int ex;
+    int ey;
+    int i;
 
     sign = u.i >> 63;
     ix = u.i >> 32 & 0x7fffffff;

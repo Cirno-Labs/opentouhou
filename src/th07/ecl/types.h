@@ -65,8 +65,10 @@ typedef struct {
     int32_t duration;
     int32_t kind; // 0 to 6 linear, 7 Hermite
     int32_t ease; // ENEMY_EASE
-    float from, to;
-    float tangent_from, tangent_to;
+    float from;
+    float to;
+    float tangent_from;
+    float tangent_to;
     // Holds the file's float operand. One that names no float variable
     // takes the values itself.
     float var;

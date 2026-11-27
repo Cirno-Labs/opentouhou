@@ -30,8 +30,12 @@ static const double aT[] = {
 
 double otm_Atan(double x)
 {
-    double_t w, s1, s2, z;
-    uint32_t ix, sign;
+    double_t w;
+    double_t s1;
+    double_t s2;
+    double_t z;
+    uint32_t ix;
+    uint32_t sign;
     int id;
 
     OTM_GET_HIGH_WORD(ix, x);

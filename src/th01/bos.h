@@ -3,7 +3,9 @@
 #include "core/io/reader.h"
 
 typedef struct {
-    int32_t width, height, count;
+    int32_t width;
+    int32_t height;
+    int32_t count;
     const uint8_t *pixels;
     const uint8_t *coverage;
 } BOS;

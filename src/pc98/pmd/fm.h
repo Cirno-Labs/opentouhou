@@ -8,7 +8,9 @@ typedef struct {
     PMD_PART channels[6];
     PMD_CHIP *chip;
     PMD_CONTROL *control;
-    uint8_t volume_down, pans[6], channel_count;
+    uint8_t volume_down;
+    uint8_t pans[6];
+    uint8_t channel_count;
     PMD_BOARD board;
     bool effect_active;
 } MUSIC_FM;

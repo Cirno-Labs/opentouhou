@@ -22,14 +22,22 @@ typedef enum {
 
 typedef struct {
     TH01_SETTINGS settings;
-    uint32_t score, highest_score, frame_rand;
+    uint32_t score;
+    uint32_t highest_score;
+    uint32_t frame_rand;
     // Retains the last life-exit checkpoint for the ending RNG seed.
     uint32_t exit_rand;
     // Rank-table leader and live HUD maximum; highest_score tracks the run.
-    uint32_t table_high_score, high_score;
-    int32_t continues_total, bonus_per_stage[SESSION_HISTORY_COUNT];
-    uint16_t continues_per_scene[SESSION_HISTORY_COUNT], point_value;
-    int16_t stage_id, lives, bombs, pellet_speed;
+    uint32_t table_high_score;
+    uint32_t high_score;
+    int32_t continues_total;
+    int32_t bonus_per_stage[SESSION_HISTORY_COUNT];
+    uint16_t continues_per_scene[SESSION_HISTORY_COUNT];
+    uint16_t point_value;
+    int16_t stage_id;
+    int16_t lives;
+    int16_t bombs;
+    int16_t pellet_speed;
     uint8_t route;
     SESSION_END ending;
 } SESSION;

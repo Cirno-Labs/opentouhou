@@ -7,24 +7,35 @@
 #define BOSS_ANIMATION_SLOTS 2
 
 typedef struct {
-    int16_t width_bytes, height, count;
+    int16_t width_bytes;
+    int16_t height;
+    int16_t count;
     uint8_t slot;
 } BOSS_METADATA;
 
 typedef struct {
-    int16_t left, right, top, bottom;
+    int16_t left;
+    int16_t right;
+    int16_t top;
+    int16_t bottom;
 } BOSS_BOUNDS;
 
 typedef struct {
-    int16_t left, top, previous_left, previous_top;
+    int16_t left;
+    int16_t top;
+    int16_t previous_left;
+    int16_t previous_top;
     BOSS_METADATA sprites;
-    BOSS_BOUNDS move_clamp, orb_hitbox;
-    int16_t image, lock_frame;
+    BOSS_BOUNDS move_clamp;
+    BOSS_BOUNDS orb_hitbox;
+    int16_t image;
+    int16_t lock_frame;
     bool orb_inactive;
 } BOSS_ENTITY;
 
 typedef struct {
-    int16_t left, top;
+    int16_t left;
+    int16_t top;
     BOSS_METADATA sprites;
     uint8_t image;
 } BOSS_ANIMATION;

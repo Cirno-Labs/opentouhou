@@ -9,7 +9,8 @@ typedef struct {
     ARENA arena;
     ALLOCATOR allocator;
     size_t allocations;
-    uint8_t bytes[2][806], effect_bytes[118];
+    uint8_t bytes[2][806];
+    uint8_t effect_bytes[118];
     MDRV_TRACK tracks[2][10];
     MDRV_MUSIC songs[2];
     MDRV_EFFECT effects[2];

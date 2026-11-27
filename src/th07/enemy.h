@@ -154,7 +154,8 @@ typedef struct ENEMY {
         struct {
             int32_t sub;
             ECL_VARS vars;
-            TIMER interval, timer;
+            TIMER interval;
+            TIMER timer;
         } periodic;
     } script;
 
@@ -162,26 +163,32 @@ typedef struct ENEMY {
         VEC3 pos;
         VEC3 velocity;
         // Hold where the last move started, and how far it went.
-        VEC3 prev_pos, step;
+        VEC3 prev_pos;
+        VEC3 step;
         float angle;
         float angular_velocity;
         float speed;
         float acceleration;
         struct {
-            float angle, angular_velocity;
-            float radius, radius_velocity;
+            float angle;
+            float angular_velocity;
+            float radius;
+            float radius_velocity;
         } circle;
-        VEC3 start, delta;
+        VEC3 start;
+        VEC3 delta;
         TIMER timer; // counts down move.duration
         int32_t duration;
-        VEC2 bounds_min, bounds_max;
+        VEC2 bounds_min;
+        VEC2 bounds_max;
     } move;
 
     VEC3 hitbox_size;
     // Is also tested while its x is above 0. Outside a bomb, it adds its
     // damage / 2.5.
     VEC3 extra_hitbox_size;
-    int32_t life, max_life;
+    int32_t life;
+    int32_t max_life;
     int32_t score;
     int32_t last_damage; // ECL variable 10061
     // While above 0, a boss takes a ninth of the damage and others none.
@@ -194,9 +201,12 @@ typedef struct ENEMY {
         TIMER timer;
         // Hold how the speeds and counts of the shots grow with the rank:
         // what is added at rank 0 and at rank 32.
-        float rank_speed_low, rank_speed_high;
-        int16_t rank_columns_low, rank_columns_high;
-        int16_t rank_rows_low, rank_rows_high;
+        float rank_speed_low;
+        float rank_speed_high;
+        int16_t rank_columns_low;
+        int16_t rank_columns_high;
+        int16_t rank_rows_low;
+        int16_t rank_rows_high;
         BULLET_SHOOTER laser_shooter;
         LASER *lasers[ENEMY_LASER_COUNT];
         int32_t laser_index; // where the next laser goes in lasers
@@ -234,8 +244,11 @@ typedef struct ENEMY {
     // still at first, to still from left and from right, to left and to
     // right. With left negative, the sprite never turns.
     struct {
-        int16_t still, still_from_left, still_from_right;
-        int16_t left, right;
+        int16_t still;
+        int16_t still_from_left;
+        int16_t still_from_right;
+        int16_t left;
+        int16_t right;
     } turns;
 
     // Hold the orbit effects that follow the enemy and widen to radius.
@@ -250,7 +263,9 @@ typedef struct ENEMY {
     // contact_count touches the player.
     struct {
         uint8_t flags; // ENEMY_TRAIL_FLAG
-        int16_t count, contact_count, step;
+        int16_t count;
+        int16_t contact_count;
+        int16_t step;
         ENEMY_TRAIL_BOX boxes[ENEMY_TRAIL_COUNT];
     } trail;
 

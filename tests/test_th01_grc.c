@@ -159,7 +159,8 @@ TEST(assets_share_an_arena_and_release_together)
     Arena_Init(&arena, "GRC assets", 4096);
     uint8_t bytes[64 + 6];
     const size_t size = M_File(bytes, 1);
-    GRC first, second;
+    GRC first;
+    GRC second;
     CHECK(Result_Ignore(M_Load(bytes, size, Arena_Allocator(&arena), &first)));
     CHECK(Result_Ignore(M_Load(bytes, size, Arena_Allocator(&arena), &second)));
     memset(bytes, 0, sizeof(bytes));

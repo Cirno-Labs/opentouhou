@@ -52,9 +52,12 @@ typedef enum {
 // Holds one shot of a power level. A laser keeps its frames (a trail laser
 // its trail length) in interval, and its entry of the lasers in phase.
 typedef struct {
-    int16_t interval, phase;
-    float offset_x, offset_y; // from the player, or from the option
-    float size_x, size_y;
+    int16_t interval;
+    int16_t phase;
+    float offset_x;
+    float offset_y; // from the player, or from the option
+    float size_x;
+    float size_y;
     float angle;
     float speed;
     int16_t damage;
@@ -79,12 +82,16 @@ typedef struct {
 typedef struct {
     float bombs; // a life starts with them
     int32_t bomb_window; // frames to bomb after a hit
-    float hitbox_size, graze_size;
+    float hitbox_size;
+    float graze_size;
     float item_pull_speed;
     float item_collect_size;
     float death_cherry_share; // of the cherry that a death takes
     float item_line; // above it, the player draws the items in
-    float speed, speed_focused, speed_diagonal, speed_diagonal_focused;
+    float speed;
+    float speed_focused;
+    float speed_diagonal;
+    float speed_diagonal_focused;
     int32_t table_count;
     SHOT_TABLE *tables;
 } SHOT_TYPE;

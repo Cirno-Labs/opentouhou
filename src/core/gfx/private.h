@@ -15,9 +15,12 @@ typedef enum {
 // width x height: target = logical * scale + offset. rect is the part of
 // the target that shows the logical screen; the rest is border.
 typedef struct {
-    int32_t width, height;
-    float scale_x, scale_y;
-    float offset_x, offset_y;
+    int32_t width;
+    int32_t height;
+    float scale_x;
+    float scale_y;
+    float offset_x;
+    float offset_y;
     GFX_RECT rect;
     GFX_COLOR border;
     GFX_FILTER filter;
@@ -31,7 +34,10 @@ typedef struct {
     MAT4 view;
     MAT4 projection;
     GFX_FOG fog;
-    float scissor_x, scissor_y, scissor_width, scissor_height;
+    float scissor_x;
+    float scissor_y;
+    float scissor_width;
+    float scissor_height;
 } GFX_PASS_VIEW;
 
 // Holds consecutive quads that share a state, a texture and a view.
@@ -45,7 +51,8 @@ typedef struct {
 } GFX_BATCH;
 
 struct GFX_TEXTURE {
-    int32_t width, height;
+    int32_t width;
+    int32_t height;
     bool indexed;
     void *handle; // the backend's, nullptr without a backend
     // Links the live textures, or the freed ones that wait for the next

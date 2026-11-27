@@ -26,7 +26,8 @@
 
 typedef struct {
     ARENA arena;
-    PTN miko, stage;
+    PTN miko;
+    PTN stage;
     GAME_TEXT_FONT font;
 } CASE;
 

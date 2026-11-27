@@ -21,9 +21,12 @@ typedef enum {
 } PALETTE_FADE_KIND;
 
 typedef struct {
-    int16_t speed, target, delta;
+    int16_t speed;
+    int16_t target;
+    int16_t delta;
     uint16_t wait;
-    bool shown, active;
+    bool shown;
+    bool active;
 } PALETTE_FADE;
 
 // Sets the stock colors and tone without showing them.

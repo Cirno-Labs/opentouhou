@@ -10,9 +10,16 @@ typedef struct {
     uint8_t *work;
     size_t work_size;
     uint64_t step;
-    uint16_t position, repeat_position, instrument_offset;
-    uint8_t remaining, id, timer_delta;
-    bool playing, failed, repeat, ended;
+    uint16_t position;
+    uint16_t repeat_position;
+    uint16_t instrument_offset;
+    uint8_t remaining;
+    uint8_t id;
+    uint8_t timer_delta;
+    bool playing;
+    bool failed;
+    bool repeat;
+    bool ended;
 } PMD_EFFECT_PLAYER;
 
 // Retains mutable loop bytes across triggers. Channel selects a physical

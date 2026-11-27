@@ -90,7 +90,8 @@ TEST(jpeg_pixels_match_direct3d)
     const struct {
         const uint8_t *data;
         size_t size;
-        int32_t width, height;
+        int32_t width;
+        int32_t height;
         uint32_t crc;
     } cases[] = {
         { m_Jpeg444, sizeof(m_Jpeg444), 32, 32, 0xa4a6167c },

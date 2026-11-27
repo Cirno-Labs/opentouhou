@@ -4,8 +4,10 @@
 #include "test_dir.h"
 
 typedef struct {
-    VFS *original, *user;
-    char *original_dir, *user_dir;
+    VFS *original;
+    VFS *user;
+    char *original_dir;
+    char *user_dir;
 } FIXTURE;
 
 static FIXTURE M_Open(const bool writable)
@@ -74,7 +76,8 @@ static void M_CheckDisk(
 TEST(missing_file_creates_five_factory_tables_only_in_user_storage)
 {
     FIXTURE fixture = M_Open(true);
-    HIGH_SCORES expected, actual;
+    HIGH_SCORES expected;
+    HIGH_SCORES actual;
     HighScores_Defaults(&expected);
     CHECK(Result_Ignore(
         HighScoresFile_Load(fixture.original, fixture.user, &actual)));
@@ -87,7 +90,9 @@ TEST(missing_file_creates_five_factory_tables_only_in_user_storage)
 TEST(first_launch_imports_original_but_existing_user_scores_take_priority)
 {
     FIXTURE fixture = M_Open(true);
-    HIGH_SCORES original, user, actual;
+    HIGH_SCORES original;
+    HIGH_SCORES user;
+    HIGH_SCORES actual;
     HighScores_Defaults(&original);
     original.sections[0].cleared = 318;
     original.sections[4].records[9].score = 9876543;
@@ -111,7 +116,9 @@ TEST(first_launch_imports_original_but_existing_user_scores_take_priority)
 TEST(native_configuration_prevents_reimport_after_a_user_file_was_removed)
 {
     FIXTURE fixture = M_Open(true);
-    HIGH_SCORES original, expected, actual;
+    HIGH_SCORES original;
+    HIGH_SCORES expected;
+    HIGH_SCORES actual;
     HighScores_Defaults(&original);
     original.sections[0].cleared = 318;
     original.sections[1].cleared = 118;
@@ -130,7 +137,9 @@ TEST(native_configuration_prevents_reimport_after_a_user_file_was_removed)
 TEST(corrupt_user_file_is_removed_and_only_the_next_launch_creates_defaults)
 {
     FIXTURE fixture = M_Open(true);
-    HIGH_SCORES original, actual, expected;
+    HIGH_SCORES original;
+    HIGH_SCORES actual;
+    HIGH_SCORES expected;
     HighScores_Defaults(&original);
     original.sections[0].cleared = 318;
     M_Original(&fixture, &original);
@@ -201,7 +210,8 @@ TEST(write_and_removal_failures_preserve_output_and_existing_data)
 TEST(valid_user_file_is_accepted_without_any_write)
 {
     FIXTURE fixture = M_Open(true);
-    HIGH_SCORES expected, actual;
+    HIGH_SCORES expected;
+    HIGH_SCORES actual;
     HighScores_Defaults(&expected);
     expected.sections[4].records[0].score = 2345678;
     CHECK(Result_Ignore(HighScoresFile_Save(fixture.user, &expected)));

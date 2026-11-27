@@ -5,7 +5,8 @@
 typedef struct MDRV MDRV;
 
 typedef struct {
-    int32_t music[2], effects[2];
+    int32_t music[2];
+    int32_t effects[2];
 } MDRV_FRAME;
 
 // Plays MDRV98 3.4f music and effects on one YM2608 at 48000 Hz. The FM

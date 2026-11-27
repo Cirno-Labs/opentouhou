@@ -95,7 +95,8 @@ TEST(default_font_renders_japanese)
     CHECK(IS_OK(M_Open(16, &font)));
     TEXT_STYLE style = TextStyle_Default();
     style.color = (GFX_COLOR) { 31, 127, 211, 192 };
-    int32_t width, height;
+    int32_t width;
+    int32_t height;
     CHECK(IS_OK(Text_Measure(font, "東方紅魔郷", &style, &width, &height)));
     CHECK(width > 0 && height > 0);
     IMAGE image;
@@ -133,7 +134,8 @@ TEST(shadow_offsets_and_width_scale)
     style.shadow = (GFX_COLOR) { 255, 0, 0, 255 };
     style.shadow_x = -4;
     style.shadow_y = 3;
-    int32_t width, height;
+    int32_t width;
+    int32_t height;
     CHECK(IS_OK(Text_Measure(font, "Reimu", &style, &width, &height)));
     IMAGE styled;
     CHECK(IS_OK(Text_Render(font, "Reimu", &style, &g_HeapAllocator, &styled)));
@@ -161,7 +163,8 @@ TEST(empty_and_invalid_text)
     FONT *font = nullptr;
     CHECK(IS_OK(M_Open(15, &font)));
     TEXT_STYLE style = TextStyle_Default();
-    int32_t width = -1, height = -1;
+    int32_t width = -1;
+    int32_t height = -1;
     CHECK(IS_OK(Text_Measure(font, "", &style, &width, &height)));
     CHECK_EQ_INT(width, 0);
     CHECK_EQ_INT(height, 0);
@@ -199,7 +202,8 @@ TEST(measure_matches_glyph_bounds)
     style.shadow_y = -2;
     const char *const strings[] = { "東方", "Á", "j", " " };
     for (size_t i = 0; i < sizeof(strings) / sizeof(strings[0]); i++) {
-        int32_t width, height;
+        int32_t width;
+        int32_t height;
         CHECK(IS_OK(Text_Measure(font, strings[i], &style, &width, &height)));
         IMAGE image;
         CHECK(IS_OK(
@@ -218,10 +222,12 @@ TEST(resize_uses_loaded_font_data)
     FONT *font = nullptr;
     CHECK(IS_OK(M_Open(15, &font)));
     const TEXT_STYLE style = TextStyle_Default();
-    int32_t width, height;
+    int32_t width;
+    int32_t height;
     CHECK(IS_OK(Text_Measure(font, "東方", &style, &width, &height)));
     CHECK(IS_OK(Font_SetSize(font, 30)));
-    int32_t resized_width, resized_height;
+    int32_t resized_width;
+    int32_t resized_height;
     CHECK(IS_OK(
         Text_Measure(font, "東方", &style, &resized_width, &resized_height)));
     CHECK(resized_width > width);
@@ -262,7 +268,8 @@ TEST(the_font_cell_is_its_em)
     FONT *const bundled = M_LoadWithEmCell(30);
     FONT *const em = M_LoadWithCell(0, 0, 30);
     const TEXT_STYLE style = TextStyle_Default();
-    IMAGE expected, image;
+    IMAGE expected;
+    IMAGE image;
     CHECK(IS_OK(Text_Render(
         em, "Night Sign 霊夢", &style, &g_HeapAllocator, &expected)));
     CHECK(IS_OK(Text_Render(
@@ -289,13 +296,15 @@ TEST(rounded_cells_use_whole_em_pixels_and_windows_baselines)
     FONT *const font = M_LoadWithCell(units * 11 / 10, units * 4 / 10, 30);
     FONT *const em = M_LoadWithCell(0, 0, 20);
     FONT *const low_ascent = M_LoadWithCell(units / 2, units, 30);
-    int32_t offset, low_offset;
+    int32_t offset;
+    int32_t low_offset;
     CHECK(IS_OK(Font_SetSizeRounded(font, 30, &offset)));
     CHECK(IS_OK(Font_SetSizeRounded(low_ascent, 30, &low_offset)));
     CHECK_EQ_INT(low_offset - offset, -12);
     TEXT_STYLE style = TextStyle_Default();
     style.face = TEXT_FACE_BOLD;
-    IMAGE expected, image;
+    IMAGE expected;
+    IMAGE image;
     CHECK(IS_OK(Text_Render(
         em, "Night Sign 霊夢", &style, &g_HeapAllocator, &expected)));
     CHECK(IS_OK(Text_Render(
@@ -374,7 +383,10 @@ TEST(a_tall_cell_shrinks_the_em)
     FONT *const tall = M_LoadWithCell(units, units, 30);
     FONT *const half = M_LoadWithEmCell(15);
     const TEXT_STYLE style = TextStyle_Default();
-    int32_t width, height, half_width, half_height;
+    int32_t width;
+    int32_t height;
+    int32_t half_width;
+    int32_t half_height;
     CHECK(IS_OK(Text_Measure(tall, "Night Sign", &style, &width, &height)));
     CHECK(IS_OK(
         Text_Measure(half, "Night Sign", &style, &half_width, &half_height)));
@@ -417,7 +429,9 @@ TEST(faces_change_the_glyphs)
     style.face = TEXT_FACE_UNDERLINE;
     CHECK(M_CountInk(font, "Reimu", &style) > plain);
     style.face = TEXT_FACE_ITALIC;
-    int32_t width, height, italic_width;
+    int32_t width;
+    int32_t height;
+    int32_t italic_width;
     CHECK(IS_OK(Text_Measure(font, "Reimu", &style, &italic_width, &height)));
     style.face = 0;
     CHECK(IS_OK(Text_Measure(font, "Reimu", &style, &width, &height)));
@@ -470,7 +484,9 @@ TEST(synthetic_bold_advances_one_pixel_per_glyph_at_every_size)
     for (size_t i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++) {
         CHECK(IS_OK(Font_SetSize(font, (float)sizes[i])));
         TEXT_STYLE style = TextStyle_Default();
-        int32_t regular, bold, height;
+        int32_t regular;
+        int32_t bold;
+        int32_t height;
         CHECK(IS_OK(Text_Measure(font, "      ", &style, &regular, &height)));
         style.face = TEXT_FACE_BOLD;
         CHECK(IS_OK(Text_Measure(font, "      ", &style, &bold, &height)));
@@ -492,9 +508,12 @@ TEST(synthetic_bold_moves_glyphs_without_scaling_their_pixels)
     FONT *const font = M_LoadRegularFont();
     TEXT_STYLE style = TextStyle_Default();
     style.face = TEXT_FACE_BOLD;
-    int32_t space, height;
+    int32_t space;
+    int32_t height;
     CHECK(IS_OK(Text_Measure(font, " ", &style, &space, &height)));
-    IMAGE single, repeated, markup;
+    IMAGE single;
+    IMAGE repeated;
+    IMAGE markup;
     CHECK(IS_OK(Text_Render(font, "I", &style, &g_HeapAllocator, &single)));
     CHECK(IS_OK(Text_Render(font, "I I", &style, &g_HeapAllocator, &repeated)));
     style.face = 0;
@@ -538,7 +557,8 @@ TEST(synthetic_bold_keeps_shaped_text_and_decorations_within_its_bounds)
     style.shadow_y = 1;
     const char *const strings[] = { "Á Â", "霊夢 A", "שלום", "مرحبا" };
     for (size_t i = 0; i < sizeof(strings) / sizeof(strings[0]); i++) {
-        int32_t width, height;
+        int32_t width;
+        int32_t height;
         CHECK(IS_OK(Text_Measure(font, strings[i], &style, &width, &height)));
         IMAGE image;
         CHECK(IS_OK(
@@ -554,7 +574,8 @@ TEST(synthetic_bold_keeps_shaped_text_and_decorations_within_its_bounds)
 static int32_t M_Width(const FONT *const font, const char *const text)
 {
     const TEXT_STYLE style = TextStyle_Default();
-    int32_t width, height;
+    int32_t width;
+    int32_t height;
     CHECK(IS_OK(Text_MeasureMarkup(font, text, &style, &width, &height)));
     return width;
 }
@@ -589,7 +610,8 @@ TEST(a_line_without_markup_renders_as_plain_text)
     style.shadow = (GFX_COLOR) { 0, 0, 0, 255 };
     style.shadow_x = 3;
     style.shadow_y = 2;
-    IMAGE plain, markup;
+    IMAGE plain;
+    IMAGE markup;
     CHECK(
         IS_OK(Text_Render(font, "霊夢 <b>", &style, &g_HeapAllocator, &plain)));
     CHECK(IS_OK(Text_RenderMarkup(
@@ -601,7 +623,10 @@ TEST(a_line_without_markup_renders_as_plain_text)
             markup.pixels, plain.pixels,
             (size_t)plain.width * (size_t)plain.height * 4)
         == 0);
-    int32_t width, height, plain_width, plain_height;
+    int32_t width;
+    int32_t height;
+    int32_t plain_width;
+    int32_t plain_height;
     CHECK(IS_OK(Text_MeasureMarkup(font, "霊夢 <b>", &style, &width, &height)));
     CHECK(IS_OK(
         Text_Measure(font, "霊夢 <b>", &style, &plain_width, &plain_height)));
@@ -623,7 +648,8 @@ TEST(center_aligns_the_text_in_its_column)
         M_Width(font, "<c$Rumia$Youkai of the Dusk>!"),
         column + M_Width(font, "!"));
     const TEXT_STYLE style = TextStyle_Default();
-    IMAGE image, alone;
+    IMAGE image;
+    IMAGE alone;
     CHECK(IS_OK(Text_RenderMarkup(
         font, "<c$Rumia$Youkai of the Dusk>", &style, &g_HeapAllocator,
         &image)));
@@ -643,7 +669,8 @@ TEST(right_aligns_the_text_at_the_column_end)
     const int32_t text = M_Width(font, "Reimu:");
     CHECK_EQ_INT(M_Width(font, "<r$Reimu:$12345678>"), column);
     const TEXT_STYLE style = TextStyle_Default();
-    IMAGE image, alone;
+    IMAGE image;
+    IMAGE alone;
     CHECK(IS_OK(Text_RenderMarkup(
         font, "<r$Reimu:$12345678>", &style, &g_HeapAllocator, &image)));
     CHECK(IS_OK(Text_Render(font, "Reimu:", &style, &g_HeapAllocator, &alone)));
@@ -698,7 +725,8 @@ TEST(incomplete_markup_is_text)
 {
     FONT *const font = M_OpenMarkupFont();
     const TEXT_STYLE style = TextStyle_Default();
-    int32_t width, height;
+    int32_t width;
+    int32_t height;
     CHECK(IS_OK(Text_Measure(font, "<c$a$b", &style, &width, &height)));
     CHECK_EQ_INT(M_Width(font, "<c$a$b"), width);
     CHECK(IS_OK(Text_Measure(font, "<text>", &style, &width, &height)));
@@ -795,7 +823,9 @@ TEST(gdi_combining_accents_keep_shaped_advances)
     TEXT_STYLE style = TextStyle_Default();
     style.face = TEXT_FACE_BOLD;
     style.gdi_raster = true;
-    int32_t gdi, shaped, height;
+    int32_t gdi;
+    int32_t shaped;
+    int32_t height;
     const char *const texts[] = { "é", "が", "ガ" };
     for (size_t i = 0; i < sizeof(texts) / sizeof(texts[0]); i++) {
         style.gdi_raster = true;
@@ -818,7 +848,10 @@ static void M_CheckFallbackEm(FONT *const font)
     TEXT_STYLE style = TextStyle_Default();
     style.face = TEXT_FACE_BOLD;
     style.gdi_raster = true;
-    int32_t width, height, expected_width, expected_height;
+    int32_t width;
+    int32_t height;
+    int32_t expected_width;
+    int32_t expected_height;
     CHECK(
         IS_OK(Text_Measure(font->fallback, "十　あ", &style, &width, &height)));
     CHECK(IS_OK(Text_Measure(
@@ -885,7 +918,8 @@ TEST(each_face_has_its_gdi_advances)
         TEXT_STYLE style = TextStyle_Default();
         style.face = TEXT_FACE_BOLD;
         style.gdi_raster = true;
-        int32_t width, height;
+        int32_t width;
+        int32_t height;
         CHECK(IS_OK(Text_Measure(font, "あ", &style, &width, &height)));
         CHECK_EQ_INT(width, m_Advances[i].kana);
         CHECK(IS_OK(Text_Measure(font, "A", &style, &width, &height)));
@@ -924,7 +958,8 @@ TEST(a_kanji_line_takes_ms_gothics_width_in_the_text_font)
     TEXT_STYLE style = TextStyle_Default();
     style.face = TEXT_FACE_BOLD;
     style.gdi_raster = true;
-    int32_t width, height;
+    int32_t width;
+    int32_t height;
     CHECK(IS_OK(Text_Measure(
         font, "東方紅魔郷東方紅魔郷東方紅魔郷東", &style, &width, &height)));
     CHECK_EQ_INT(width, 2 * 248);

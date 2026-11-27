@@ -33,10 +33,20 @@ struct GFX_TEXTURE {
 };
 
 typedef struct {
-    bool in_tick, finish_score, finish_ending, queue_on_quit, fail_save;
-    int asset_step, fail_asset, texture_step, fail_texture;
-    int textures_live, flush_calls, written;
-    int opening_begins, opening_ticks;
+    bool in_tick;
+    bool finish_score;
+    bool finish_ending;
+    bool queue_on_quit;
+    bool fail_save;
+    int asset_step;
+    int fail_asset;
+    int texture_step;
+    int fail_texture;
+    int textures_live;
+    int flush_calls;
+    int written;
+    int opening_begins;
+    int opening_ticks;
     int score_begins, score_ticks, ending_begins, ending_ticks, ending_clears,
         switch_begins;
     OPENING_ACTION action;

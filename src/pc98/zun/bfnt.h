@@ -4,7 +4,9 @@
 #include "core/io/reader.h"
 
 typedef struct {
-    int32_t width, height, count;
+    int32_t width;
+    int32_t height;
+    int32_t count;
     uint16_t first; // character code of the first image, for glyph banks
     uint8_t bits_per_pixel; // 4 for sprites, 1 for masks
     bool has_palette;

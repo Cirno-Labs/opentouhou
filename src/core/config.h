@@ -74,10 +74,12 @@ typedef struct {
     } fallback;
     union {
         struct {
-            int32_t min, max;
+            int32_t min;
+            int32_t max;
         } integer;
         struct {
-            float min, max;
+            float min;
+            float max;
         } real;
         // A CONFIG_ENUM's names, in index order, ending with nullptr.
         const char *const *names;

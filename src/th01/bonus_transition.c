@@ -7,8 +7,11 @@
 typedef struct {
     uint16_t transferred[VIDEO_HEIGHT];
     bool active[VIDEO_HEIGHT];
-    uint16_t activated, done, previous_done;
-    bool pending, waiting;
+    uint16_t activated;
+    uint16_t done;
+    uint16_t previous_done;
+    bool pending;
+    bool waiting;
 } BONUS_ROW_TRANSITION;
 
 static BONUS_ROW_TRANSITION m_Transition;

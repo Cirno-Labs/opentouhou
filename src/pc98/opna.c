@@ -14,13 +14,21 @@
 #define M_DISABLED UINT64_MAX
 
 struct OPNA {
-    void *fm, *ssg, *fm_storage, *ssg_storage;
+    void *fm;
+    void *ssg;
+    void *fm_storage;
+    void *ssg_storage;
     OPNA_TIMER_CALLBACK callback;
     void *context;
-    uint64_t time, fm_next, ssg_next, timer[2];
-    uint32_t fm_period, ssg_period;
+    uint64_t time;
+    uint64_t fm_next;
+    uint64_t ssg_next;
+    uint64_t timer[2];
+    uint32_t fm_period;
+    uint32_t ssg_period;
     int32_t held[5];
-    bool irq, rendering;
+    bool irq;
+    bool rendering;
 };
 
 size_t pc98_ym2608_size(void);
@@ -85,7 +93,8 @@ static void M_Events(OPNA *const chip)
         chip->fm_next += chip->fm_period;
     }
     if (chip->ssg_next == chip->time) {
-        DEV_SMPL left, right;
+        DEV_SMPL left;
+        DEV_SMPL right;
         DEV_SMPL *out[2] = { &left, &right };
         ay8910_update_one(chip->ssg, 1, out);
         pc98_ay8910_output(chip->ssg, &chip->held[2]);

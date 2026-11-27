@@ -14,8 +14,11 @@
 typedef struct {
     SCENE_DATA scenes[SCENE_COUNT];
     PI_IMAGE backgrounds[SCENE_COUNT];
-    PTN stage, boss_stage, miko;
-    BOS miko_ac, miko_ac2;
+    PTN stage;
+    PTN boss_stage;
+    PTN miko;
+    BOS miko_ac;
+    BOS miko_ac2;
     GRF hud;
     INVINCIBILITY_ASSETS invincibility;
     BOMB_ASSETS bomb;
@@ -25,7 +28,11 @@ typedef struct {
     BONUS_STAGE_ASSETS *bonus;
     PELLET_ASSETS *pellets;
     SHOOTOUT_LASERS_ASSETS *lasers;
-    GAME_TEXT_FONT hud_font, item_font, bonus_font, route_font, menu_font;
+    GAME_TEXT_FONT hud_font;
+    GAME_TEXT_FONT item_font;
+    GAME_TEXT_FONT bonus_font;
+    GAME_TEXT_FONT route_font;
+    GAME_TEXT_FONT menu_font;
     MDRV_MUSIC songs[GAMEPLAY_SONG_COUNT];
     MDRV_EFFECTS effects;
 } GAMEPLAY_ASSETS;

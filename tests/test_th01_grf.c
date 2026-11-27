@@ -8,7 +8,8 @@
 
 typedef struct {
     uint8_t bytes[8192];
-    size_t size, decoded;
+    size_t size;
+    size_t decoded;
     uint8_t run_byte;
 } GRF_BUILDER;
 
@@ -247,7 +248,8 @@ TEST(masks_share_the_asset_arena_and_release_together)
     GRF_BUILDER file = M_Header(10);
     M_Literal(&file, 0x80);
     M_FinishZero(&file);
-    GRF first, second;
+    GRF first;
+    GRF second;
     CHECK(Result_Ignore(
         M_Load(&file, file.size, Arena_Allocator(&arena), &first)));
     CHECK(Result_Ignore(

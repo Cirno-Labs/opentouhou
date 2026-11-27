@@ -14,8 +14,13 @@ typedef struct {
     int8_t debug;
     int32_t score;
     uint16_t continues_used;
-    int8_t bombs, lives, rank, start_power, music;
-    uint8_t start_bombs, start_lives;
+    int8_t bombs;
+    int8_t lives;
+    int8_t rank;
+    int8_t start_power;
+    int8_t music;
+    uint8_t start_bombs;
+    uint8_t start_lives;
     int32_t frame;
     int16_t unused_1;
     int8_t unused_2;
@@ -24,20 +29,27 @@ typedef struct {
     int8_t unused_3;
     uint8_t shot_type;
     int8_t demo_num;
-    int16_t skill, unused_4;
+    int16_t skill;
+    int16_t unused_4;
     int32_t highest_score;
 } TH02_SESSION;
 
 typedef struct {
     SOUND_EFFECT force_effect;
     uint16_t wait_frames;
-    bool save_settings, select_shot, enter_main;
+    bool save_settings;
+    bool select_shot;
+    bool enter_main;
 } SESSION_EVENTS;
 
 typedef struct {
-    int8_t stage, lives, bombs, rank;
+    int8_t stage;
+    int8_t lives;
+    int8_t bombs;
+    int8_t rank;
     uint8_t power;
-    int16_t performance, big_power_override;
+    int16_t performance;
+    int16_t big_power_override;
 } SESSION_ENTRY;
 
 // Clears the session, once per process; new games keep reserved fields.

@@ -93,7 +93,8 @@ static void M_Unrotated(
 static MAT4 M_Rotation(const int32_t axis, const float angle)
 {
     MAT4 rotation = Mat4_Identity();
-    float sine, cosine;
+    float sine;
+    float cosine;
     X87_SinCos(angle, &sine, &cosine);
     const int32_t a = (axis + 1) % 3;
     const int32_t b = (axis + 2) % 3;
@@ -213,7 +214,8 @@ void Anm_Draw(const ANM_VM *const vm, const ANM_DRAW *const draw)
     if (!M_Visible(vm)) {
         return;
     }
-    float sine, cosine;
+    float sine;
+    float cosine;
     X87_SinCos(vm->rotation.z, &sine, &cosine);
     const float cx = X87_Rint(vm->pos.x);
     const float cy = X87_Rint(vm->pos.y);

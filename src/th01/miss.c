@@ -25,7 +25,10 @@ typedef enum {
 typedef struct {
     MISS_PHASE phase;
     VSYNC_WAIT wait;
-    int16_t frame, effect_left, target_right, target_left;
+    int16_t frame;
+    int16_t effect_left;
+    int16_t target_right;
+    int16_t target_left;
 } MISS;
 
 static MISS m_Miss;

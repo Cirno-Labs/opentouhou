@@ -61,7 +61,8 @@ typedef struct {
     const GFX_BACKEND *backend;
     bool started;
     bool preserve;
-    int32_t width, height;
+    int32_t width;
+    int32_t height;
     M_TICK ticks[2];
     int32_t current;
     bool in_tick;

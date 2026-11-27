@@ -14,9 +14,12 @@ typedef struct {
 } FIXTURE;
 
 typedef struct {
-    const uint8_t *fm, *ssg;
-    size_t fm_size, ssg_size;
-    uint8_t fm_part, ssg_part;
+    const uint8_t *fm;
+    const uint8_t *ssg;
+    size_t fm_size;
+    size_t ssg_size;
+    uint8_t fm_part;
+    uint8_t ssg_part;
     uint16_t drums;
 } SCORE;
 
@@ -191,12 +194,14 @@ static void M_Score(FIXTURE *const fixture, const SCORE *const score)
 
 TEST(public_driver_keeps_music_effects_and_drums_identical_across_blocks)
 {
-    FIXTURE whole, split;
+    FIXTURE whole;
+    FIXTURE split;
     M_Init(&whole);
     M_Init(&split);
     Pmd_Effect(whole.pmd, 0);
     Pmd_Effect(split.pmd, 0);
-    OPNA_FRAME a[8192], b[8192];
+    OPNA_FRAME a[8192];
+    OPNA_FRAME b[8192];
     Pmd_Render(whole.pmd, a, ARRAY_SIZE(a));
     const size_t blocks[] = { 1, 17, 6203, 0, 1971 };
     size_t position = 0;
@@ -206,7 +211,9 @@ TEST(public_driver_keeps_music_effects_and_drums_identical_across_blocks)
     }
     CHECK_EQ_INT(position, ARRAY_SIZE(a));
     CHECK(memcmp(a, b, sizeof(a)) == 0);
-    bool fm = false, melody = false, drums = false;
+    bool fm = false;
+    bool melody = false;
+    bool drums = false;
     for (size_t i = 0; i < ARRAY_SIZE(a); i++) {
         fm |= a[i].fm_rhythm[0] != 0 || a[i].fm_rhythm[1] != 0;
         melody |= a[i].ssg[0] != 0;
@@ -418,7 +425,8 @@ TEST(public_fade_stops_at_the_next_music_tick_after_overflow)
 
 TEST(public_effect_releases_the_shared_fm_voice_back_to_music)
 {
-    FIXTURE music, silent;
+    FIXTURE music;
+    FIXTURE silent;
     M_InitEffect(&music, 4);
     M_InitEffect(&silent, 4);
     const uint8_t stream[] = {
@@ -435,7 +443,8 @@ TEST(public_effect_releases_the_shared_fm_voice_back_to_music)
     M_Score(&silent, &without_music);
     Pmd_Effect(music.pmd, 0);
     Pmd_Effect(silent.pmd, 0);
-    OPNA_FRAME a[8000], b[8000];
+    OPNA_FRAME a[8000];
+    OPNA_FRAME b[8000];
     Pmd_Render(music.pmd, a, 3000);
     Pmd_Render(silent.pmd, b, 3000);
     CHECK(memcmp(a, b, 3000 * sizeof(*a)) == 0);
@@ -459,7 +468,8 @@ TEST(public_percussion_plays_only_the_lowest_selected_effect)
                                   { 0x2001, 1 },
                                   { 0x2080, 0x80 } };
     for (size_t i = 0; i < ARRAY_SIZE(masks); i++) {
-        FIXTURE combined, first;
+        FIXTURE combined;
+        FIXTURE first;
         M_Init(&combined);
         M_Init(&first);
         const SCORE a_score = { .fm_part = 0,
@@ -470,7 +480,8 @@ TEST(public_percussion_plays_only_the_lowest_selected_effect)
                                 .drums = masks[i][1] };
         M_Score(&combined, &a_score);
         M_Score(&first, &b_score);
-        OPNA_FRAME a[8000], b[8000];
+        OPNA_FRAME a[8000];
+        OPNA_FRAME b[8000];
         Pmd_Render(combined.pmd, a, ARRAY_SIZE(a));
         Pmd_Render(first.pmd, b, ARRAY_SIZE(b));
         CHECK(memcmp(a, b, sizeof(a)) == 0);
@@ -528,7 +539,8 @@ TEST(public_restart_resets_tempo_after_the_loaded_timer_interval)
 
 TEST(public_long_playback_keeps_pcm_and_measures_across_arbitrary_blocks)
 {
-    FIXTURE whole, split;
+    FIXTURE whole;
+    FIXTURE split;
     M_Init(&whole);
     M_Init(&split);
     const uint8_t stream[] = {
@@ -647,7 +659,8 @@ TEST(public_driver_reports_fatal_stream_voice_and_effect_errors)
         const uint8_t *stream;
         size_t size;
         const char *error;
-        uint8_t effect_program, effect_id;
+        uint8_t effect_program;
+        uint8_t effect_id;
         bool effect;
     } cases[] = {
         { empty_repeat, sizeof(empty_repeat), "PMD dispatch limit exceeded", 0,
@@ -684,7 +697,8 @@ TEST(public_driver_reports_fatal_stream_voice_and_effect_errors)
 
 TEST(public_fm_modulation_keeps_pcm_and_independent_component_buses)
 {
-    FIXTURE whole, split;
+    FIXTURE whole;
+    FIXTURE split;
     M_Init(&whole);
     M_Init(&split);
     const uint8_t stream[] = {
@@ -694,7 +708,8 @@ TEST(public_fm_modulation_keeps_pcm_and_independent_component_buses)
     const SCORE score = { .fm = stream, .fm_size = sizeof(stream) };
     M_Score(&whole, &score);
     M_Score(&split, &score);
-    OPNA_FRAME a[8192], b[8192];
+    OPNA_FRAME a[8192];
+    OPNA_FRAME b[8192];
     Pmd_Render(whole.pmd, a, ARRAY_SIZE(a));
     const size_t blocks[] = { 1, 775, 800, 4627, 1, 1988 };
     size_t position = 0;
@@ -773,7 +788,8 @@ TEST(public_masked_extension_keeps_parsing_without_a_bound_fm_voice)
 
 TEST(public_fm_and_ssg_random_lfos_share_the_same_pcm_timeline)
 {
-    FIXTURE whole, split;
+    FIXTURE whole;
+    FIXTURE split;
     M_Init(&whole);
     M_Init(&split);
     const uint8_t fm[] = {
@@ -792,7 +808,8 @@ TEST(public_fm_and_ssg_random_lfos_share_the_same_pcm_timeline)
     };
     M_Score(&whole, &score);
     M_Score(&split, &score);
-    OPNA_FRAME a[8192], b[8192];
+    OPNA_FRAME a[8192];
+    OPNA_FRAME b[8192];
     Pmd_Render(whole.pmd, a, ARRAY_SIZE(a));
     const size_t blocks[] = { 17, 0, 775, 503, 2048, 1 };
     size_t position = 0;
@@ -804,7 +821,8 @@ TEST(public_fm_and_ssg_random_lfos_share_the_same_pcm_timeline)
         position += count;
     }
     CHECK(memcmp(a, b, sizeof(a)) == 0);
-    bool fm_audible = false, ssg_audible = false;
+    bool fm_audible = false;
+    bool ssg_audible = false;
     for (size_t i = 0; i < ARRAY_SIZE(a); i++) {
         fm_audible |= a[i].fm_rhythm[0] != 0 || a[i].fm_rhythm[1] != 0;
         ssg_audible |= a[i].ssg[0] != 0;
@@ -861,7 +879,8 @@ TEST(public_effects_keep_stopped_timer_phase_across_start_and_counter_wrap)
 
 TEST(public_effect_release_waits_for_the_next_music_note)
 {
-    FIXTURE music, rest;
+    FIXTURE music;
+    FIXTURE rest;
     M_InitEffect(&music, 1);
     M_InitEffect(&rest, 1);
     const uint8_t notes[] = { 0xff, 7, 0xf6, 0x40, 8, 0x80 };
@@ -876,7 +895,8 @@ TEST(public_effect_release_waits_for_the_next_music_note)
     M_Score(&rest, &rest_score);
     Pmd_Effect(music.pmd, 0);
     Pmd_Effect(rest.pmd, 0);
-    OPNA_FRAME a[8192], b[8192];
+    OPNA_FRAME a[8192];
+    OPNA_FRAME b[8192];
     Pmd_Render(music.pmd, a, 6978);
     Pmd_Render(rest.pmd, b, 6978);
     CHECK(memcmp(a, b, 6978 * sizeof(*a)) == 0);
@@ -906,7 +926,8 @@ TEST(public_effect_release_waits_for_the_next_music_note)
 
 TEST(public_music_and_effect_pcm_keep_coincident_block_boundaries)
 {
-    FIXTURE whole, split;
+    FIXTURE whole;
+    FIXTURE split;
     const uint8_t effect[] = { 0xff, 0, 0x40, 6, 0x44, 8, 0x80 };
     M_InitEffectStream(&whole, effect, sizeof(effect), 200);
     M_InitEffectStream(&split, effect, sizeof(effect), 200);
@@ -916,7 +937,8 @@ TEST(public_music_and_effect_pcm_keep_coincident_block_boundaries)
     M_ScoreTracks(&split, &score, true);
     Pmd_Effect(whole.pmd, 0);
     Pmd_Effect(split.pmd, 0);
-    OPNA_FRAME a[8192], b[8192];
+    OPNA_FRAME a[8192];
+    OPNA_FRAME b[8192];
     Pmd_Render(whole.pmd, a, ARRAY_SIZE(a));
     const size_t blocks[] = { 6203, 1, 0, 1988 };
     size_t position = 0;
@@ -985,7 +1007,8 @@ TEST(public_default_restore_uses_retained_work_after_the_bank_terminator)
 
 TEST(public_inline_fm_effect_keeps_the_current_note_dispatch_branch)
 {
-    FIXTURE actual, reference;
+    FIXTURE actual;
+    FIXTURE reference;
     M_InitEffect(&actual, 4);
     M_InitEffect(&reference, 4);
     const uint8_t commands[] = {
@@ -1000,7 +1023,8 @@ TEST(public_inline_fm_effect_keeps_the_current_note_dispatch_branch)
                                     .fm_part = 2 };
     M_Score(&actual, &score);
     M_Score(&reference, &reference_score);
-    OPNA_FRAME a[8192], b[8192];
+    OPNA_FRAME a[8192];
+    OPNA_FRAME b[8192];
     Pmd_Render(actual.pmd, a, ARRAY_SIZE(a));
     Pmd_Render(reference.pmd, b, ARRAY_SIZE(b));
     CHECK(memcmp(a, b, sizeof(a)) == 0);
@@ -1041,7 +1065,8 @@ TEST(public_fade_in_keeps_the_equality_refresh_until_the_next_borrow)
     CHECK_EQ_INT(Pmd_Measure(fixture.pmd), 27);
     Pmd_Render(fixture.pmd, frames + 21268, count - 21268);
     CHECK_EQ_INT(Pmd_Measure(fixture.pmd), 41);
-    bool fm_audible = false, ssg_audible = false;
+    bool fm_audible = false;
+    bool ssg_audible = false;
     for (size_t i = 0; i < count; i++) {
         fm_audible |=
             frames[i].fm_rhythm[0] != 0 || frames[i].fm_rhythm[1] != 0;
@@ -1139,7 +1164,8 @@ TEST(public_ssg_melody_takes_over_low_priority_drums_before_slur_and_glide)
 
 TEST(public_regular_ssg_effect_prevents_melody_takeover)
 {
-    FIXTURE actual, reference;
+    FIXTURE actual;
+    FIXTURE reference;
     M_Init(&actual);
     M_Init(&reference);
     const uint8_t effect[] = { 0xd4, 11, 0x80 };
@@ -1154,7 +1180,8 @@ TEST(public_regular_ssg_effect_prevents_melody_takeover)
     const SCORE without_melody = { .fm = effect, .fm_size = sizeof(effect) };
     M_Score(&actual, &score);
     M_Score(&reference, &without_melody);
-    OPNA_FRAME a[8192], b[8192];
+    OPNA_FRAME a[8192];
+    OPNA_FRAME b[8192];
     Pmd_Render(actual.pmd, a, ARRAY_SIZE(a));
     Pmd_Render(reference.pmd, b, ARRAY_SIZE(b));
     CHECK(memcmp(a, b, sizeof(a)) == 0);
@@ -1170,7 +1197,8 @@ TEST(public_regular_ssg_effect_prevents_melody_takeover)
 
 TEST(public_inline_ssg_effect_keeps_the_current_note_dispatch_branch)
 {
-    FIXTURE actual, reference;
+    FIXTURE actual;
+    FIXTURE reference;
     M_Init(&actual);
     M_Init(&reference);
     const uint8_t commands[] = { 0xd4, 11, 0xd4, 0, 0x40, 2, 0xc1, 0x80 };
@@ -1183,7 +1211,8 @@ TEST(public_inline_ssg_effect_keeps_the_current_note_dispatch_branch)
                                     .ssg_part = 8 };
     M_Score(&actual, &score);
     M_Score(&reference, &reference_score);
-    OPNA_FRAME a[8192], b[8192];
+    OPNA_FRAME a[8192];
+    OPNA_FRAME b[8192];
     Pmd_Render(actual.pmd, a, ARRAY_SIZE(a));
     Pmd_Render(reference.pmd, b, ARRAY_SIZE(b));
     CHECK(memcmp(a, b, sizeof(a)) == 0);
@@ -1278,7 +1307,8 @@ TEST(board86_effect_borrows_fm6_without_interrupting_fm3)
 {
     const uint8_t effect[] = { 0xec, 1, 0xff, 0, 0x43, 255, 0x80 };
     const uint8_t music[] = { 0xff, 7, 0xec, 2, 0xfd, 108, 0x40, 255, 0x80 };
-    FIXTURE control, playing;
+    FIXTURE control;
+    FIXTURE playing;
     M_InitEffectStreamBoard(
         &control, effect, sizeof(effect), 200, PMD_BOARD_86);
     M_InitEffectStreamBoard(
@@ -1289,7 +1319,8 @@ TEST(board86_effect_borrows_fm6_without_interrupting_fm3)
     Pmd_Render(control.pmd, nullptr, 4096);
     Pmd_Render(playing.pmd, nullptr, 4096);
     Pmd_Effect(playing.pmd, 0);
-    OPNA_FRAME a[8192], b[8192];
+    OPNA_FRAME a[8192];
+    OPNA_FRAME b[8192];
     Pmd_Render(control.pmd, a, ARRAY_SIZE(a));
     Pmd_Render(playing.pmd, b, ARRAY_SIZE(b));
     bool effect_audible = false;
@@ -1327,7 +1358,8 @@ TEST(board86_direct_rhythm_commands_set_level_and_pan)
 
 TEST(public_loading_song_data_keeps_current_playback_running)
 {
-    FIXTURE control, loading;
+    FIXTURE control;
+    FIXTURE loading;
     M_Init(&control);
     M_Init(&loading);
     const uint8_t music[] = { 0xfd, 15, 0x40, 255, 0x80 };
@@ -1339,7 +1371,8 @@ TEST(public_loading_song_data_keeps_current_playback_running)
     Pmd_Render(control.pmd, nullptr, 2560);
     Pmd_Render(loading.pmd, nullptr, 2560);
     Pmd_Load(loading.pmd, loading.song);
-    OPNA_FRAME a[4096], b[4096];
+    OPNA_FRAME a[4096];
+    OPNA_FRAME b[4096];
     Pmd_Render(control.pmd, a, ARRAY_SIZE(a));
     Pmd_Render(loading.pmd, b, ARRAY_SIZE(b));
     CHECK(memcmp(a, b, sizeof(a)) == 0);
@@ -1355,7 +1388,8 @@ TEST(public_loading_song_data_keeps_current_playback_running)
 
 TEST(board86_song_start_keeps_the_borrowed_effect_pan_and_pcm)
 {
-    FIXTURE control, starting;
+    FIXTURE control;
+    FIXTURE starting;
     const uint8_t effect[] = { 0xec, 2, 0xff, 0, 0x40, 255, 0x80 };
     M_InitEffectStreamBoard(
         &control, effect, sizeof(effect), 200, PMD_BOARD_86);
@@ -1371,7 +1405,8 @@ TEST(board86_song_start_keeps_the_borrowed_effect_pan_and_pcm)
     Pmd_Render(control.pmd, nullptr, 4096);
     Pmd_Render(starting.pmd, nullptr, 4096);
     Pmd_Start(starting.pmd);
-    OPNA_FRAME a[4096], b[4096];
+    OPNA_FRAME a[4096];
+    OPNA_FRAME b[4096];
     Pmd_Render(control.pmd, a, ARRAY_SIZE(a));
     Pmd_Render(starting.pmd, b, ARRAY_SIZE(b));
     CHECK(memcmp(a, b, sizeof(a)) == 0);

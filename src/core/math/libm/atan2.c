@@ -14,7 +14,11 @@ static const double pi_lo = 1.2246467991473531772E-16;
 double otm_Atan2(double y, double x)
 {
     double z;
-    uint32_t m, lx, ly, ix, iy;
+    uint32_t m;
+    uint32_t lx;
+    uint32_t ly;
+    uint32_t ix;
+    uint32_t iy;
 
     if (isnan(x) || isnan(y)) {
         return x + y;

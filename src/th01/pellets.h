@@ -40,12 +40,25 @@ typedef enum {
 } PELLET_GROUP;
 
 typedef struct {
-    bool moving, not_rendered;
+    bool moving;
+    bool not_rendered;
     uint8_t motion_type;
-    int16_t left, top, previous_left, previous_top, from_group;
-    MATH16_VECTOR spin_center, velocity, spin_velocity;
-    int16_t age, speed, decay_frame, cloud_frame, cloud_left, cloud_top;
-    int16_t angle, sling_direction;
+    int16_t left;
+    int16_t top;
+    int16_t previous_left;
+    int16_t previous_top;
+    int16_t from_group;
+    MATH16_VECTOR spin_center;
+    MATH16_VECTOR velocity;
+    MATH16_VECTOR spin_velocity;
+    int16_t age;
+    int16_t speed;
+    int16_t decay_frame;
+    int16_t cloud_frame;
+    int16_t cloud_left;
+    int16_t cloud_top;
+    int16_t angle;
+    int16_t sling_direction;
 } PELLET;
 
 typedef struct {
@@ -55,7 +68,9 @@ typedef struct {
     int16_t speed;
     // Accumulates destroyed-pellet score in unsigned 16 bits until committed.
     uint16_t destroy_score_delta;
-    bool interlace_field, interlace, spawn_with_cloud;
+    bool interlace_field;
+    bool interlace;
+    bool spawn_with_cloud;
 } PELLETS;
 
 extern const PELLETS *const g_Pellets;

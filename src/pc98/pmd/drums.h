@@ -10,15 +10,22 @@ typedef struct {
     const uint8_t *bytes;
     size_t size;
     uint16_t offsets[SSG_EFFECT_LIMIT];
-    uint8_t priorities[SSG_EFFECT_LIMIT], count;
+    uint8_t priorities[SSG_EFFECT_LIMIT];
+    uint8_t count;
 } SSG_EFFECT_BANK;
 
 typedef struct {
     const SSG_EFFECT_BANK *bank;
     PMD_CHIP *chip;
-    uint16_t position, tone;
+    uint16_t position;
+    uint16_t tone;
     int16_t tone_sweep;
-    uint8_t noise, noise_sweep, noise_count, count, priority, id;
+    uint8_t noise;
+    uint8_t noise_sweep;
+    uint8_t noise_count;
+    uint8_t count;
+    uint8_t priority;
+    uint8_t id;
 } SSG_EFFECTS;
 
 // Binds the static table compiled into the original PMD driver.

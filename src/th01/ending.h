@@ -6,9 +6,14 @@
 #define ENDING_SHEET_COUNT 15
 
 typedef struct {
-    uint32_t score, highest_score, random;
-    uint32_t continues[4], total;
-    int32_t skill, group, level;
+    uint32_t score;
+    uint32_t highest_score;
+    uint32_t random;
+    uint32_t continues[4];
+    uint32_t total;
+    int32_t skill;
+    int32_t group;
+    int32_t level;
     int8_t extra_lives;
     uint8_t rank;
     SESSION_END route;

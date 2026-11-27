@@ -19,7 +19,10 @@ typedef struct {
 } BOSS_HIT;
 
 typedef struct {
-    int16_t left, top, width_minus_shot, height_minus_shot;
+    int16_t left;
+    int16_t top;
+    int16_t width_minus_shot;
+    int16_t height_minus_shot;
 } BOSS_SHOT_HITBOX;
 
 typedef enum {
@@ -40,7 +43,9 @@ typedef struct {
     BOSS_DEFEAT_PHASE phase;
     BOSS_DEFEAT_KIND kind;
     VSYNC_WAIT wait;
-    int16_t top, bottom, frame;
+    int16_t top;
+    int16_t bottom;
+    int16_t frame;
 } BOSS_DEFEAT;
 
 // Applies debug damage and Orb or bomb hits: flashes, decrements HP, reflects

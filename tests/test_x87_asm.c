@@ -196,7 +196,8 @@ static float M_RealSqrt(const float x)
 // result, not an approximation.
 static bool M_SameBits(const float a, const float b)
 {
-    uint32_t ua, ub;
+    uint32_t ua;
+    uint32_t ub;
     memcpy(&ua, &a, sizeof(ua));
     memcpy(&ub, &b, sizeof(ub));
     return ua == ub;
@@ -260,7 +261,10 @@ TEST(trig_functions_match_the_real_x87_over_game_ranges)
             atan2_r.mismatches++;
         }
 
-        float es, ec, as, ac;
+        float es;
+        float ec;
+        float as;
+        float ac;
         X87_SinCos(x, &es, &ec);
         M_RealSinCos(x, &as, &ac);
         sincos_r.total++;
@@ -268,7 +272,10 @@ TEST(trig_functions_match_the_real_x87_over_game_ranges)
             sincos_r.mismatches++;
         }
 
-        float ex, ey, ax, ay;
+        float ex;
+        float ey;
+        float ax;
+        float ay;
         X87_SinCosScale(x, y, &ex, &ey);
         M_RealSinCosScale(x, y, &ax, &ay);
         scale_r.total++;
@@ -302,7 +309,9 @@ TEST(rint_ftol_and_sqrt_match_the_real_x87_exactly)
         -1.5f, -2.5f,  8388608.0f, -8388608.0f, 2147483648.0f, -2147483649.0f,
         1e30f, -1e30f, INFINITY,   -INFINITY,   nanf(""),
     };
-    int64_t rint_mismatches = 0, ftol_mismatches = 0, sqrt_mismatches = 0;
+    int64_t rint_mismatches = 0;
+    int64_t ftol_mismatches = 0;
+    int64_t sqrt_mismatches = 0;
     const int64_t edge_count =
         (int64_t)(sizeof(edge_cases) / sizeof(edge_cases[0]));
 

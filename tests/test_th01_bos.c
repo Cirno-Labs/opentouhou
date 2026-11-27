@@ -87,7 +87,8 @@ TEST(loads_odd_byte_widths_all_frames_and_full_header_ranges)
         { 255, 255, 1 },
         { 1, 1, 255 },
     };
-    ARENA staging, assets;
+    ARENA staging;
+    ARENA assets;
     Arena_Init(&staging, "BOS synthetic", 1024 * 1024);
     Arena_Init(&assets, "BOS assets", 2 * 1024 * 1024);
     for (size_t i = 0; i < sizeof(dimensions) / sizeof(dimensions[0]); i++) {
@@ -131,7 +132,8 @@ TEST(owns_data_after_reader_close_and_respects_reader_position)
     READER reader;
     Reader_OpenBuffer(&reader, bytes, sizeof(bytes), nullptr);
     Reader_Skip(&reader, 5);
-    BOS first, second;
+    BOS first;
+    BOS second;
     CHECK(Result_Log(
         Bos_Load(&reader, Arena_Allocator(&arena), &first), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(Reader_Tell(&reader), 5 + size);
@@ -195,7 +197,8 @@ TEST(rejects_bad_signature_and_zero_dimensions_or_count)
 TEST(late_io_failure_preserves_existing_arena_assets)
 {
     const char *const path = "test_th01_bos_truncated.bin";
-    ARENA staging, assets;
+    ARENA staging;
+    ARENA assets;
     Arena_Init(&staging, "BOS synthetic", 512 * 1024);
     Arena_Init(&assets, "BOS assets", 4096);
     const size_t file_size = 64 + 255 * 255 * 5;

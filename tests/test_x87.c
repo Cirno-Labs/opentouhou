@@ -59,7 +59,8 @@ TEST(sin_cos_tan_match_their_single_counterparts)
 
 TEST(sincos_matches_sin_and_cos)
 {
-    float s, c;
+    float s;
+    float c;
     X87_SinCos(0.7f, &s, &c);
     CHECK(s == X87_Sin(0.7f));
     CHECK(c == X87_Cos(0.7f));
@@ -67,7 +68,8 @@ TEST(sincos_matches_sin_and_cos)
 
 TEST(sincosscale_scales_both_components)
 {
-    float x, y;
+    float x;
+    float y;
     X87_SinCosScale(0.0f, 10.0f, &x, &y);
     CHECK(x == 10.0f);
     CHECK(y == 0.0f);

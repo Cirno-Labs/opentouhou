@@ -48,7 +48,8 @@ static void M_ShrinkCell(uint8_t *const data)
 static int32_t M_Width(FONT *const font)
 {
     const TEXT_STYLE style = TextStyle_Default();
-    int32_t width, height;
+    int32_t width;
+    int32_t height;
     CHECK(IS_OK(Text_Measure(font, "霊夢", &style, &width, &height)));
     return width;
 }
@@ -119,7 +120,9 @@ TEST(names_match_in_every_language_ignoring_ascii_case)
 TEST(a_collection_opens_the_face_with_the_name)
 {
     CHECK(IS_OK(Text_Init()));
-    size_t gothic_size, ui_size, size;
+    size_t gothic_size;
+    size_t ui_size;
+    size_t size;
     uint8_t *const gothic = TestFonts_Read(TEST_FONT_GOTHIC, &gothic_size);
     uint8_t *const ui = TestFonts_Read(TEST_FONT_UI_GOTHIC, &ui_size);
     uint8_t *const collection =
@@ -212,7 +215,9 @@ TEST(a_system_font_leaves_the_added_fonts_their_names)
 {
     CHECK(IS_OK(Text_Init()));
     memset(&m_System, 0, sizeof(m_System));
-    size_t gothic_size, ui_size, size;
+    size_t gothic_size;
+    size_t ui_size;
+    size_t size;
     uint8_t *const gothic = TestFonts_Read(TEST_FONT_GOTHIC, &gothic_size);
     uint8_t *const ui = TestFonts_Read(TEST_FONT_UI_GOTHIC, &ui_size);
     uint8_t *const collection =
@@ -346,7 +351,8 @@ TEST(a_fallback_draws_what_the_font_lacks)
     Font_SetFallback(font, fallback);
     CHECK(IS_OK(Font_SetSize(font, 15)));
     const TEXT_STYLE style = TextStyle_Default();
-    int32_t width, height;
+    int32_t width;
+    int32_t height;
     CHECK(IS_OK(Text_Measure(font, "Reimu", &style, &width, &height)));
     CHECK(width > 0);
     Font_SetFallback(font, nullptr);

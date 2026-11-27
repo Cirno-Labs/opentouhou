@@ -28,7 +28,10 @@ typedef enum {
 
 typedef struct {
     ENDING_OPERATION_KIND kind;
-    int32_t value, left, top, style;
+    int32_t value;
+    int32_t left;
+    int32_t top;
+    int32_t style;
     const char *text;
 } ENDING_OPERATION;
 
@@ -37,7 +40,10 @@ typedef struct {
     PALETTE_FADE switch_fade;
     VSYNC_WAIT switch_wait;
     ENDING_OPERATION operations[ENDING_OPERATION_CAPACITY];
-    int32_t count, next, timeout;
-    bool waiting, sensing;
+    int32_t count;
+    int32_t next;
+    int32_t timeout;
+    bool waiting;
+    bool sensing;
     char result_lines[10][256];
 } ENDING;

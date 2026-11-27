@@ -124,7 +124,8 @@ TEST(results_use_signed_scores_and_all_source_levels)
         CHECK_EQ_INT(r.skill, expected[i] + 10);
         CHECK_EQ_INT(r.random, 1);
     }
-    int32_t levels = 0, groups = 0;
+    int32_t levels = 0;
+    int32_t groups = 0;
     for (uint8_t rank = 0; rank < 4; rank++) {
         for (uint32_t total = 0; total <= 24; total++) {
             END_RESULT r = { .rank = rank,
@@ -152,7 +153,9 @@ TEST(all_four_stories_preserve_source_wait_totals_and_complete)
             g_Session.continues_per_scene[2] = (uint16_t)bad;
             g_Session.continues_total = 100;
             Ending_Begin();
-            int32_t duration = 0, stage5_nuls = 0, story_end = 0;
+            int32_t duration = 0;
+            int32_t stage5_nuls = 0;
+            int32_t story_end = 0;
             for (int32_t i = 0; i < f.ending->count; i++) {
                 const ENDING_OPERATION *const op = &f.ending->operations[i];
                 if (op->kind == END_RESULT_LINES) {

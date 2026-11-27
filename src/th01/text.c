@@ -211,7 +211,8 @@ const GAME_TEXT_GLYPH *GameText_Find(
     const GAME_TEXT_FONT *const font, const uint32_t codepoint)
 {
     const uint32_t normalized = M_Normalize(codepoint);
-    int32_t left = 0, right = font->count;
+    int32_t left = 0;
+    int32_t right = font->count;
     while (left < right) {
         const int32_t middle = left + (right - left) / 2;
         const GAME_TEXT_GLYPH *const glyph = &font->glyphs[middle];

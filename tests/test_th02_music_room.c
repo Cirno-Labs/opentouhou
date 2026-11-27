@@ -7,9 +7,18 @@
 typedef struct {
     TEST_MUSIC_VIEW view;
     MUSIC_ROOM_AUDIO_REQUEST audio[8];
-    uint8_t old_playing[8], choices[16], colors[16];
-    int begin_count, end_count, renders, flips, comments, audio_count, tracks;
-    uint8_t drawing, visible;
+    uint8_t old_playing[8];
+    uint8_t choices[16];
+    uint8_t colors[16];
+    int begin_count;
+    int end_count;
+    int renders;
+    int flips;
+    int comments;
+    int audio_count;
+    int tracks;
+    uint8_t drawing;
+    uint8_t visible;
 } FIXTURE;
 
 static void M_Begin(void *const context, const uint8_t selection)
@@ -111,7 +120,8 @@ TEST(up_and_down_redraw_independently_in_source_order)
     MusicRoom_Update(0);
     MusicRoom_Update(GAME_KEY_UP | GAME_KEY_DOWN);
     CHECK_EQ_INT(m_Room.selection, 0);
-    const uint8_t choices[] = { 0, 16, 16, 0 }, colors[] = { 3, 15, 3, 15 };
+    const uint8_t choices[] = { 0, 16, 16, 0 };
+    const uint8_t colors[] = { 3, 15, 3, 15 };
     CHECK_EQ_INT(fixture.tracks, 4);
     CHECK(memcmp(fixture.choices, choices, sizeof(choices)) == 0);
     CHECK(memcmp(fixture.colors, colors, sizeof(colors)) == 0);

@@ -6,7 +6,8 @@
 
 typedef struct {
     uint8_t bytes[4096];
-    size_t size, bit_count;
+    size_t size;
+    size_t bit_count;
 } PI_BUILDER;
 
 static void M_Byte(PI_BUILDER *const file, const uint8_t value)

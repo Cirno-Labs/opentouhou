@@ -17,7 +17,10 @@ typedef enum {
 } MISSILE_FLAG;
 
 typedef struct {
-    int16_t left, top, previous_left, previous_top;
+    int16_t left;
+    int16_t top;
+    int16_t previous_left;
+    int16_t previous_top;
     MATH16_VECTOR velocity;
     int16_t unused;
     int8_t reserved;

@@ -9,9 +9,12 @@
 #include <string.h>
 
 typedef struct {
-    PALETTE white, bright;
-    int16_t left[18], top[18];
-    int16_t frame, scroll;
+    PALETTE white;
+    PALETTE bright;
+    int16_t left[18];
+    int16_t top[18];
+    int16_t frame;
+    int16_t scroll;
     int8_t tint_offset;
     VSYNC_WAIT wait;
     bool waiting;

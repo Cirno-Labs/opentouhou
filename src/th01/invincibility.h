@@ -9,7 +9,9 @@ typedef struct {
 } INVINCIBILITY_ASSETS;
 
 typedef struct {
-    int16_t frame[8], left[8], top[8];
+    int16_t frame[8];
+    int16_t left[8];
+    int16_t top[8];
 } INVINCIBILITY;
 
 // Loads the four masks from the last cels of shape8x8.bmp before simulation;

@@ -6,7 +6,8 @@
 
 // The world state a boss borrows for one call.
 typedef struct {
-    const PTN *miko, *stage;
+    const PTN *miko;
+    const PTN *stage;
     const ROUTE_SELECT_ASSETS *route;
     const TH01_INPUT *raw;
     uint64_t host_tick;

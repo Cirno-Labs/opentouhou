@@ -198,7 +198,8 @@ static RESULT M_Dispatch(PMD_EFFECT_PLAYER *const player)
             "Truncated EFC command %02X", opcode);
         memcpy(parameters, player->work + offset + 1, count_parameters);
         player->position = (uint16_t)(offset + 1 + count_parameters);
-        uint16_t target = 0, counter = 0;
+        uint16_t target = 0;
+        uint16_t counter = 0;
         if (opcode == 0xf9 || opcode == 0xf7) {
             target = M_Word(parameters);
             counter = (uint16_t)(target + 1);

@@ -636,7 +636,8 @@ TEST(disabled_gameplay_preserves_an_existing_opening_fade)
     Sound_Stop();
     Sound_Stop();
     CHECK_EQ_INT(m_Song, 3);
-    static MDRV_FRAME expected[4800], actual[4800];
+    static MDRV_FRAME expected[4800];
+    static MDRV_FRAME actual[4800];
     Mdrv_Render(twin, expected, 4800);
     Mdrv_Render(m_Driver, actual, 4800);
     CHECK(memcmp(expected, actual, sizeof(actual)) == 0);

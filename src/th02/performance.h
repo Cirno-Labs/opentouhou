@@ -6,8 +6,13 @@
 #include "core/base/types.h"
 
 typedef struct {
-    int16_t value, item_skill;
-    uint8_t maximum, total_misses, total_bombs, collected, dropped;
+    int16_t value;
+    int16_t item_skill;
+    uint8_t maximum;
+    uint8_t total_misses;
+    uint8_t total_bombs;
+    uint8_t collected;
+    uint8_t dropped;
 } PERFORMANCE;
 
 extern const PERFORMANCE *const g_Performance;

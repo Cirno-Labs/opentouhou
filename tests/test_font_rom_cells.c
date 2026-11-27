@@ -40,7 +40,8 @@ TEST(raw_rom_cells_keep_all_ank_and_jis_addresses_and_unicode_aliases)
                 CHECK_EQ_INT(half[row], ((code ^ row * 7) & 255) << 8);
             }
         }
-        const int first = (int)(code >> 8), second = (int)(code & 255);
+        const int first = (int)(code >> 8);
+        const int second = (int)(code & 255);
         const bool valid =
             first >= 0x21 && first <= 0x7e && second >= 0x21 && second <= 0x7e;
         const uint16_t *const full = FontRom_Cell(rom, (uint16_t)code, true);
@@ -82,7 +83,8 @@ TEST(bdf_graphics_aliases_borrow_halfwidth_cells)
         "CHARSET_REGISTRY \"JISX0201.1976\"\nENDPROPERTIES\n"
         "CHARS 1\nSTARTCHAR A\nENCODING 65\nBBX 8 1 0 13\n"
         "BITMAP\nA5\nENDCHAR\nENDFONT\n";
-    READER full_reader, half_reader;
+    READER full_reader;
+    READER half_reader;
     Reader_OpenBuffer(&full_reader, full, sizeof(full) - 1, nullptr);
     Reader_OpenBuffer(&half_reader, half, sizeof(half) - 1, nullptr);
     FONT_ROM *rom;

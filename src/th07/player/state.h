@@ -132,8 +132,12 @@ typedef struct {
 // touch it: a box while width is set, else a circle while radius is set.
 // The area is freed at the start of the update after frames_left runs out.
 typedef struct {
-    float x, y, width, height;
-    float radius, radius_growth;
+    float x;
+    float y;
+    float width;
+    float height;
+    float radius;
+    float radius_growth;
     int32_t frames_left;
     ITEM_TYPE item; // what a cleared bullet turns into
 } PLAYER_CLEAR_AREA;
@@ -149,14 +153,18 @@ typedef struct {
         VEC3 hitbox_size;
         VEC3 graze_size;
         VEC3 collect_size; // 12, 12, 5
-        VEC3 hitbox_min, hitbox_max;
-        VEC3 graze_min, graze_max;
-        VEC3 collect_min, collect_max;
+        VEC3 hitbox_min;
+        VEC3 hitbox_max;
+        VEC3 graze_min;
+        VEC3 graze_max;
+        VEC3 collect_min;
+        VEC3 collect_max;
     } box;
 
     struct {
         // Scale the movement during some bombs, else 1.
-        float speed_scale_x, speed_scale_y;
+        float speed_scale_x;
+        float speed_scale_y;
         float last_x; // the horizontal move of the last frame
         float delta_x; // last_x at the game speed
         bool focused;
@@ -231,7 +239,8 @@ typedef struct {
 
     // Hold the shot types of g_GameManager.run.shot_index, unfocused and
     // focused, from the add of the player to its removal.
-    SHOT_TYPE shot_type, shot_type_focused;
+    SHOT_TYPE shot_type;
+    SHOT_TYPE shot_type_focused;
 } PLAYER;
 
 extern PLAYER g_Player;

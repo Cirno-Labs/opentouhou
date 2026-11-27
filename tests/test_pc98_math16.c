@@ -6,7 +6,8 @@ TEST(sine_and_cosine_use_the_stock_integer_angles)
 {
     static const struct {
         int32_t angle;
-        int16_t sine, cosine;
+        int16_t sine;
+        int16_t cosine;
     } cases[] = {
         { 0, 0, 256 },         { 1, 6, 256 },         { 2, 13, 256 },
         { 16, 98, 237 },       { 32, 181, 181 },      { 48, 237, 98 },
@@ -49,7 +50,8 @@ TEST(polar_rounds_negative_products_down_and_wave_truncates)
 TEST(angle_preserves_axes_quadrants_and_lookup_quantization)
 {
     static const struct {
-        int16_t y, x;
+        int16_t y;
+        int16_t x;
         uint8_t angle;
     } cases[] = {
         { 0, 0, 0 },         { 0, 1, 0 },          { 1, 0, 64 },

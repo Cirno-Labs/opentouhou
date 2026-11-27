@@ -3,7 +3,8 @@
 #include <string.h>
 
 typedef struct {
-    uint64_t hi, lo;
+    uint64_t hi;
+    uint64_t lo;
 } WIDE;
 
 static WIDE M_Add(const WIDE a, const WIDE b)

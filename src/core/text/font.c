@@ -74,7 +74,8 @@ static RESULT M_UpdateBoldAdvance(FONT *const font)
         return OK;
     }
     const TTF_FontStyleFlags previous = TTF_GetFontStyle(font->font);
-    int regular, bold;
+    int regular;
+    int bold;
     TTF_SetFontStyle(font->font, TTF_STYLE_NORMAL);
     const bool measured_regular = TTF_GetGlyphMetrics(
         font->font, ' ', nullptr, nullptr, nullptr, nullptr, &regular);

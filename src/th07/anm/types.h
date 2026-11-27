@@ -14,11 +14,20 @@
 // A rectangle of a loaded ANM file's texture.
 typedef struct {
     int32_t slot; // the ANM slot it came from; negative when unused
-    float x0, y0, x1, y1; // pixels, in the texture
-    float texture_width, texture_height;
-    float u0, v0, u1, v1;
-    float width, height; // in the header's pixels
-    float scale_x, scale_y; // texture size over the header's size
+    float x0;
+    float y0;
+    float x1;
+    float y1; // pixels, in the texture
+    float texture_width;
+    float texture_height;
+    float u0;
+    float v0;
+    float u1;
+    float v1;
+    float width;
+    float height; // in the header's pixels
+    float scale_x;
+    float scale_y; // texture size over the header's size
     int32_t id; // the order sprites were loaded in
 } ANM_SPRITE;
 
@@ -86,19 +95,27 @@ typedef struct {
     VEC3 pos_offset; // set instead of pos while use_pos_offset is set
     VEC3 rotation;
     VEC3 rotation_speed;
-    float scale_x, scale_y;
-    float scale_speed_x, scale_speed_y;
-    float uv_scroll_x, uv_scroll_y;
-    float uv_scroll_speed_x, uv_scroll_speed_y;
+    float scale_x;
+    float scale_y;
+    float scale_speed_x;
+    float scale_speed_y;
+    float uv_scroll_x;
+    float uv_scroll_y;
+    float uv_scroll_speed_x;
+    float uv_scroll_speed_y;
 
     // interp_time counts up to interp_length, which is 0 for none.
     TIMER interp_time[ANM_INTERP_COUNT];
     int32_t interp_length[ANM_INTERP_COUNT];
     uint8_t interp_ease[ANM_INTERP_COUNT];
-    VEC3 move_from, move_to;
-    VEC3 rotate_from, rotate_to;
-    VEC2 scale_from, scale_to;
-    uint32_t color_from, color_to;
+    VEC3 move_from;
+    VEC3 move_to;
+    VEC3 rotate_from;
+    VEC3 rotate_to;
+    VEC2 scale_from;
+    VEC2 scale_to;
+    uint32_t color_from;
+    uint32_t color_to;
 
     // Variables 10000-10003, 10008 and 10009, and 10004-10007.
     int32_t int_vars[ANM_INT_VAR_COUNT];
@@ -107,20 +124,29 @@ typedef struct {
     // matrix scales the 256-unit quad to the sprite; draw_matrix adds the
     // VM's scale and rotation; size_matrix maps the quad to the sprite's
     // texture coordinates.
-    MAT4 matrix, draw_matrix, size_matrix;
+    MAT4 matrix;
+    MAT4 draw_matrix;
+    MAT4 size_matrix;
     uint32_t color; // 0xAARRGGBB
     uint32_t color2; // drawn instead of color while use_color2 is set
 
-    bool shown, visible, blend_add, use_pos_offset, z_write_off;
+    bool shown;
+    bool visible;
+    bool blend_add;
+    bool use_pos_offset;
+    bool z_write_off;
     // Make 3D drawing rebuild draw_matrix, unless keep_draw_matrix is set.
-    bool rotation_changed, scale_changed, keep_draw_matrix;
+    bool rotation_changed;
+    bool scale_changed;
+    bool keep_draw_matrix;
     bool stage_camera; // 3D drawing goes through the stage camera
     bool use_color2;
     uint8_t flip; // bit 0 mirrors horizontally, bit 1 vertically
     uint8_t anchor; // bit 0 anchors the left edge, bit 1 the top edge
     int16_t auto_rotate;
 
-    uint8_t font_width, font_height;
+    uint8_t font_width;
+    uint8_t font_height;
 
     // Identifies one presentation lifetime. Exclude it from simulation hashes
     // and saves.

@@ -37,7 +37,8 @@ TEST(wait_keys_preserve_the_original_narrow_group_selection)
 
 TEST(wait_needs_two_clear_release_samples_before_a_new_press_pair)
 {
-    const TH02_INPUT held = { .shot = true }, clear = {};
+    const TH02_INPUT held = { .shot = true };
+    const TH02_INPUT clear = {};
     KEY_WAIT wait;
     GameInput_BeginWait(&wait, &held);
     CHECK(!GameInput_AdvanceWait(&wait, &clear));

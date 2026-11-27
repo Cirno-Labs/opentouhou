@@ -13,7 +13,8 @@ typedef struct {
     char *text;
     VEC3 pos;
     uint32_t color;
-    float scale_x, scale_y;
+    float scale_x;
+    float scale_y;
     bool highlight;
     bool in_arena;
 } ASCII_STRING;
@@ -43,7 +44,8 @@ typedef struct {
     char frame_rate[32];
     bool hide_frame_rate;
     uint32_t color;
-    float scale_x, scale_y;
+    float scale_x;
+    float scale_y;
     bool in_arena;
     bool highlight;
     int32_t next_popup;

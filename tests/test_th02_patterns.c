@@ -3,7 +3,9 @@
 #include "test.h"
 
 typedef struct {
-    size_t allocations, frees, live_bytes;
+    size_t allocations;
+    size_t frees;
+    size_t live_bytes;
 } ALLOCATION_COUNT;
 
 static void *M_Alloc(void *const context, const size_t size)

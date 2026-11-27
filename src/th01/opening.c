@@ -16,10 +16,18 @@ typedef struct {
     PALETTE_FADE fade;
     MENU_INPUT input;
     OPENING_ACTION exit_action;
-    int32_t line_count, line_y[2], prompt_frame;
-    int32_t selection, option_item_count, music_mode, wait;
+    int32_t line_count;
+    int32_t line_y[2];
+    int32_t prompt_frame;
+    int32_t selection;
+    int32_t option_item_count;
+    int32_t music_mode;
+    int32_t wait;
     bool drawn_rows[VIDEO_HEIGHT];
-    bool entering, left_locked[2], right_locked[2], confirm_locked;
+    bool entering;
+    bool left_locked[2];
+    bool right_locked[2];
+    bool confirm_locked;
 } OPENING_MENU;
 
 static OPENING m_Opening;

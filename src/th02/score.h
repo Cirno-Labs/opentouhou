@@ -3,9 +3,14 @@
 #include "core/base/types.h"
 
 typedef struct {
-    int32_t value, delta, highest, reset_unknown;
-    uint16_t transferred, extends;
-    int8_t lives, bombs;
+    int32_t value;
+    int32_t delta;
+    int32_t highest;
+    int32_t reset_unknown;
+    uint16_t transferred;
+    uint16_t extends;
+    int8_t lives;
+    int8_t bombs;
     uint8_t highest_continues;
 } SCORE;
 

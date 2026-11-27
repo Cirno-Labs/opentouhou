@@ -38,7 +38,8 @@ static bool M_BossUpdate(
 typedef struct {
     B05_ASSETS assets;
     GAME_TEXT_FONT font;
-    PTN stage, miko;
+    PTN stage;
+    PTN miko;
     SCENE_DATA cache[3];
     ROUTE_SELECT_ASSETS route_assets;
 

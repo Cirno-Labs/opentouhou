@@ -7,7 +7,8 @@
 #include "pc98/vsync.h"
 
 typedef struct {
-    uint16_t count1, count2;
+    uint16_t count1;
+    uint16_t count2;
     uint64_t edges;
 } VSYNC_COUNTERS;
 

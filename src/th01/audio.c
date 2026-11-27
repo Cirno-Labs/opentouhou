@@ -9,7 +9,8 @@ struct GAME_AUDIO {
     AUDIO_LIVE *input;
     MDRV_FRAME raw[M_BLOCK_FRAMES];
     float buses[2][M_BLOCK_FRAMES * 2];
-    float previous_input[2][2], previous_output[2][2];
+    float previous_input[2][2];
+    float previous_output[2][2];
 };
 
 RESULT GameAudio_Prepare(

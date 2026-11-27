@@ -35,14 +35,26 @@ typedef enum {
 
 typedef struct {
     int16_t left;
-    bool deflecting, sliding, is_hit, invincible, invincible_against_orb;
-    int16_t invincibility_time, remaining_bombs;
+    bool deflecting;
+    bool sliding;
+    bool is_hit;
+    bool invincible;
+    bool invincible_against_orb;
+    int16_t invincibility_time;
+    int16_t remaining_bombs;
     bool bomb_damaging;
     uint32_t bomb_frame;
-    int8_t dash_cycle, mode_frame, mode, dash_direction, bomb_flag;
+    int8_t dash_cycle;
+    int8_t mode_frame;
+    int8_t mode;
+    int8_t dash_direction;
+    int8_t bomb_flag;
     // Horizontal input direction, or PLAYER_SPECIAL | PLAYER_FACING.
-    int8_t submode, previous_ptn, deflect_duration;
-    bool bombing, combo_enabled;
+    int8_t submode;
+    int8_t previous_ptn;
+    int8_t deflect_duration;
+    bool bombing;
+    bool combo_enabled;
 } PLAYER;
 
 // Keeps the suspended bomb branch. Zero-initialize before its first use.
@@ -53,7 +65,8 @@ typedef struct {
 
 typedef struct {
     const PTN *miko;
-    const BOS *miko_ac, *miko_ac2;
+    const BOS *miko_ac;
+    const BOS *miko_ac2;
 } PLAYER_SPRITES;
 
 extern const PLAYER *const g_Player;

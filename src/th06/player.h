@@ -105,7 +105,10 @@ typedef struct {
 // Holds a box of the bomb, centered on x and y, that clears the enemy
 // bullets that touch it. The box is unused while width is 0.
 typedef struct {
-    float x, y, width, height;
+    float x;
+    float y;
+    float width;
+    float height;
 } PLAYER_CLEAR_AREA;
 
 typedef struct {
@@ -118,17 +121,22 @@ typedef struct {
     struct {
         VEC3 hitbox_size;
         VEC3 graze_size;
-        VEC3 hitbox_min, hitbox_max;
-        VEC3 graze_min, graze_max;
+        VEC3 hitbox_min;
+        VEC3 hitbox_max;
+        VEC3 graze_min;
+        VEC3 graze_max;
     } box;
 
     struct {
         // Hold the speeds of the shot type. The diagonal speeds are the
         // straight speeds divided by sqrtf(2).
-        float speed, speed_focused;
-        float speed_diagonal, speed_diagonal_focused;
+        float speed;
+        float speed_focused;
+        float speed_diagonal;
+        float speed_diagonal_focused;
         // Scale the movement: 0.3 during the bomb of Marisa B, else 1.
-        float speed_scale_x, speed_scale_y;
+        float speed_scale_x;
+        float speed_scale_y;
         float last_x; // the horizontal move of the last frame
         bool focused;
     } move;

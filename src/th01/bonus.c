@@ -20,7 +20,8 @@ typedef enum {
 
 typedef struct {
     BONUS_PHASE phase;
-    int16_t stage_number, row;
+    int16_t stage_number;
+    int16_t row;
     bool waiting;
 } BONUS_RUN;
 
@@ -48,7 +49,13 @@ typedef struct {
     BONUS_TOTAL_PHASE phase;
     uint64_t last_tick;
     uint32_t credit;
-    int16_t stage_number, digits[6], top, metric, place, digit_count, spin;
+    int16_t stage_number;
+    int16_t digits[6];
+    int16_t top;
+    int16_t metric;
+    int16_t place;
+    int16_t digit_count;
+    int16_t spin;
 } BONUS_TOTAL;
 
 static BONUS m_Bonus;

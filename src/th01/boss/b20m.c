@@ -24,57 +24,115 @@
 #include <string.h>
 
 typedef struct {
-    BOS shield, wand, dress;
-    GRC vortex, bird, cross, splash;
-    PI_IMAGE lower, upper, backgrounds[6];
+    BOS shield;
+    BOS wand;
+    BOS dress;
+    GRC vortex;
+    GRC bird;
+    GRC cross;
+    GRC splash;
+    PI_IMAGE lower;
+    PI_IMAGE upper;
+    PI_IMAGE backgrounds[6];
     const INTERLEAVE_ASSETS *interleave;
-    const uint8_t *star, *flake, *spark, *leaf_left, *leaf_right;
+    const uint8_t *star;
+    const uint8_t *flake;
+    const uint8_t *spark;
+    const uint8_t *leaf_left;
+    const uint8_t *leaf_right;
 } B20M_ASSETS;
 
 typedef struct {
-    double left[30], top[30], velocity_x[30], velocity_y[30];
-    int8_t reserved[30], hatch_time[30], hatch_frames[30];
+    double left[30];
+    double top[30];
+    double velocity_x[30];
+    double velocity_y[30];
+    int8_t reserved[30];
+    int8_t hatch_time[30];
+    int8_t hatch_frames[30];
     bool alive[30];
 } B20M_BIRDS;
 typedef struct {
-    double left[30], top[30], velocity[30];
+    double left[30];
+    double top[30];
+    double velocity[30];
     int8_t color[30];
 } B20M_PARTICLES;
 typedef struct {
-    int16_t left[30], top[30], velocity[30], age[30];
+    int16_t left[30];
+    int16_t top[30];
+    int16_t velocity[30];
+    int16_t age[30];
     int8_t color[30];
 } B20M_WAVES;
 typedef struct {
-    int16_t left[30], top[30], velocity_x[30], velocity_y[30], flag[30];
+    int16_t left[30];
+    int16_t top[30];
+    int16_t velocity_x[30];
+    int16_t velocity_y[30];
+    int16_t flag[30];
 } B20M_LEAVES;
 typedef struct {
-    int16_t x, y, velocity_x, velocity_y, image, previous_image;
+    int16_t x;
+    int16_t y;
+    int16_t velocity_x;
+    int16_t velocity_y;
+    int16_t image;
+    int16_t previous_image;
 } B20M_RAYS;
 typedef struct {
-    int16_t x, y, speed, subpattern;
+    int16_t x;
+    int16_t y;
+    int16_t speed;
+    int16_t subpattern;
     uint8_t angle;
 } B20M_SPRAY;
 typedef struct {
-    int16_t left[2], top[2], previous_left[2], previous_top[2];
+    int16_t left[2];
+    int16_t top[2];
+    int16_t previous_left[2];
+    int16_t previous_top[2];
 } B20M_VORTICES;
 typedef struct {
-    int16_t x[10], y[10];
-    int16_t origin_x, origin_y, velocity_x, velocity_y, target;
+    int16_t x[10];
+    int16_t y[10];
+    int16_t origin_x;
+    int16_t origin_y;
+    int16_t velocity_x;
+    int16_t velocity_y;
+    int16_t target;
 } B20M_LASER;
 typedef struct {
-    int16_t left[30], top[30], alive;
+    int16_t left[30];
+    int16_t top[30];
+    int16_t alive;
 } B20M_EGGS;
 typedef struct {
-    int16_t left, top, velocity_x, velocity_y;
+    int16_t left;
+    int16_t top;
+    int16_t velocity_x;
+    int16_t velocity_y;
 } B20M_SPAWNER;
 typedef struct {
-    int16_t state, left, top, velocity_x, velocity_y;
+    int16_t state;
+    int16_t left;
+    int16_t top;
+    int16_t velocity_x;
+    int16_t velocity_y;
 } B20M_FLAKE;
 typedef struct {
-    int16_t left, top, radius_outer_1, radius_outer_2, radius_inner;
+    int16_t left;
+    int16_t top;
+    int16_t radius_outer_1;
+    int16_t radius_outer_2;
+    int16_t radius_inner;
 } B20M_STAR;
 typedef struct {
-    int16_t x, y, offset, color, id;
+    int16_t x;
+    int16_t y;
+    int16_t offset;
+    int16_t color;
+    int16_t id;
 } B20M_GUST;
 typedef enum {
     B20M_PHASE_START = 0,
@@ -108,15 +166,20 @@ typedef enum {
 
 typedef struct {
     BOSS_ENTITY shield;
-    BOSS_ANIMATION dress, wand;
+    BOSS_ANIMATION dress;
+    BOSS_ANIMATION wand;
     BOSS_HIT hit;
-    PALETTE boss_palette, stage_palette;
+    PALETTE boss_palette;
+    PALETTE stage_palette;
     uint8_t wand_background[128 * 96];
     B20M_BIRDS birds;
-    B20M_PARTICLES vertical, horizontal;
+    B20M_PARTICLES vertical;
+    B20M_PARTICLES horizontal;
     B20M_WAVES waves;
     B20M_LEAVES leaves;
-    B20M_RAYS bird_rays, stack_rays, seal_rays;
+    B20M_RAYS bird_rays;
+    B20M_RAYS stack_rays;
+    B20M_RAYS seal_rays;
     B20M_SPRAY sprays[2];
     B20M_VORTICES vortices;
     B20M_LASER laser;
@@ -126,16 +189,30 @@ typedef struct {
     B20M_STAR star;
     B20M_GUST gust;
     BOSS_STATE status;
-    int16_t pattern, pattern_state, patterns_done, patterns_until_next;
-    int16_t entrance_radius, wand_frame, bird_pellet_group;
-    int16_t ray_previous_x, ray_previous_y;
-    int16_t dotted_radius, rings_interval, scroll_line;
+    int16_t pattern;
+    int16_t pattern_state;
+    int16_t patterns_done;
+    int16_t patterns_until_next;
+    int16_t entrance_radius;
+    int16_t wand_frame;
+    int16_t bird_pellet_group;
+    int16_t ray_previous_x;
+    int16_t ray_previous_y;
+    int16_t dotted_radius;
+    int16_t rings_interval;
+    int16_t scroll_line;
     WAIT wait;
     uint8_t rings_angle, radial_angle, radial_velocity, sequence,
         sequence_stage, resume_stage;
     int8_t call_phase;
-    bool vortex_wand_done, bird_wand_done, direction_first, direction_second;
-    bool hp_bar_filled, dotted_active, entrance_active, finished;
+    bool vortex_wand_done;
+    bool bird_wand_done;
+    bool direction_first;
+    bool direction_second;
+    bool hp_bar_filled;
+    bool dotted_active;
+    bool entrance_active;
+    bool finished;
 } B20M;
 
 typedef enum {
@@ -608,7 +685,8 @@ static bool M_BirdsUpdate(const B20M_ASSETS *const assets, const uint64_t tick)
         if (!birds->alive[i]) {
             continue;
         }
-        const int16_t x = M_Pixel(birds->left[i]), y = M_Pixel(birds->top[i]);
+        const int16_t x = M_Pixel(birds->left[i]);
+        const int16_t y = M_Pixel(birds->top[i]);
         if (birds->hatch_time[i] > 0) {
             M_Grc(
                 assets, x, y, 1,
@@ -627,7 +705,8 @@ static bool M_BirdsUpdate(const B20M_ASSETS *const assets, const uint64_t tick)
         }
         birds->left[i] = M_Add(birds->left[i], birds->velocity_x[i]);
         birds->top[i] = M_Add(birds->top[i], birds->velocity_y[i]);
-        const int16_t x = M_Pixel(birds->left[i]), y = M_Pixel(birds->top[i]);
+        const int16_t x = M_Pixel(birds->left[i]);
+        const int16_t y = M_Pixel(birds->top[i]);
         if (birds->left[i] < 0 || birds->left[i] > 639 || birds->top[i] < 0
             || birds->top[i] > 399) {
             M_Erase(assets, x, y);
@@ -1300,7 +1379,9 @@ static void M_FourLasers(const B20M_ASSETS *const assets)
     if (m_B20M.status.frame < 50) {
         return;
     }
-    int16_t x = 0, y = 0, target = 0;
+    int16_t x = 0;
+    int16_t y = 0;
+    int16_t target = 0;
     int32_t laser = -1;
     if (m_B20M.status.frame == 50) {
         x = 460;
@@ -1514,7 +1595,10 @@ static void M_SymmetricBirds(const B20M_ASSETS *const assets)
 }
 static void M_Semicircles(const B20M_ASSETS *const assets)
 {
-    int32_t count = 0, angle = 0, step = 0, speed = 0;
+    int32_t count = 0;
+    int32_t angle = 0;
+    int32_t step = 0;
+    int32_t speed = 0;
     if (m_B20M.status.frame == 50) {
         count = 20;
         step = 7;

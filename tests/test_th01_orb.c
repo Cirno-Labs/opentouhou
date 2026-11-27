@@ -100,7 +100,8 @@ TEST(top_force_preserves_the_sign_of_zero)
 TEST(surface_rng_draws_twice_and_second_can_override_left)
 {
     static const struct {
-        uint32_t seed, after;
+        uint32_t seed;
+        uint32_t after;
         ORB_VELOCITY_X velocity;
     } cases[] = {
         { 0, 22695478, ORB_X_LEFT_4 },

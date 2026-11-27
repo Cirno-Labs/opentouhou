@@ -36,7 +36,8 @@ typedef struct {
 typedef struct {
     SCENE scene; // of Scene_GetRequested
     bool replay_stages[9]; // of Replay_HasStage, during playback
-    int32_t spell_captures, spell_attempts;
+    int32_t spell_captures;
+    int32_t spell_attempts;
 } GUI_FAKE;
 
 extern GUI_CALLS g_GuiCalls;

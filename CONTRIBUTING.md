@@ -77,6 +77,8 @@ Rules:
 - Reset a global or module variable with `memset`, then assign its
   non-zero fields, never with a compound literal: MinGW builds the
   literal on the stack, and a large struct overflows it.
+- One declaration per statement: `int16_t x;` and `int16_t y;`, never
+  `int16_t x, y;`.
 - Comments are `//` only.
 - In a header, a blank line comes before each commented function
   declaration, so that every documented function stands apart.

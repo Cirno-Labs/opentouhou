@@ -139,25 +139,44 @@ typedef struct {
 } M_GL;
 
 typedef struct {
-    GLuint framebuffer, color, depth;
-    int32_t width, height;
+    GLuint framebuffer;
+    GLuint color;
+    GLuint depth;
+    int32_t width;
+    int32_t height;
     bool drawn;
 } M_TARGET;
 
 typedef struct {
-    GLint view, projection, output;
-    GLint texture, palette, indexed, textured, color_add, alpha_test;
-    GLint fog, fog_range, fog_color;
+    GLint view;
+    GLint projection;
+    GLint output;
+    GLint texture;
+    GLint palette;
+    GLint indexed;
+    GLint textured;
+    GLint color_add;
+    GLint alpha_test;
+    GLint fog;
+    GLint fog_range;
+    GLint fog_color;
 } M_LOCATIONS;
 
 typedef struct {
     M_GL gl;
     bool es;
-    GLuint program, vertex_array, vertex_buffer, index_buffer, rect_buffer;
-    int32_t index_quads, rect_quads;
+    GLuint program;
+    GLuint vertex_array;
+    GLuint vertex_buffer;
+    GLuint index_buffer;
+    GLuint rect_buffer;
+    int32_t index_quads;
+    int32_t rect_quads;
     GLuint samplers[M_SAMPLER_COUNT];
     M_LOCATIONS locations;
-    M_TARGET screen, output, history;
+    M_TARGET screen;
+    M_TARGET output;
+    M_TARGET history;
     M_TARGET *target;
     GFX_PASS pass;
     GFX_PASS_OUTPUT pass_output;
@@ -167,7 +186,8 @@ typedef struct {
 } M_BACKEND;
 
 typedef struct {
-    GLuint pixels, palette;
+    GLuint pixels;
+    GLuint palette;
 } M_TEXTURE;
 
 static M_BACKEND m_Backend;

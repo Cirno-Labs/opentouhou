@@ -9,7 +9,10 @@
 
 // A rectangle in play-area pixels.
 typedef struct {
-    float x, y, width, height;
+    float x;
+    float y;
+    float width;
+    float height;
 } PLAY_RECT;
 
 // Holds the state of the game being played. The original keeps lives,

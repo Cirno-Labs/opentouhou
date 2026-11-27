@@ -18,7 +18,8 @@ typedef enum {
 
 typedef struct {
     WAIT_KIND kind;
-    uint16_t count, measure;
+    uint16_t count;
+    uint16_t measure;
     KEY_WAIT key;
     PALETTE_FADE fade;
     uint8_t key_frames;

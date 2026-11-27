@@ -39,7 +39,8 @@ TEST(fractional_delays_include_the_final_empty_frame)
     INTERLEAVE_ASSETS assets = {};
     PALETTE_STATE palette;
     Palette_Init(&palette);
-    PALETTE current = {}, target = {};
+    PALETTE current = {};
+    PALETTE target = {};
     target.colors[0][0] = 15;
     Transition_Init();
     CHECK(!Transition_BeginDiagonal(
@@ -80,7 +81,8 @@ TEST(live_target_mutation_and_large_tick_gap)
     INTERLEAVE_ASSETS assets = {};
     PALETTE_STATE palette;
     Palette_Init(&palette);
-    PALETTE current = {}, target = {};
+    PALETTE current = {};
+    PALETTE target = {};
     target.colors[2][1] = 15;
     Transition_Init();
     CHECK(!Transition_BeginDiagonal(

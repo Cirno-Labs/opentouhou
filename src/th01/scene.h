@@ -10,7 +10,8 @@
 typedef struct {
     STAGE_DATA layouts;
     uint8_t id;
-    char background[8], music[8];
+    char background[8];
+    char music[8];
 } SCENE_DATA;
 
 // Clears the selected scene for a new gameplay session.

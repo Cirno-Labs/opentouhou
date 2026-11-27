@@ -11,9 +11,15 @@
 #define HUD_RESOURCE_CAPACITY 32
 
 typedef struct {
-    uint8_t *lives, *bombs, *numbers, *stage, *timer;
-    uint32_t score_previous, high_previous;
-    int16_t combo_previous, max_previous;
+    uint8_t *lives;
+    uint8_t *bombs;
+    uint8_t *numbers;
+    uint8_t *stage;
+    uint8_t *timer;
+    uint32_t score_previous;
+    uint32_t high_previous;
+    int16_t combo_previous;
+    int16_t max_previous;
     uint8_t maximum_combo;
     bool force_numbers;
     const GRF *mask;

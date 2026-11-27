@@ -24,9 +24,13 @@ typedef struct {
     GAMEPLAY_SEQUENCE sequence;
     VSYNC_WAIT wait;
     bool wait_for_shot;
-    bool boss_stage, waiting, bgm_started;
-    uint8_t menu_selection, animation_frame;
-    int16_t gameover_left[5], gameover_top[5];
+    bool boss_stage;
+    bool waiting;
+    bool bgm_started;
+    uint8_t menu_selection;
+    uint8_t animation_frame;
+    int16_t gameover_left[5];
+    int16_t gameover_top[5];
     bool gameover_clipped[5];
     uint16_t continue_frame;
     // Ignores confirm at Continue until released, with fix_debouncing.

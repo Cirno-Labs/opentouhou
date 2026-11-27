@@ -22,12 +22,23 @@
     } while (0)
 
 typedef struct {
-    uint8_t mask, algorithm;
-    uint8_t dt_mul[4], tl[4], ks_ar[4], am_dr[4], sr[4], sl_rr[4];
+    uint8_t mask;
+    uint8_t algorithm;
+    uint8_t dt_mul[4];
+    uint8_t tl[4];
+    uint8_t ks_ar[4];
+    uint8_t am_dr[4];
+    uint8_t sr[4];
+    uint8_t sl_rr[4];
 } M_FM_PROGRAM;
 
 typedef struct {
-    uint8_t initial, attack, decay, sustain, sustain_rate, release;
+    uint8_t initial;
+    uint8_t attack;
+    uint8_t decay;
+    uint8_t sustain;
+    uint8_t sustain_rate;
+    uint8_t release;
 } M_SSG_PROGRAM;
 
 typedef struct {
@@ -37,30 +48,64 @@ typedef struct {
 } M_SONG;
 
 typedef struct {
-    uint8_t speed, depth, step, delay, phase, depth_work, delay_work;
-    bool enabled, ramp;
+    uint8_t speed;
+    uint8_t depth;
+    uint8_t step;
+    uint8_t delay;
+    uint8_t phase;
+    uint8_t depth_work;
+    uint8_t delay_work;
+    bool enabled;
+    bool ramp;
 } M_LFO;
 
 typedef struct {
-    uint16_t pitch, portamento;
-    uint8_t volume, attenuation, program, pan, hardware_lfo;
-    uint8_t algorithm, mask, tl[4], octave, noise_mode, previous_volume;
-    uint8_t envelope_step, envelope_wait, envelope_target, envelope_level;
+    uint16_t pitch;
+    uint16_t portamento;
+    uint8_t volume;
+    uint8_t attenuation;
+    uint8_t program;
+    uint8_t pan;
+    uint8_t hardware_lfo;
+    uint8_t algorithm;
+    uint8_t mask;
+    uint8_t tl[4];
+    uint8_t octave;
+    uint8_t noise_mode;
+    uint8_t previous_volume;
+    uint8_t envelope_step;
+    uint8_t envelope_wait;
+    uint8_t envelope_target;
+    uint8_t envelope_level;
     uint8_t envelope_stage;
-    int8_t detune, transpose;
-    bool envelope, portamento_enabled;
-    M_LFO pitch_lfo, volume_lfo;
+    int8_t detune;
+    int8_t transpose;
+    bool envelope;
+    bool portamento_enabled;
+    M_LFO pitch_lfo;
+    M_LFO volume_lfo;
 } M_VOICE;
 
 // Holds one track's parser state. channel is the physical slot: FM 80..85,
 // PCM 20, rhythm 10 and SSG 40..42. suppressed masks the ordinary output of
 // a music SSG track while an effect holds its channel.
 typedef struct {
-    uint32_t position, remaining, gate_remaining;
+    uint32_t position;
+    uint32_t remaining;
+    uint32_t gate_remaining;
     uint32_t return_position, repeat_one_start, repeat_one_end,
         repeat_two_start;
-    uint8_t channel, gate, repeat_one_count, repeat_two_count;
-    bool active, key_on, legato, repeat_one, repeat_two, suppressed, effect;
+    uint8_t channel;
+    uint8_t gate;
+    uint8_t repeat_one_count;
+    uint8_t repeat_two_count;
+    bool active;
+    bool key_on;
+    bool legato;
+    bool repeat_one;
+    bool repeat_two;
+    bool suppressed;
+    bool effect;
 } M_TRACK;
 
 // Plays music when music is set and effects otherwise, on a private copy of
@@ -70,8 +115,10 @@ typedef struct {
     M_TRACK *tracks;
     uint8_t *work;
     size_t work_size;
-    uint32_t commands_start, commands_end;
-    uint16_t track_count, capacity;
+    uint32_t commands_start;
+    uint32_t commands_end;
+    uint16_t track_count;
+    uint16_t capacity;
     uint8_t effect_counter;
     bool playing;
 } M_SEQUENCE;
@@ -79,15 +126,26 @@ typedef struct {
 struct MDRV {
     OPNA *chip;
     M_SONG *songs;
-    size_t song_count, song;
+    size_t song_count;
+    size_t song;
     const MDRV_EFFECTS *effects;
     M_SSG_PROGRAM *effect_programs;
-    M_SEQUENCE music_sequence, effect_sequence;
-    M_VOICE music[10], effect[3];
+    M_SEQUENCE music_sequence;
+    M_SEQUENCE effect_sequence;
+    M_VOICE music[10];
+    M_VOICE effect[3];
     M_SSG_PROGRAM patterns[6];
-    uint8_t registers[512], rhythm[6], music_mixer, music_noise;
-    uint8_t fm_balance, rhythm_balance;
-    uint8_t timer_b, fade_interval, fade_counter, fade_direction, fade_amount;
+    uint8_t registers[512];
+    uint8_t rhythm[6];
+    uint8_t music_mixer;
+    uint8_t music_noise;
+    uint8_t fm_balance;
+    uint8_t rhythm_balance;
+    uint8_t timer_b;
+    uint8_t fade_interval;
+    uint8_t fade_counter;
+    uint8_t fade_direction;
+    uint8_t fade_amount;
     bool fading;
 };
 

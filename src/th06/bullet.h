@@ -140,8 +140,10 @@ typedef struct {
     int16_t type;
     int16_t color;
     VEC3 pos;
-    float angle1, angle2;
-    float speed1, speed2;
+    float angle1;
+    float angle2;
+    float speed1;
+    float speed2;
     // Hold the values of the flags (see BULLET_FLAG). For a laser,
     // ex_floats hold the start offset, the end offset, the maximum length
     // and the width; ex_ints hold the frames of the start, of the firing
@@ -171,7 +173,8 @@ typedef struct {
     ANM_VM origin; // the glow at the start; only drawing reads it
     VEC3 pos;
     float angle;
-    float start_offset, end_offset;
+    float start_offset;
+    float end_offset;
     float max_length;
     float width;
     float speed;

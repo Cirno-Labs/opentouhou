@@ -17,15 +17,21 @@
 // replay traces will settle it later.
 
 typedef struct {
-    float x, y;
+    float x;
+    float y;
 } VEC2;
 
 typedef struct {
-    float x, y, z;
+    float x;
+    float y;
+    float z;
 } VEC3;
 
 typedef struct {
-    float x, y, z, w;
+    float x;
+    float y;
+    float z;
+    float w;
 } VEC4;
 
 // Row-major, row-vector, like D3D: a point transforms as v * m, and
@@ -38,7 +44,12 @@ typedef struct {
 // A D3DVIEWPORT8 (x, y, width, height in pixels; min_z and max_z the depth
 // range, usually 0 and 1).
 typedef struct {
-    float x, y, width, height, min_z, max_z;
+    float x;
+    float y;
+    float width;
+    float height;
+    float min_z;
+    float max_z;
 } VIEWPORT;
 
 VEC3 Vec3_Add(VEC3 a, VEC3 b);

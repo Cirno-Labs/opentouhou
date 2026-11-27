@@ -8,11 +8,23 @@
 #include <string.h>
 
 typedef struct {
-    int32_t origin_left, origin_y, start_left, start_y;
-    int32_t cursor_left, cursor_y, step_x, step_y;
-    int16_t length, tail_speed, extend_speed, age, detach_age;
-    uint8_t color, width_mask;
-    bool alive, damaging;
+    int32_t origin_left;
+    int32_t origin_y;
+    int32_t start_left;
+    int32_t start_y;
+    int32_t cursor_left;
+    int32_t cursor_y;
+    int32_t step_x;
+    int32_t step_y;
+    int16_t length;
+    int16_t tail_speed;
+    int16_t extend_speed;
+    int16_t age;
+    int16_t detach_age;
+    uint8_t color;
+    uint8_t width_mask;
+    bool alive;
+    bool damaging;
 } SHOOTOUT_LASER;
 
 typedef struct {

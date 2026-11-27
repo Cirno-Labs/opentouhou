@@ -187,7 +187,8 @@ TEST(assets_share_an_arena_and_survive_reader_close)
     bytes[88] = 0x23;
     ARENA arena;
     Arena_Init(&arena, "BFNT assets", 1024);
-    BFNT first, second;
+    BFNT first;
+    BFNT second;
     CHECK(Result_Log(
         M_Load(bytes, sizeof(bytes), &arena, &first), LOG_LEVEL_ERROR));
     CHECK(Result_Log(

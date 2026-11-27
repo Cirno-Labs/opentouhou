@@ -82,7 +82,9 @@ static void M_Close(FIXTURE *const fixture)
 
 TEST(headless_render_and_failed_preparation_preserve_timeline)
 {
-    FIXTURE fixture, reference, fresh;
+    FIXTURE fixture;
+    FIXTURE reference;
+    FIXTURE fresh;
     M_Init(&fixture);
     M_Init(&reference);
     M_Init(&fresh);
@@ -92,7 +94,10 @@ TEST(headless_render_and_failed_preparation_preserve_timeline)
     CHECK(output == nullptr);
     GameAudio_Free(output);
     CHECK(Result_Ignore(GameAudio_Render(nullptr, fixture.pmd, 1600)));
-    OPNA_FRAME skipped[1600], actual[800], expected[800], beginning[800];
+    OPNA_FRAME skipped[1600];
+    OPNA_FRAME actual[800];
+    OPNA_FRAME expected[800];
+    OPNA_FRAME beginning[800];
     Pmd_Render(reference.pmd, skipped, ARRAY_SIZE(skipped));
     Pmd_Render(fixture.pmd, actual, ARRAY_SIZE(actual));
     Pmd_Render(reference.pmd, expected, ARRAY_SIZE(expected));
@@ -107,7 +112,8 @@ TEST(headless_render_and_failed_preparation_preserve_timeline)
 TEST(shared_pcm_reaches_mixer_with_gain_and_continuous_filter_history)
 {
     CHECK(Result_Ignore(Audio_Init()));
-    FIXTURE actual, reference;
+    FIXTURE actual;
+    FIXTURE reference;
     M_Init(&actual);
     M_Init(&reference);
     GAME_AUDIO *output;
@@ -115,8 +121,10 @@ TEST(shared_pcm_reaches_mixer_with_gain_and_continuous_filter_history)
         GameAudio_Prepare(Arena_Allocator(&actual.arena), &output)));
     CHECK(Result_Ignore(Audio_SetMasterVolume(0.5f)));
     CHECK(Result_Ignore(Audio_SetGroupVolume(AUDIO_GROUP_MUSIC, 0.25f)));
-    float previous_input[2] = {}, previous_output[2] = {};
-    bool fm = false, ssg = false;
+    float previous_input[2] = {};
+    float previous_output[2] = {};
+    bool fm = false;
+    bool ssg = false;
     const size_t counts[] = { 0, 1, 17, 1600, 139, 900, 800 };
     for (size_t block = 0; block < ARRAY_SIZE(counts); block++) {
         const size_t count = counts[block];
@@ -160,7 +168,8 @@ TEST(synthetic_music_and_effect_pcm_is_stable_through_fades_and_restarts)
     FIXTURE fixture;
     M_Init(&fixture);
     uint64_t hash = 14695981039346656037ULL;
-    bool fm = false, ssg = false;
+    bool fm = false;
+    bool ssg = false;
     for (size_t tick = 0; tick < 120; tick++) {
         if (tick == 30) {
             Pmd_Fade(fixture.pmd, 5);

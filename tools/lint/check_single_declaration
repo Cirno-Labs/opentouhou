@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""Fail when one statement declares several variables or fields.
+
+Takes the paths of C files. A declaration such as `int16_t x, y;` or
+`bool seen = false, done = false;` names one declarator per statement
+instead, so that each has its own line and its own comment. --fix splits
+them, repeating the type for each declarator.
+"""
+
+import argparse
+import re
+import sys
+from pathlib import Path
+
+QUALIFIERS = r"(?:(?:static|const|volatile|extern|unsigned|signed|struct|enum|union) )*"
+TYPE = r"[A-Za-z_][A-Za-z0-9_]*"
+DECLARATION = re.compile(
+    rf"^(?P<indent>\s*)(?P<type>{QUALIFIERS}{TYPE}(?: const)?) "
+    r"(?P<rest>\**[A-Za-z_][A-Za-z0-9_]*.*);(?P<tail>\s*(?://.*)?)$"
+)
+NOT_TYPES = {"return", "goto", "case", "else", "typedef", "sizeof", "do"}
+
+
+def split_top_level(text: str) -> list[str]:
+    """Split text at commas outside brackets, braces and parentheses."""
+    parts, depth, start, quote = [], 0, 0, None
+    for index, char in enumerate(text):
+        if quote:
+            if char == quote and text[index - 1] != "\\":
+                quote = None
+        elif char in "'\"":
+            quote = char
+        elif char in "([{":
+            depth += 1
+        elif char in ")]}":
+            depth -= 1
+        elif char == "," and depth == 0:
+            parts.append(text[start:index].strip())
+            start = index + 1
+    parts.append(text[start:].strip())
+    return parts
+
+
+def declarators(line: str) -> tuple[str, str, list[str], str] | None:
+    """Return the parts of a multiple declaration on line, or None."""
+    if line.rstrip().endswith("\\"):
+        return None
+    match = DECLARATION.match(line)
+    if not match:
+        return None
+    type_name = match["type"].split()[-1]
+    if type_name in NOT_TYPES or match["type"].split()[0] in NOT_TYPES:
+        return None
+    parts = split_top_level(match["rest"])
+    if len(parts) < 2:
+        return None
+    name = re.compile(r"^\**[A-Za-z_][A-Za-z0-9_]*(\[[^\]]*\])*(\s*=.*)?$")
+    if not all(name.match(part) for part in parts):
+        return None
+    return match["indent"], match["type"], parts, match["tail"]
+
+
+def fix(lines: list[str]) -> list[str]:
+    """Return lines with each multiple declaration split."""
+    out = []
+    for line in lines:
+        found = declarators(line)
+        if found is None:
+            out.append(line)
+            continue
+        indent, type_text, parts, tail = found
+        for index, part in enumerate(parts):
+            end = tail if index == len(parts) - 1 else ""
+            out.append(f"{indent}{type_text} {part};{end}")
+    return out
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fix", action="store_true")
+    parser.add_argument("paths", nargs="*")
+    args = parser.parse_args(argv)
+    failed = False
+    for name in args.paths:
+        path = Path(name)
+        text = path.read_text(encoding="utf-8")
+        lines = text.splitlines()
+        if args.fix:
+            fixed = fix(lines)
+            if fixed != lines:
+                path.write_text("\n".join(fixed) + "\n", encoding="utf-8")
+            continue
+        for index, line in enumerate(lines):
+            if declarators(line) is not None:
+                print(f"{name}:{index + 1}: one declaration per statement")
+                failed = True
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

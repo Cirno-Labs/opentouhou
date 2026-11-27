@@ -221,7 +221,8 @@ TEST(names_out_of_range_fail_the_read)
 {
     static const struct {
         uint8_t opcode;
-        int16_t who, index;
+        int16_t who;
+        int16_t index;
         bool good;
     } cases[] = {
         { GUI_MSG_OP_PORTRAIT_SCRIPT, 2, 0, false },
@@ -339,7 +340,8 @@ TEST(the_last_stages_set_the_spell_background)
 {
     static const struct {
         int32_t stage;
-        int32_t offset, count;
+        int32_t offset;
+        int32_t count;
     } cases[] = { { 6, 2, 0 }, { 7, 1, 2 }, { 8, 2, 0 } };
     for (size_t i = 0; i < 3; i++) {
         MSG_BUILDER msg;
@@ -767,8 +769,11 @@ TEST(the_scene_instruction_goes_on_to_the_next_stage)
 TEST(the_scene_instruction_picks_the_scene_by_mode)
 {
     static const struct {
-        int32_t stage, difficulty;
-        bool practice, replay, has_next;
+        int32_t stage;
+        int32_t difficulty;
+        bool practice;
+        bool replay;
+        bool has_next;
         SCENE scene;
         bool cleared;
     } cases[] = {

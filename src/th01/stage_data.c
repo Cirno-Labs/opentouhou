@@ -9,7 +9,9 @@ RESULT StageData_Load(
     *out = (STAGE_DATA) {};
     MUST(Reader_Result(reader));
     FAIL_IF(Reader_Remaining(reader) < 22 + 5 * 250, "Truncated stage data");
-    uint8_t magic[5], bgm_name[8], grf_name[8];
+    uint8_t magic[5];
+    uint8_t bgm_name[8];
+    uint8_t grf_name[8];
     Reader_ReadBytes(reader, magic, sizeof(magic));
     Reader_ReadI8(reader);
     Reader_ReadBytes(reader, bgm_name, sizeof(bgm_name));

@@ -11,10 +11,14 @@
 #define PARTICLES_COUNT 40
 
 typedef struct {
-    int16_t spawn_interval, velocity_max;
-    int16_t x[PARTICLES_COUNT], y[PARTICLES_COUNT];
-    int16_t velocity_x[PARTICLES_COUNT], velocity_y[PARTICLES_COUNT];
-    uint8_t alive[PARTICLES_COUNT], velocity_base[PARTICLES_COUNT];
+    int16_t spawn_interval;
+    int16_t velocity_max;
+    int16_t x[PARTICLES_COUNT];
+    int16_t y[PARTICLES_COUNT];
+    int16_t velocity_x[PARTICLES_COUNT];
+    int16_t velocity_y[PARTICLES_COUNT];
+    uint8_t alive[PARTICLES_COUNT];
+    uint8_t velocity_base[PARTICLES_COUNT];
     uint8_t cycle;
 } PARTICLES;
 

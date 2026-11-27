@@ -163,7 +163,8 @@ TEST(tied_previous_note_keeps_envelope_and_rest_enters_release)
     FIXTURE fixture;
     M_Init(&fixture);
     M_Begin(&fixture, 1);
-    const uint8_t volume[] = { 15 }, envelope[] = { 0, 0, 1, 1 };
+    const uint8_t volume[] = { 15 };
+    const uint8_t envelope[] = { 0, 0, 1, 1 };
     MusicSsg_Command(&fixture.ssg, 6, 0, 0xfd, volume);
     MusicSsg_Command(&fixture.ssg, 6, 0, 0xf0, envelope);
     M_Note(&fixture, 0x40, 2, false, true);
@@ -196,7 +197,8 @@ TEST(noise_and_mixer_are_shared_and_a_masked_part_keeps_global_noise_commands)
     for (uint8_t masked = 0; masked < 2; masked++) {
         FIXTURE fixture;
         M_Init(&fixture);
-        const uint8_t pattern[] = { 0x38 }, noise[] = { 5 };
+        const uint8_t pattern[] = { 0x38 };
+        const uint8_t noise[] = { 5 };
         MusicSsg_Begin(&fixture.ssg, 6, masked, 1);
         MusicSsg_Command(&fixture.ssg, 6, masked, 0xed, pattern);
         MusicSsg_Command(&fixture.ssg, 6, masked, 0xee, noise);
@@ -236,7 +238,8 @@ TEST(ssg_portamento_uses_period_differences_and_distributes_the_remainder)
 TEST(detune_clamps_and_extended_negative_rounding_follow_word_arithmetic)
 {
     static const struct {
-        uint8_t detune[2], note;
+        uint8_t detune[2];
+        uint8_t note;
         bool extended;
         uint16_t period;
     } cases[] = {

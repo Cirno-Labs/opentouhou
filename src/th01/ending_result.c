@@ -29,7 +29,8 @@ void Ending_Clear(void)
 
 void Ending_CalculateTitle(END_RESULT *const r)
 {
-    int32_t score, highest;
+    int32_t score;
+    int32_t highest;
     memcpy(&score, &r->score, sizeof(score));
     memcpy(&highest, &r->highest_score, sizeof(highest));
     int32_t skill = 0;

@@ -92,7 +92,8 @@ typedef struct {
         // Hold the bar sections that ECL sets, as fractions of the bar;
         // unused while start is 0. A section shows from end up to start.
         struct {
-            float start, end;
+            float start;
+            float end;
             int32_t color;
         } sections[GUI_BOSS_SECTION_COUNT];
     } boss;
@@ -110,9 +111,18 @@ typedef struct {
 
     struct {
         ANM_VM titles[GUI_TITLE_COUNT]; // of the stage and its songs
-        ANM_VM bomb_portrait, bomb_glow, bomb_frame, bomb_name, bomb_bar;
-        ANM_VM spell_portrait, spell_glow, spell_frame, spell_name, spell_bar;
-        ANM_VM spell_score_bar, spell_score_digit;
+        ANM_VM bomb_portrait;
+        ANM_VM bomb_glow;
+        ANM_VM bomb_frame;
+        ANM_VM bomb_name;
+        ANM_VM bomb_bar;
+        ANM_VM spell_portrait;
+        ANM_VM spell_glow;
+        ANM_VM spell_frame;
+        ANM_VM spell_name;
+        ANM_VM spell_bar;
+        ANM_VM spell_score_bar;
+        ANM_VM spell_score_digit;
     } banners;
 
     // Holds the screens between stages. Each sprite shows while it is not

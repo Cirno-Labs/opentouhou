@@ -3,8 +3,10 @@
 #include "pc98/pmd/registers.h"
 
 typedef struct {
-    uint16_t frequency, glide;
-    int16_t glide_step, glide_remainder;
+    uint16_t frequency;
+    uint16_t glide;
+    int16_t glide_step;
+    int16_t glide_remainder;
     uint8_t note;
 } PMD_PITCH;
 

@@ -653,7 +653,8 @@ static CHAIN_STATUS M_Draw(void *const arg)
         if (!laser->active) {
             continue;
         }
-        float sine, cosine;
+        float sine;
+        float cosine;
         X87_SinCos(laser->angle, &sine, &cosine);
         const float length = (laser->end_offset - laser->start_offset) / 2.0f
             + laser->start_offset;

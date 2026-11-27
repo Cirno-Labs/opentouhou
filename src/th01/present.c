@@ -8,7 +8,8 @@
 #include <string.h>
 
 static GFX_TEXTURE *m_TextTexture;
-static uint8_t *m_UploadedText, *m_ScrolledPage;
+static uint8_t *m_UploadedText;
+static uint8_t *m_ScrolledPage;
 static GFX_TEXTURE *m_Pages[2];
 static uint8_t *m_UploadedPages[2];
 static GFX_COLOR m_UploadedPalette[16];

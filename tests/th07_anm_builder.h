@@ -13,7 +13,10 @@
 
 typedef struct {
     int32_t id;
-    float x, y, w, h;
+    float x;
+    float y;
+    float w;
+    float h;
 } ANM_BUILDER_SPRITE;
 
 typedef struct {
@@ -23,12 +26,17 @@ typedef struct {
 } ANM_BUILDER_SCRIPT;
 
 typedef struct {
-    int32_t width, height, format, version;
+    int32_t width;
+    int32_t height;
+    int32_t format;
+    int32_t version;
     uint32_t color_key;
     const char *name; // "@" for a blank texture; nullptr for none
     const char *alpha_name; // nullptr for none
     // The stored image, while image_pixels is not nullptr.
-    int16_t image_format, image_width, image_height;
+    int16_t image_format;
+    int16_t image_width;
+    int16_t image_height;
     const uint8_t *image_pixels;
     size_t image_size;
     ANM_BUILDER_SPRITE sprites[ANM_BUILDER_MAX_SPRITES];

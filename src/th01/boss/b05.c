@@ -16,7 +16,9 @@
 #include <string.h>
 
 typedef struct {
-    BOS sphere, flash, person;
+    BOS sphere;
+    BOS flash;
+    BOS person;
     PI_IMAGE background;
     PALETTE palette;
 } B05_ASSETS;
@@ -38,13 +40,19 @@ typedef enum {
 } B05_PHASE;
 
 typedef struct {
-    BOSS_ENTITY sphere, flash, person;
+    BOSS_ENTITY sphere;
+    BOSS_ENTITY flash;
+    BOSS_ENTITY person;
     BOSS_HIT hit;
-    PALETTE boss_palette, post_defeat;
+    PALETTE boss_palette;
+    PALETTE post_defeat;
     BOSS_DEFEAT defeat;
     BOSS_STATE status;
-    int16_t pattern, pattern_state;
-    int16_t velocity_x, velocity_y, rotation_interval;
+    int16_t pattern;
+    int16_t pattern_state;
+    int16_t velocity_x;
+    int16_t velocity_y;
+    int16_t rotation_interval;
     uint8_t angle;
     int8_t direction;
     bool hp_bar_filled;

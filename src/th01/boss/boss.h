@@ -17,7 +17,8 @@ typedef enum {
 } BOSS;
 
 typedef struct {
-    int16_t hp, frame;
+    int16_t hp;
+    int16_t frame;
     int8_t phase;
 } BOSS_STATE;
 

@@ -21,8 +21,12 @@ typedef enum {
 } TH02_MUSIC;
 
 typedef struct {
-    int32_t difficulty, music, bombs, lives;
-    bool reduce_effects, fix_bomb_transition_overread;
+    int32_t difficulty;
+    int32_t music;
+    int32_t bombs;
+    int32_t lives;
+    bool reduce_effects;
+    bool fix_bomb_transition_overread;
 } TH02_SETTINGS;
 
 // The config.ini schema; lives holds spare lives, shown as lives + 1.

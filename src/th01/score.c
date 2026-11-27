@@ -20,7 +20,12 @@ typedef struct {
     VSYNC_WAIT wait;
     SCORE_CONTEXT context;
     SCORE_PHASE phase;
-    int32_t rank, place, row, column, cursor, inputs;
+    int32_t rank;
+    int32_t place;
+    int32_t row;
+    int32_t column;
+    int32_t cursor;
+    int32_t inputs;
     char slots[8][9];
 } SCORE_SCENE;
 
@@ -115,7 +120,8 @@ static void M_EntryScore(
 static void M_Alphabet(
     const int32_t row, const int32_t column, const bool selected)
 {
-    const int32_t left = 32 + column * 32, top = 240 + row * 24;
+    const int32_t left = 32 + column * 32;
+    const int32_t top = 240 + row * 24;
     Video_Restore16((GFX_RECT) { left, top, 32, 16 });
     char text[9];
     M_Cell(row, column, text);

@@ -45,7 +45,9 @@
 // graze box records where an item was.
 
 typedef struct {
-    VEC3 pos, size, origin;
+    VEC3 pos;
+    VEC3 size;
+    VEC3 origin;
     float angle;
     bool can_graze;
 } M_LASER_HIT;

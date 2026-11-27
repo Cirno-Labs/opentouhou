@@ -20,7 +20,8 @@ typedef struct {
     TTF_Text *text;
     M_CLUSTER *clusters;
     int32_t count;
-    int32_t width, height;
+    int32_t width;
+    int32_t height;
 } M_RUN;
 
 static TTF_TextEngine m_Engine = { .version = sizeof(TTF_TextEngine) };

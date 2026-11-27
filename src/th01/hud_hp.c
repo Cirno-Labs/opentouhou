@@ -6,7 +6,8 @@
 
 typedef struct {
     uint8_t *backgrounds;
-    uint16_t first_redwhite, first_white;
+    uint16_t first_redwhite;
+    uint16_t first_white;
 } HUD_HP;
 
 static HUD_HP m_Health;

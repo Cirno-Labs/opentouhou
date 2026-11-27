@@ -853,7 +853,8 @@ static void M_StickValue(
         } else if (binding.device == INPUT_DEVICE_GAMEPAD) {
             if (filter == INPUT_DEVICE_COUNT
                 || filter == INPUT_DEVICE_GAMEPAD) {
-                int x_axis, y_axis;
+                int x_axis;
+                int y_axis;
                 M_GamepadStickAxes(binding.codes[0], &x_axis, &y_axis);
                 for (size_t j = 0; j < devices->controller_count; j++) {
                     const INPUT_CONTROLLER_STATE *const state =
@@ -935,7 +936,8 @@ static void M_UpdatePlayer(
             }
             *(bool *)M_FieldAt(out, action->offset) = down;
         } else {
-            float x, y;
+            float x;
+            float y;
             M_StickValue(input, devices, bindings, player, filter, &x, &y);
             *(float *)M_FieldAt(out, action->offset) = x;
             *(float *)M_FieldAt(out, action->offset + sizeof(float)) = y;
