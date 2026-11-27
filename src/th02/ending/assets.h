@@ -1,0 +1,113 @@
+#pragma once
+
+#include "pc98/zun/pi.h"
+#include "th02/draw.h"
+#include "th02/gaiji.h"
+#include "th02/patterns.h"
+
+#include "core/gfx/types.h"
+#include "core/vfs.h"
+
+typedef enum {
+    ENDING_IMAGE_STORY_1,
+    ENDING_IMAGE_STORY_2,
+    ENDING_IMAGE_STORY_3,
+    ENDING_IMAGE_STORY_4,
+    ENDING_IMAGE_STORY_5,
+    ENDING_IMAGE_CREDITS_1,
+    ENDING_IMAGE_CREDITS_2,
+    ENDING_IMAGE_CREDITS_3,
+    ENDING_IMAGE_VERDICT,
+    ENDING_IMAGE_ALL_CLEAR,
+    ENDING_IMAGE_EXTRA_UNLOCK,
+    ENDING_IMAGE_EXTRA_CLEAR,
+    ENDING_IMAGE_COUNT,
+} ENDING_IMAGE;
+
+typedef enum {
+    ENDING_COLOR_CREDITS_1_B,
+    ENDING_COLOR_CREDITS_1_C,
+    ENDING_COLOR_CREDITS_2_A,
+    ENDING_COLOR_CREDITS_2_B,
+    ENDING_COLOR_CREDITS_3_A,
+    ENDING_COLOR_CREDITS_3_B,
+    ENDING_COLOR_CREDITS_3_C,
+    ENDING_COLOR_STORY_3,
+    ENDING_COLOR_COUNT,
+} ENDING_COLOR;
+
+typedef struct {
+    uint8_t bytes[48];
+    uint8_t size;
+} ENDING_COLOR_DATA;
+
+typedef struct {
+    PI_IMAGE images[ENDING_IMAGE_COUNT];
+    ENDING_COLOR_DATA colors[ENDING_COLOR_COUNT];
+    ALLOCATOR allocator;
+} ENDING_IMAGES;
+
+#define ENDING_TEXT_LINE_BYTES 44
+
+typedef struct {
+    const DRAW_TEXT *lines;
+    uint16_t count;
+} ENDING_TEXT_SCRIPT;
+
+typedef enum {
+    ENDING_LABEL_VERSION,
+    ENDING_LABEL_CREDITS_TITLE,
+    ENDING_LABEL_PROGRAM,
+    ENDING_LABEL_GRAPHICS_1,
+    ENDING_LABEL_GRAPHICS_2,
+    ENDING_LABEL_GRAPHICS_3,
+    ENDING_LABEL_MUSIC,
+    ENDING_LABEL_TESTERS_1,
+    ENDING_LABEL_TESTERS_2,
+    ENDING_LABEL_TESTERS_3,
+    ENDING_LABEL_TESTERS_4,
+    ENDING_LABEL_TESTERS_5,
+    ENDING_LABEL_THANK_YOU,
+    ENDING_LABEL_SCORE,
+    ENDING_LABEL_CONTINUES,
+    ENDING_LABEL_RANK,
+    ENDING_LABEL_START_LIVES,
+    ENDING_LABEL_START_BOMBS,
+    ENDING_LABEL_SKILL,
+    ENDING_LABEL_COPYRIGHT,
+    ENDING_LABEL_COUNT,
+} ENDING_LABEL;
+
+typedef struct {
+    DRAW_TEXT text[ENDING_LABEL_COUNT];
+    uint8_t ranks[4][8];
+} ENDING_LABELS;
+
+#define ENDING_REVEAL_STEPS 3
+
+typedef struct {
+    uint16_t rows[ENDING_REVEAL_STEPS][16];
+} ENDING_REVEAL_MASKS;
+
+typedef enum {
+    ENDING_STORY_BAD,
+    ENDING_STORY_GOOD,
+    ENDING_STORY_COUNT,
+} ENDING_STORY;
+
+typedef struct {
+    ENDING_IMAGES images;
+    PATTERN_BANK title;
+    GFX_COLOR title_palette[16];
+    GAIJI gaiji;
+    ENDING_LABELS labels;
+    ENDING_REVEAL_MASKS masks;
+    ENDING_TEXT_SCRIPT story[ENDING_STORY_COUNT];
+    ENDING_TEXT_SCRIPT verdict[ENDING_STORY_COUNT];
+} ENDING_ASSETS;
+
+// Loads the ending into the allocator group, which must outlive every
+// scene; discard the group on failure.
+RESULT EndingAssets_Load(
+    VFS *files, const DRAW_TEXT_FONT *font, const ALLOCATOR *allocator,
+    ENDING_ASSETS *out);
