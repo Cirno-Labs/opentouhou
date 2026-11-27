@@ -1,11 +1,11 @@
-#include "th02/clip.h"
-
+#include "th02/clip_private.h"
 #include "th02/video.h"
 
 #include <string.h>
 
 static CLIP m_Clip;
 const CLIP *const g_Clip = &m_Clip;
+CLIP *const p_Clip = &m_Clip;
 
 static RESULT M_ClipAxis(
     const int16_t a, const int16_t b, const int16_t maximum, int16_t *const low,
