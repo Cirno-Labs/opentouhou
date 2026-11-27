@@ -513,3 +513,15 @@ test(
   ),
   suite: 'unit',
 )
+test(
+  'th02/opening',
+  executable(
+    'test_th02_opening',
+    'test_th02_opening.c',
+    c_args: [layer_include['th02'], layer_include['pc98'], layer_include['shell']] + core_include + tests_include,
+    implicit_include_directories: false,
+    link_with: [th02_lib, core_io_lib, core_vfs_lib, core_hash_lib, core_base_lib],
+    dependencies: [pc98_dep, sdl3],
+  ),
+  suite: 'unit',
+)

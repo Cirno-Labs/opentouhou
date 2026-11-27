@@ -25,6 +25,10 @@ typedef struct {
 // Resets the track, renderer and animation, once at startup.
 void MusicRoom_Init(void);
 
+// Resets the room's input state between visits, keeping the playing
+// track.
+void MusicRoom_Reset(void);
+
 // Enters the room, clearing the input state and keeping the playing
 // track and the renderer's animation.
 void MusicRoom_Begin(

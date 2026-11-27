@@ -96,6 +96,8 @@ th02_lib = static_library(
   'music_room/logic.c',
   'music_room/render.c',
   'music/wait.c',
+  'opening/assets.c',
+  'opening/logic.c',
   'options_menu/logic.c',
   'options_menu/render.c',
   'palette.c',
