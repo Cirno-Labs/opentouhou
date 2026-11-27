@@ -70,6 +70,8 @@ th02_lib = static_library(
   'high_scores/file.c',
   'high_scores/format.c',
   'session.c',
+  'shot_select/logic.c',
+  'shot_select/render.c',
   'settings.c',
   'sound_effects.c',
   'text_font.c',
