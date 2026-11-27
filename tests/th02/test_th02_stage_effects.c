@@ -26,7 +26,7 @@ static PLAYFIELD_PAGES M_Pages(const uint8_t back, const uint8_t front)
 static void M_Init(FIXTURE *const f, const uint8_t stage)
 {
     Sparks_Init();
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     memset(&m_Rng, 0, sizeof(m_Rng));
     memset(f, 0, sizeof(*f));
     Video_Init(&g_HeapAllocator);
@@ -66,7 +66,7 @@ TEST(weather_waits_for_activation_and_keeps_persistent_state_between_stages)
     CHECK_EQ_INT(g_Sparks->acceleration_x, -1);
     CHECK_EQ_INT(g_Clip->left, 32);
     CHECK_EQ_INT(g_Clip->right, 416);
-    CHECK_EQ_INT(m_Palette.colors[14][0], 224);
+    CHECK_EQ_INT(p_Palette->colors[14][0], 224);
     m_StageEffects.vortex_frame = 900;
     m_StageEffects.particles[0].state = ENTITY_ACTIVE;
     StageEffects_ResetStage(1);
@@ -124,13 +124,13 @@ TEST(full_weather_pool_consumes_spawn_position_without_consuming_speed)
     M_Update(&f, 1, false, M_Pages(0, 1));
     CHECK_EQ_INT(m_Rng.cursor, 2);
     CHECK_EQ_INT(m_StageEffects.lightning_next, 120);
-    CHECK_EQ_INT(m_Palette.tone, 100);
+    CHECK_EQ_INT(p_Palette->tone, 100);
     m_StageEffects.lightning_next = 65532;
     m_StageEffects.lightning_frame = 65531;
     m_StageEffects.rain_frame = 0;
     M_Update(&f, 1, false, M_Pages(0, 1));
     CHECK_EQ_INT(m_Rng.cursor, 2);
-    CHECK_EQ_INT(m_Palette.tone, 100);
+    CHECK_EQ_INT(p_Palette->tone, 100);
     M_Free();
 }
 
@@ -149,7 +149,7 @@ TEST(vortex_runs_sound_shake_palette_and_slowdown_at_original_boundaries)
             CHECK_EQ_INT(f.slowdown, 1);
         } else if (frame == 169) {
             CHECK_EQ_INT(f.slowdown, 3);
-            CHECK_EQ_INT(m_Palette.tone, 170);
+            CHECK_EQ_INT(p_Palette->tone, 170);
             CHECK_EQ_INT(g_Video.first_lines, 1);
             CHECK_EQ_INT(g_Video.first_address, 15961);
             CHECK_EQ_INT(g_Video.second_address, 1);
@@ -157,9 +157,9 @@ TEST(vortex_runs_sound_shake_palette_and_slowdown_at_original_boundaries)
             CHECK_EQ_INT(f.slowdown, 1);
             CHECK_EQ_INT(m_StageEffects.radius, 0);
             CHECK_EQ_INT(m_StageEffects.angle, 1);
-            CHECK_EQ_INT(m_Palette.colors[0][0], 100);
+            CHECK_EQ_INT(p_Palette->colors[0][0], 100);
         } else if (frame == 600) {
-            CHECK_EQ_INT(m_Palette.colors[0][2], 100);
+            CHECK_EQ_INT(p_Palette->colors[0][2], 100);
         }
     }
     CHECK_EQ_INT(m_StageEffects.vortex_frame, 200);
@@ -278,7 +278,7 @@ static uint64_t M_HashState(const FIXTURE *const f, uint64_t hash)
         g_Clip->top,
         g_Clip->right,
         g_Clip->bottom,
-        m_Palette.tone,
+        p_Palette->tone,
         g_Grcg->mode,
         g_Video.first_lines,
         g_Video.first_address,
@@ -319,7 +319,7 @@ static uint64_t M_HashState(const FIXTURE *const f, uint64_t hash)
     }
     for (size_t i = 0; i < 16; i++) {
         for (size_t channel = 0; channel < 3; channel++) {
-            hash = M_HashValue(hash, m_Palette.colors[i][channel]);
+            hash = M_HashValue(hash, p_Palette->colors[i][channel]);
         }
     }
     hash = M_HashValue(hash, m_Rng.seed);

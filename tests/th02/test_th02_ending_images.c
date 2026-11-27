@@ -259,17 +259,17 @@ TEST(drawing_and_palette_changes_are_separate_and_keep_live_state)
     }
 
     Palette_Init();
-    m_Palette.tone = 76;
+    p_Palette->tone = 76;
     EndingImages_ApplyPalette(&images, ENDING_IMAGE_CREDITS_3);
-    memset(m_Palette.colors, 0x23, sizeof(m_Palette.colors));
+    memset(p_Palette->colors, 0x23, sizeof(p_Palette->colors));
     images.colors[0].size = 3;
     memcpy(images.colors[0].bytes, (uint8_t[]) { 2, 0x1a, 0xe2 }, 3);
     EndingImages_Recolor(&images, ENDING_COLOR_CREDITS_1_B);
-    CHECK_EQ_INT(m_Palette.colors[0][0], 0x22);
-    CHECK_EQ_INT(m_Palette.colors[0][1], 0xba);
-    CHECK_EQ_INT(m_Palette.colors[0][2], 0xe2);
-    CHECK_EQ_INT(m_Palette.colors[1][0], 0x33);
-    CHECK_EQ_INT(m_Palette.tone, 76);
+    CHECK_EQ_INT(p_Palette->colors[0][0], 0x22);
+    CHECK_EQ_INT(p_Palette->colors[0][1], 0xba);
+    CHECK_EQ_INT(p_Palette->colors[0][2], 0xe2);
+    CHECK_EQ_INT(p_Palette->colors[1][0], 0x33);
+    CHECK_EQ_INT(p_Palette->tone, 76);
     CHECK_EQ_INT(g_Video.drawing_page, 1);
     CHECK_EQ_INT(g_Video.visible_page, 0);
     CHECK_EQ_INT(g_Video.first_lines, 200);

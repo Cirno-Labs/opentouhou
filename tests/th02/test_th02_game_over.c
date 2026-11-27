@@ -12,12 +12,12 @@ typedef struct {
 
 static void M_Begin(FIXTURE *const f)
 {
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     Tram_Init();
     memset(&g_VSync, 0, sizeof(g_VSync));
     memset(f, 0, sizeof(*f));
     f->session.rank = 1;
-    m_Palette.tone = 100;
+    p_Palette->tone = 100;
     g_VSync.count2 = 65520;
     GameOver_Begin(&f->session);
 }
@@ -41,14 +41,14 @@ TEST(overlays_and_animation_wait_before_accepting_held_input)
 {
     FIXTURE f;
     M_Begin(&f);
-    CHECK_EQ_INT(m_Palette.tone, 100);
+    CHECK_EQ_INT(p_Palette->tone, 100);
     for (size_t frame = 0; frame < 124; frame++) {
         CHECK_EQ_INT(GameOver_Update(GAME_KEY_SHOT), GAME_OVER_WAIT);
         const GAME_OVER saved = m_GameOver;
         CHECK_EQ_INT(GameOver_Update(GAME_KEY_SHOT), GAME_OVER_WAIT);
         CHECK(memcmp(&saved, &m_GameOver, sizeof(saved)) == 0);
         const GAME_OVER_EVENT event = M_Frame(GAME_KEY_SHOT);
-        CHECK_EQ_INT(m_Palette.tone, frame < 41 ? 100 : 50);
+        CHECK_EQ_INT(p_Palette->tone, frame < 41 ? 100 : 50);
         CHECK_EQ_INT(event, frame == 123 ? GAME_OVER_NAME : GAME_OVER_WAIT);
     }
     CHECK_EQ_INT(g_VSync.count2, 108);
@@ -93,6 +93,6 @@ TEST(extra_and_three_used_credits_skip_the_prompt)
         M_Register();
         GameOver_Resume();
         CHECK_EQ_INT(GameOver_Update(GAME_KEY_SHOT), GAME_OVER_EXIT);
-        CHECK_EQ_INT(m_Palette.tone, 50);
+        CHECK_EQ_INT(p_Palette->tone, 50);
     }
 }

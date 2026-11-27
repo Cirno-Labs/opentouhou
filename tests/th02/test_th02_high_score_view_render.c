@@ -16,7 +16,7 @@ typedef struct {
 
 static void M_Init(FIXTURE *const fixture)
 {
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     Tram_Init();
     memset(fixture, 0, sizeof(*fixture));
     Video_Init(&g_HeapAllocator);
@@ -26,7 +26,7 @@ static void M_Init(FIXTURE *const fixture)
     Clip_Reset();
     Grcg_Init();
     Palette_Init();
-    m_Palette.tone = 50;
+    p_Palette->tone = 50;
     HighScores_Defaults(&fixture->scores);
     for (int i = 0; i < 16; i++) {
         fixture->assets.palette[i] = (GFX_COLOR) { i * 17, 0, 0, 255 };
@@ -46,7 +46,7 @@ TEST(begin_preserves_hidden_memory_and_shows_the_inclusive_purple_rectangle)
         &fixture.scores, &fixture.settings, &fixture.assets);
     CHECK_EQ_INT(g_Video.drawing_page, 0);
     CHECK_EQ_INT(g_Video.visible_page, 1);
-    CHECK_EQ_INT(m_Palette.tone, 50);
+    CHECK_EQ_INT(p_Palette->tone, 50);
     CHECK_EQ_INT(g_Clip->left, 128);
     CHECK_EQ_INT(g_Clip->right, 512);
     CHECK_EQ_INT(g_Clip->top, 96);

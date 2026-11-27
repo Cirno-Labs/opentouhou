@@ -236,7 +236,7 @@ TEST(stage_one_midboss_enters_through_live_modules_and_activates_weather)
         StageScroll_Pages(), g_Stage->index, g_Stage->reduce_effects,
         &p_Stage->world.slowdown);
     CHECK_EQ_INT(g_StageEffects->storm_frame, 2);
-    CHECK_EQ_INT(m_Palette.colors[8][0], 176);
+    CHECK_EQ_INT(p_Palette->colors[8][0], 176);
     m_StageEffects.storm_frame = 527;
     StageEffects_Update(
         StageScroll_Pages(), g_Stage->index, g_Stage->reduce_effects,

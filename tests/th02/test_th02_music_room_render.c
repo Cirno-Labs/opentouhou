@@ -19,7 +19,7 @@ typedef struct {
 
 static FIXTURE *M_Init(void)
 {
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     FIXTURE *const fixture = calloc(1, sizeof(*fixture));
     CHECK(fixture != nullptr);
     Video_Init(&g_HeapAllocator);
@@ -82,7 +82,7 @@ TEST(begin_composes_both_pages_and_keeps_the_initial_page_marker)
     CHECK_EQ_INT(g_Video.drawing_page, 0);
     CHECK_EQ_INT(g_Video.visible_page, 0);
     CHECK_EQ_INT(TestMusicRoomRender_State()->logical_page, 1);
-    CHECK_EQ_INT(m_Palette.tone, 100);
+    CHECK_EQ_INT(p_Palette->tone, 100);
     CHECK_EQ_INT(g_Video.palette[15].red, 255);
     CHECK_EQ_INT(TestMusicRoomRender_State()->seed, 42);
     CHECK(!TestMusicRoomRender_State()->polygons.initialized);

@@ -14,7 +14,7 @@ typedef struct {
 
 static void M_Init(FIXTURE *const f)
 {
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     memset(&g_VSync, 0, sizeof(g_VSync));
     memset(f, 0, sizeof(*f));
     StageBonus_Init();
@@ -46,7 +46,7 @@ TEST(bonus_awards_once_then_waits_for_counted_release_and_press)
     CHECK_EQ_INT(m_Score.transferred, 17);
     CHECK_EQ_INT(m_Score.lives, 5);
     TestSound_Check(&f.sound, 8);
-    CHECK_EQ_INT(m_Palette.tone, 62);
+    CHECK_EQ_INT(p_Palette->tone, 62);
     for (unsigned i = 0; i < 8; i++) {
         CHECK(!StageBonus_Update(&held));
     }
@@ -76,7 +76,7 @@ TEST(bonus_awards_once_then_waits_for_counted_release_and_press)
     CHECK_EQ_INT(m_Score.delta, 2710);
     CHECK_EQ_INT(m_Score.transferred, 17);
     TestSound_Check(&f.sound, -1);
-    CHECK_EQ_INT(m_Palette.tone, 62);
+    CHECK_EQ_INT(p_Palette->tone, 62);
     CHECK_EQ_INT(m_Bonus.waits, 1);
     for (unsigned i = 0; i < 6; i++) {
         VSyncIrq_VSync();

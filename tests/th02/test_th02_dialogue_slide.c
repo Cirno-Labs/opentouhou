@@ -24,7 +24,7 @@ typedef struct {
 
 static void M_Init(FIXTURE *const fixture)
 {
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     Grcg_Init();
     Stage_Init();
     Tram_Init();
@@ -58,7 +58,7 @@ static void M_Init(FIXTURE *const fixture)
     m_Player.option_sprite = 74;
     p_Stage->scroll.front = 1;
     Palette_Init();
-    m_Palette.tone = 70;
+    p_Palette->tone = 70;
     Score_Init();
     m_Score.value = 99900;
     m_Score.delta = 200;
@@ -92,7 +92,7 @@ TEST(entry_grants_retained_delta_before_palette_pages_and_the_first_frame)
     const PLAYER player = m_Player;
     const STAGE_SCROLL scroll = g_Stage->scroll;
     CHECK_EQ_INT(g_Video.drawing_page, 0);
-    CHECK_EQ_INT(m_Palette.tone, 70);
+    CHECK_EQ_INT(p_Palette->tone, 70);
     DIALOGUE_SLIDE slide;
     DialogueSlide_BeginEnter(&slide, &fixture.patterns);
     CHECK_EQ_INT(m_Score.value, 100100);
@@ -104,7 +104,7 @@ TEST(entry_grants_retained_delta_before_palette_pages_and_the_first_frame)
     CHECK_EQ_INT(m_Tram.codes[6 * TRAM_COLUMNS + 58], 0x2157);
     CHECK_EQ_INT(m_Tram.codes[4 * TRAM_COLUMNS + 58], 0x2157);
     CHECK_EQ_INT(m_Tram.codes[17 * TRAM_COLUMNS + 70], 0x0256);
-    CHECK_EQ_INT(m_Palette.tone, 100);
+    CHECK_EQ_INT(p_Palette->tone, 100);
     CHECK_EQ_INT(g_Video.drawing_page, 1);
     CHECK_EQ_INT(g_Video.visible_page, 0);
     CHECK_EQ_INT(g_Video.first_lines, 400);
@@ -162,7 +162,7 @@ TEST(leave_keeps_palette_and_score_and_selects_the_live_back_page_at_completion)
     FIXTURE fixture;
     M_Init(&fixture);
     const SCORE score = *g_Score;
-    const PALETTE_STATE before_palette = m_Palette;
+    const PALETTE_STATE before_palette = (*p_Palette);
     p_Stage->scroll.back = p_Stage->scroll.front;
     p_Background->cache.mode = TILE_DISABLED;
     DIALOGUE_SLIDE slide = {};
@@ -172,6 +172,6 @@ TEST(leave_keeps_palette_and_score_and_selects_the_live_back_page_at_completion)
     CHECK_EQ_INT(p_Background->cache.mode, TILE_DISABLED);
     CHECK_EQ_INT(g_Video.drawing_page, 1);
     CHECK(memcmp(g_Score, &score, sizeof(score)) == 0);
-    CHECK(memcmp(&m_Palette, &before_palette, sizeof(before_palette)) == 0);
+    CHECK(memcmp(p_Palette, &before_palette, sizeof(before_palette)) == 0);
     M_Free(&fixture);
 }

@@ -66,7 +66,7 @@ TEST(bonus_render_composes_palette_score_hud_and_ordered_sound_requests)
     memset(&m_Tram, 0x5a, sizeof(m_Tram));
 
     Palette_Init();
-    const PALETTE_STATE before = m_Palette;
+    const PALETTE_STATE before = (*p_Palette);
     memset(&g_Video, 0, sizeof(g_Video));
     g_Video.drawing_page = 1;
     g_Video.visible_page = 1;
@@ -88,9 +88,10 @@ TEST(bonus_render_composes_palette_score_hud_and_ordered_sound_requests)
     CHECK_EQ_INT(m_Score.value, 112499);
     TestSound_Check(&sound, 8);
     TestSound_Free(&sound);
-    CHECK_EQ_INT(m_Palette.tone, 62);
+    CHECK_EQ_INT(p_Palette->tone, 62);
     CHECK(
-        memcmp(m_Palette.colors, before.colors, sizeof(m_Palette.colors)) == 0);
+        memcmp(p_Palette->colors, before.colors, sizeof(p_Palette->colors))
+        == 0);
     CHECK_EQ_INT(g_Video.palette[15].red, 102);
     CHECK_EQ_INT(g_Video.drawing_page, 1);
     CHECK_EQ_INT(g_Video.visible_page, 1);

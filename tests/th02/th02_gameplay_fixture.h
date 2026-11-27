@@ -55,7 +55,7 @@ static inline void TestGameplay_FixtureInit(FIXTURE *const fixture)
     TestStageFlow_Boss(nullptr);
     TestBossExplosion_Observe(nullptr);
     SoundEffects_Init(nullptr);
-    memset((PALETTE_STATE *)g_Palette, 0, sizeof(*g_Palette));
+    memset(p_Palette, 0, sizeof(*p_Palette));
     Grcg_Init();
     Tram_Init();
     memset(&g_VSync, 0, sizeof(g_VSync));

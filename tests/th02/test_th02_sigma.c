@@ -123,7 +123,7 @@ TEST(sigma_entry_borrows_cached_sprites_and_resets_only_its_owned_state)
     const uint8_t *const startup = g->assets.patterns.entries[0].data;
     const uint8_t *const owner = f.assets.patterns.entries[128].data;
     const GFX_COLOR dac = g_Video.palette[0];
-    m_Palette.tone = 77;
+    p_Palette->tone = 77;
     Sigma_SelectPatterns(&g->assets.patterns, &assets);
     CHECK(g->assets.patterns.entries[0].data == startup);
     CHECK(f.assets.patterns.entries[128].data == owner);
@@ -131,8 +131,8 @@ TEST(sigma_entry_borrows_cached_sprites_and_resets_only_its_owned_state)
         g->assets.patterns.entries[128].data
         == assets.patterns.entries[128].data);
     CHECK_EQ_INT(g->assets.patterns.next, 130);
-    CHECK_EQ_INT(m_Palette.colors[0][0], 40);
-    CHECK_EQ_INT(m_Palette.tone, 77);
+    CHECK_EQ_INT(p_Palette->colors[0][0], 40);
+    CHECK_EQ_INT(p_Palette->tone, 77);
     CHECK(memcmp(&dac, &g_Video.palette[0], sizeof(dac)) == 0);
     p_Stage->scroll.back = 1;
     p_Stage->scroll.front = 0;

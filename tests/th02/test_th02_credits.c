@@ -16,7 +16,7 @@ typedef struct {
 
 static void M_Init(FIXTURE *const f)
 {
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     Grcg_Init();
     memset(&g_VSync, 0, sizeof(g_VSync));
     memset(f, 0, sizeof(*f));
@@ -97,7 +97,7 @@ TEST(credits_complete_with_music_or_fallback)
         CHECK_EQ_INT(g_Video.drawing_page, 0);
         CHECK_EQ_INT(g_Video.visible_page, 0);
         CHECK_EQ_INT(g_Grcg->mode, 0);
-        CHECK_EQ_INT(m_Palette.tone, 0);
+        CHECK_EQ_INT(p_Palette->tone, 0);
         for (size_t i = 0; i < 16; i++) {
             CHECK_EQ_INT(g_Video.palette[i].red, 0);
             CHECK_EQ_INT(g_Video.palette[i].green, 0);

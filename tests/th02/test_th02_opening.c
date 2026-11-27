@@ -68,7 +68,7 @@ static void M_Begin(FIXTURE *const fixture, const HIGH_SCORES *const scores)
 
 static void M_Init(FIXTURE *const fixture)
 {
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     memset(&g_VSync, 0, sizeof(g_VSync));
     memset(fixture, 0, sizeof(*fixture));
     Arena_Init(&fixture->arena, "opening scene", 1024 * 1024);
@@ -418,7 +418,7 @@ TEST(start_and_extra_apply_the_delay_before_saving_and_observe_both_fades)
         }
         M_Edge(&fixture, 0);
         CHECK_EQ_INT(m_Opening.program.phase, OPENING_SHOTS);
-        CHECK_EQ_INT(m_Palette.tone, 100);
+        CHECK_EQ_INT(p_Palette->tone, 100);
         M_Edge(&fixture, GAME_KEY_OK);
         CHECK_EQ_INT(m_Opening.program.phase, OPENING_SHOT_FADE_OUT);
         CHECK_EQ_INT(fixture.session.frame, frame);
@@ -430,7 +430,7 @@ TEST(start_and_extra_apply_the_delay_before_saving_and_observe_both_fades)
             M_Edge(&fixture, 0).action,
             extra != 0 ? MAIN_MENU_EXTRA : MAIN_MENU_START);
         CHECK_EQ_INT(m_Opening.program.phase, OPENING_SUSPENDED);
-        CHECK_EQ_INT(m_Palette.tone, 0);
+        CHECK_EQ_INT(p_Palette->tone, 0);
         CHECK_EQ_INT(fixture.saves, 1);
         Arena_Free(&fixture.arena);
     }
@@ -486,7 +486,7 @@ TEST(
     CHECK_EQ_INT(m_Opening.program.phase, OPENING_RETURN_SCORES);
     CHECK_EQ_INT(m_Viewer.duration, 350);
     CHECK_EQ_INT(m_Viewer.frame, 1);
-    CHECK_EQ_INT(m_Palette.tone, 100);
+    CHECK_EQ_INT(p_Palette->tone, 100);
     CHECK_EQ_INT(f.audio_count, 0);
     for (unsigned edge = 0; edge < 370; edge++) {
         M_Edge(&f, 0);
