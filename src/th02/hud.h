@@ -5,4 +5,5 @@
 
 #include "th02/hud/counters.h"
 #include "th02/hud/numbers.h"
+#include "th02/hud/panel.h"
 #include "th02/hud/playfield.h"

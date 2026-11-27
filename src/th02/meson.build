@@ -17,6 +17,7 @@ th02_lib = static_library(
   'draw/text.c',
   'hud/counters.c',
   'hud/numbers.c',
+  'hud/panel.c',
   'hud/playfield.c',
   'input.c',
   'main_menu/logic.c',
