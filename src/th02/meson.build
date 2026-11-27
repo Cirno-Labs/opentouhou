@@ -6,6 +6,7 @@ th02_lib = static_library(
   'boss/boss.c',
   'boss/explosion.c',
   'boss/fight.c',
+  'boss/meira.c',
   'boss/rika.c',
   'boss/scene.c',
   'boss/strategy.c',
