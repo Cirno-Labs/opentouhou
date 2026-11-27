@@ -17,6 +17,10 @@ Downloads, release notes and help: <https://opentouhou.org/>
   (th01) can be played from start to finish, both routes and the
   endings included. Its test runs match the original PC-98 game frame by
   frame in DOSBox-X.
+- [東方封魔録 ~ the Story of Eastern Wonderland](https://opentouhou.org/oth02)
+  (th02) can be played from start to finish, Extra and the endings
+  included. Its test runs match the original PC-98 game frame by frame
+  in DOSBox-X.
 
 Each port is written from a matching decompilation, which reproduces the
 original executable byte for byte. This repository turns that source
