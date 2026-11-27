@@ -125,12 +125,34 @@ typedef struct {
     // Runs when the port's program has loaded and runs its first
     // instruction next, after the sites follow it, or nullptr.
     void (*on_exec)(void *context, uint8_t program);
+    // Returns whether to track this execution, before installing its sites
+    // or starting the clock. May read the PSP to distinguish packed programs
+    // selected by command-line arguments. nullptr accepts every execution.
+    bool (*accept_exec)(void *context, uint8_t program, uint16_t psp);
+    // Observes every loaded executable, including setup and resident tools.
+    void (*on_load)(void *context, const char *name, uint16_t psp);
+    // Observes hooked instructions before normal site handling, or nullptr.
+    void (*observe_site)(void *context, uint32_t address);
+    // Observes every frame end before its screenshot and input commit.
+    void (*on_frame_end)(void *context);
 } DOSBOX_PORT;
 
 // Starts the emulator for the command line of argv and returns the exit
 // status: 0 when the run matches, 1 when it differs, 2 on an error.
 // Rejects --live.
 int Dosbox_Launch(const DOSBOX_PROGRAM *program, int argc, char **argv);
+
+// Observes an instruction at a linear guest address until removed.
+// Use addresses outside the port's normal sites.
+void Dosbox_ObserveSite(uint32_t address);
+void Dosbox_RemoveObserver(uint32_t address);
+
+// Returns the current emulated time in microseconds.
+uint64_t Dosbox_Now(void);
+
+// Records a measured clock sample during capture. During replay, checks
+// it against the case when that frame/key pair is present.
+void Dosbox_RecordClock(uint32_t key, uint64_t microseconds);
 
 // Sets the run up for port and returns the guest for the emulator. Called
 // from the library's Dosbox_Attach with its arguments, the backend
@@ -155,6 +177,10 @@ uint32_t Dosbox_Buttons(void);
 // Copies guest memory at segment:offset into out.
 void Dosbox_Read(uint16_t segment, uint16_t offset, void *out, size_t size);
 
+// Copies both raw 640 by 400 graphics pages and sixteen RGBA analog
+// palette entries, as hook.h's read_graphics does.
+void Dosbox_ReadGraphics(uint8_t *pages, uint8_t *palette);
+
 // Copies size bytes of data into guest memory at segment:offset.
 void Dosbox_Write(
     uint16_t segment, uint16_t offset, const void *data, size_t size);
@@ -164,3 +190,11 @@ const START_VALUE *Dosbox_Starts(size_t *count);
 
 // Returns the current registers.
 DOSBOX_REGS Dosbox_Regs(void);
+
+// Records or supplies the local date immediately after DOS INT 21h/2Ah,
+// before the guest stores CX (year) and DX (month/day).
+void Dosbox_Date(void);
+
+// Records a sampled calendar date as YYYYMMDD before the frame advances.
+// Use the same clock as the guest's date service.
+void Dosbox_RecordDate(uint32_t date);

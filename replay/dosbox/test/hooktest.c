@@ -25,6 +25,10 @@ typedef struct {
     uint16_t frames;
     uint16_t irqs;
     uint16_t limit;
+    uint16_t site_timer_a_start;
+    uint16_t site_timer_a_end;
+    uint16_t site_timer_b_start;
+    uint16_t site_timer_b_end;
 } M_TABLE;
 
 typedef struct {
@@ -44,6 +48,7 @@ typedef struct {
     bool halting;
     bool raised;
     uint64_t halt_start;
+    uint64_t timer_start;
     int wakes;
     int raises;
     int vblank_ends;
@@ -52,6 +57,8 @@ typedef struct {
 
 static M_TEST m_Test;
 static uint32_t m_Pixels[640 * 400];
+static uint8_t m_Graphics[2][640 * 400];
+static uint8_t m_Palette[16 * 4];
 
 static void M_Check(const bool ok, const char *what)
 {
@@ -96,6 +103,10 @@ static void M_OnExec(void *context, const char *name, const uint16_t psp)
     m_Test.host->set_site(M_Linear(m_Test.table.site_regs));
     m_Test.host->set_site(M_Linear(m_Test.table.site_vsync));
     m_Test.host->set_site(M_Linear(m_Test.table.site_vblank_end));
+    m_Test.host->set_site(M_Linear(m_Test.table.site_timer_a_start));
+    m_Test.host->set_site(M_Linear(m_Test.table.site_timer_a_end));
+    m_Test.host->set_site(M_Linear(m_Test.table.site_timer_b_start));
+    m_Test.host->set_site(M_Linear(m_Test.table.site_timer_b_end));
     m_Test.host->own_vsync();
 }
 
@@ -177,6 +188,19 @@ static void M_WriteShot(void)
 
 static void M_Render(void)
 {
+    m_Test.host->read_graphics(m_Graphics[0], m_Palette);
+    bool pages = true;
+    for (unsigned x = 0; x < 8; x++) {
+        pages = pages && m_Graphics[0][200 * 640 + x] == 1
+            && m_Graphics[1][200 * 640 + x] == 0
+            && m_Graphics[0][200 * 640 + 16 + x] == 0
+            && m_Graphics[1][200 * 640 + 16 + x] == 2;
+    }
+    M_Check(pages, "read both raw graphics pages");
+    M_Check(
+        m_Palette[8] == 85 && m_Palette[9] == 51 && m_Palette[10] == 153
+            && m_Palette[11] == 255,
+        "read analog palette as RGBA");
     m_Test.host->render(m_Pixels);
     bool text = false;
     for (int y = 0; y < 16; y++) {
@@ -193,6 +217,15 @@ static void M_Render(void)
         (unsigned)m_Pixels[200 * 640], (unsigned)m_Pixels[200 * 640 + 8],
         (unsigned)m_Pixels[300 * 640 + 320]);
     M_Check(text, "render text layer");
+    bool underlines = true;
+    for (unsigned row = 5; row <= 23; row += 9) {
+        const uint32_t *const line = m_Pixels + (row * 16 + 15) * 640;
+        for (unsigned x = 36; x < 44; x++) {
+            underlines =
+                underlines && line[x] == (x < 40 ? 0xffffff : 0x00ff00);
+        }
+    }
+    M_Check(underlines, "render underlines on each text row");
     M_Check(
         graphics && m_Pixels[200 * 640 + 8] == 0
             && m_Pixels[300 * 640 + 320] == 0,
@@ -215,6 +248,16 @@ static void M_OnVblankEndSite(void)
     }
 }
 
+static void M_TimerEnd(const uint32_t clocks, const char *const name)
+{
+    const uint64_t elapsed = m_Test.host->now() - m_Test.timer_start;
+    const uint64_t expected = (uint64_t)clocks * 1000000 / 7987200;
+    printf(
+        "hooktest: %s elapsed %llu us, expected %llu us\n", name,
+        (unsigned long long)elapsed, (unsigned long long)expected);
+    M_Check(elapsed >= expected && elapsed <= expected + 10, name);
+}
+
 static void M_OnSite(void *context, const uint32_t address)
 {
     if (address == M_Linear(m_Test.table.site_regs)) {
@@ -223,6 +266,14 @@ static void M_OnSite(void *context, const uint32_t address)
         M_OnVsyncSite();
     } else if (address == M_Linear(m_Test.table.site_vblank_end)) {
         M_OnVblankEndSite();
+    } else if (
+        address == M_Linear(m_Test.table.site_timer_a_start)
+        || address == M_Linear(m_Test.table.site_timer_b_start)) {
+        m_Test.timer_start = m_Test.host->now();
+    } else if (address == M_Linear(m_Test.table.site_timer_a_end)) {
+        M_TimerEnd(144 * 1024, "YM2608 timer A");
+    } else if (address == M_Linear(m_Test.table.site_timer_b_end)) {
+        M_TimerEnd(2304 * 256, "YM2608 timer B");
     }
 }
 

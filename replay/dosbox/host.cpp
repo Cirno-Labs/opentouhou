@@ -246,6 +246,7 @@ static const DOSBOX_HOST m_Host = {
     M_Mount,
     M_Quit,
     M_SetTimer,
+    Harness_ReadGraphics,
 };
 
 // Ends emulation through DOSBox-X's kill switch once quit was called.

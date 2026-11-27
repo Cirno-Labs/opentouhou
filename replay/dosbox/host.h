@@ -33,3 +33,6 @@ int Harness_Shutdown(int status);
 
 // Draws the shown screen into 640 by 400 pixels; vga_draw.cpp gives it.
 void Harness_Render(uint32_t *pixels);
+
+// Copies raw graphics pages and the analog palette; vga_draw.cpp gives it.
+void Harness_ReadGraphics(uint8_t *pages, uint8_t *palette);
