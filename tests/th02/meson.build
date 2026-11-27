@@ -358,7 +358,10 @@ test(
   ),
   suite: 'unit',
 )
-foreach part : ['stage_assets', 'stage_scroll', 'stage_titles']
+foreach part : [
+  'stage_assets', 'stage_scroll', 'stage_titles', 'stage_bonus',
+  'stage_bonus_logic', 'stage_bonus_assets', 'stage_bonus_render',
+]
   test(
     'th02/' + part,
     executable(
