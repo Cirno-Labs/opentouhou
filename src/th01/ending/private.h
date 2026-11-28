@@ -47,3 +47,6 @@ typedef struct {
     bool sensing;
     char result_lines[10][256];
 } ENDING;
+
+// Writable view of the ending sequence for tests.
+extern ENDING *const p_Ending;

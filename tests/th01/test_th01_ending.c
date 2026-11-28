@@ -1,5 +1,5 @@
 #include "tests/test.h"
-#include "th01/ending/ending.c"
+#include "th01/ending/private.h"
 #include "th01/music.h"
 #include "th01/session_private.h"
 #include "th01/vsync_irq_private.h"
@@ -60,7 +60,7 @@ static void M_Init(FIXTURE *const f)
         }
     }
     Ending_Init(&f->assets);
-    f->ending = &m_Ending;
+    f->ending = p_Ending;
     f->arena.capacity = f->arena.used;
     Session_Init();
     p_Session->score = 2345678;

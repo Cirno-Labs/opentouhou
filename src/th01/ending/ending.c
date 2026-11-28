@@ -12,6 +12,7 @@ static END_RESULT m_EndResult;
 const END_RESULT *const g_EndResult = &m_EndResult;
 
 static ENDING m_Ending;
+ENDING *const p_Ending = &m_Ending;
 static const ENDING_ASSETS *m_Assets;
 
 // clang-format off
