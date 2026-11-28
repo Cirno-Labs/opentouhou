@@ -24,6 +24,7 @@ typedef struct {
 } PARTICLES;
 
 static PARTICLES m_Particles;
+const PARTICLES *const g_Particles = &m_Particles;
 
 static void M_SetX(const uint32_t i, const int16_t value)
 {
