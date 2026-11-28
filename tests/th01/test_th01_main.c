@@ -8,7 +8,7 @@
 #include "th01/gameplay/life.c"
 #include "th01/gameplay/pause.c"
 #include "th01/gameplay/stage.c"
-#include "th01/hud/hp.c"
+#include "th01/hud/hp_private.h"
 #include "th01/hud/hud.c"
 #include "th01/main.h"
 #include "th01/music.c"
@@ -367,7 +367,7 @@ static void M_Play(void)
     }
     CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_GAMEPLAY);
     CHECK(m_Hud.numbers != nullptr);
-    CHECK(m_Health.backgrounds != nullptr);
+    CHECK(p_Health->backgrounds != nullptr);
 }
 
 static void M_Shutdown(void)

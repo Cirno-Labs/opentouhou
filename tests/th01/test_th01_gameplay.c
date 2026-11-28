@@ -8,7 +8,7 @@
 #include "th01/gameplay/life.c"
 #include "th01/gameplay/pause.c"
 #include "th01/gameplay/stage.c"
-#include "th01/hud/hp.c"
+#include "th01/hud/hp_private.h"
 #include "th01/hud/hud.c"
 #include "th01/miss.c"
 #include "th01/music.c"
@@ -725,7 +725,7 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     Sound_Play();
     Music_Update();
     const void *const numbers = m_Hud.numbers;
-    const void *const backgrounds = m_Health.backgrounds;
+    const void *const backgrounds = p_Health->backgrounds;
     const size_t used = f.arena.used;
     BossStrategy_Get(BOSS_SINGYOKU)
         ->setup(f.assets->bosses[BOSS_SINGYOKU], &(BOSS_CONTEXT) {});
@@ -745,7 +745,7 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK_EQ_INT(p_Player->left, 304);
     CHECK_EQ_INT(m_Hud.score_previous, 0);
     CHECK(m_Hud.numbers == numbers);
-    CHECK(m_Health.backgrounds == backgrounds);
+    CHECK(p_Health->backgrounds == backgrounds);
     CHECK(g_Tram->visible);
     CHECK_EQ_INT(g_Tram->pixels[VIDEO_PAGE_SIZE - 1], 0);
     Music_BindOutput(nullptr);

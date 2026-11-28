@@ -2,7 +2,7 @@
 #include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_world.h"
 #include "th01/boss/b10j.c"
-#include "th01/hud/hp.c"
+#include "th01/hud/hp_private.h"
 #include "th01/missiles.c"
 #include "th01/orb_private.h"
 #include "th01/pellets/private.h"
@@ -166,8 +166,8 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     CHECK_EQ_INT(m_B10J.status.hp, 12);
     CHECK_EQ_INT(m_B10J.status.frame, 0);
     CHECK_EQ_INT(m_B10J.status.phase, B10J_PHASE_START);
-    CHECK_EQ_INT(m_Health.first_white, 6);
-    CHECK_EQ_INT(m_Health.first_redwhite, 2);
+    CHECK_EQ_INT(p_Health->first_white, 6);
+    CHECK_EQ_INT(p_Health->first_redwhite, 2);
     CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
     CHECK_EQ_INT(m_Missiles.slots[0].previous_top, 36);
     CHECK_EQ_INT(g_VSync->count1, 28);

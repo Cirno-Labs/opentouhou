@@ -3,7 +3,7 @@
 #include "tests/th01/th01_world.h"
 #include "th01/boss/b05.c"
 #include "th01/boss/entity.c"
-#include "th01/hud/hp.c"
+#include "th01/hud/hp_private.h"
 #include "th01/orb_private.h"
 #include "th01/particles.c"
 #include "th01/pellets/private.h"
@@ -188,8 +188,8 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     CHECK_EQ_INT(m_B05.pattern, 3);
     CHECK_EQ_INT(m_B05.velocity_x, 999);
     CHECK_EQ_INT(m_B05.direction, -1);
-    CHECK_EQ_INT(m_Health.first_white, 6);
-    CHECK_EQ_INT(m_Health.first_redwhite, 2);
+    CHECK_EQ_INT(p_Health->first_white, 6);
+    CHECK_EQ_INT(p_Health->first_redwhite, 2);
     CHECK_EQ_INT(m_Particles.alive[0], 0);
     CHECK_EQ_INT(m_Particles.cycle, 73);
     CHECK_EQ_INT(m_Particles.velocity_base[0], 9);

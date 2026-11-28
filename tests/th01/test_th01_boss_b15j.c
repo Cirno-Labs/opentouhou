@@ -4,7 +4,7 @@
 #include "th01/boss/b15j.c"
 #include "th01/boss/boss.c"
 #include "th01/boss/entity.c"
-#include "th01/hud/hp.c"
+#include "th01/hud/hp_private.h"
 #include "th01/orb_private.h"
 #include "th01/pellets/private.h"
 #include "th01/player_private.h"
@@ -127,8 +127,8 @@ TEST(setup_binds_shared_banks_and_keeps_actor_history)
     CHECK_EQ_INT(m_B15J.status.hp, 14);
     CHECK_EQ_INT(m_B15J.status.phase, B15J_PHASE_ENTRANCE);
     CHECK_EQ_INT(m_B15J.status.frame, 0);
-    CHECK_EQ_INT(m_Health.first_white, 10);
-    CHECK_EQ_INT(m_Health.first_redwhite, 6);
+    CHECK_EQ_INT(p_Health->first_white, 10);
+    CHECK_EQ_INT(p_Health->first_redwhite, 6);
     CHECK(m_Sprites.entities[0] == &f.assets.souls);
     CHECK(m_Sprites.entities[1] == &f.assets.tears);
     for (int32_t i = 0; i < 2; i++) {
@@ -418,11 +418,11 @@ TEST(timeout_forces_one_hp_before_damage_without_a_health_draw)
     m_B15J.status.phase = B15J_PHASE_PATTERNS;
     m_B15J.subphase = 1;
     m_B15J.patterns_done = 30;
-    const HUD_HP health = m_Health;
+    const HUD_HP health = *p_Health;
     VSyncIrq_Reset();
     CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 1);
-    CHECK(memcmp(&m_Health, &health, sizeof(health)) == 0);
+    CHECK(memcmp(p_Health, &health, sizeof(health)) == 0);
     CHECK_EQ_INT(g_Stage->score, 0);
     m_TestDamage = true;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, &f.stage));

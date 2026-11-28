@@ -1,16 +1,9 @@
-#include "th01/hud/hp.h"
+#include "th01/hud/hp_private.h"
 
 #include <string.h>
 
-#define HUD_HP_CAPACITY 32
-
-typedef struct {
-    uint8_t *backgrounds;
-    uint16_t first_redwhite;
-    uint16_t first_white;
-} HUD_HP;
-
 static HUD_HP m_Health;
+HUD_HP *const p_Health = &m_Health;
 
 static void M_SnapPoint(const int16_t point)
 {

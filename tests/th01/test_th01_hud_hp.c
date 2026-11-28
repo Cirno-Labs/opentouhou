@@ -1,8 +1,7 @@
 #include "tests/test.h"
 #include "tests/th01/th01_video.h"
 #include "tests/th01/th01_world.h"
-#include "th01/hud/hp.c"
-#include "th01/hud/hp.h"
+#include "th01/hud/hp_private.h"
 
 #include "core/base/arena.h"
 
@@ -27,7 +26,7 @@ TEST(pattern_mask_and_odd_boundary_decrement)
         CHECK_EQ_INT(Th01Test_Pixel(page, 135, 48), page == 0 ? 15 : 2);
         CHECK_EQ_INT(Th01Test_Pixel(page, 128, 63), page == 0 ? 15 : 2);
     }
-    CHECK_EQ_INT(m_Health.backgrounds[256], 15);
+    CHECK_EQ_INT(p_Health->backgrounds[256], 15);
     HudHp_Decrement(3);
     for (int32_t page = 0; page < 2; page++) {
         CHECK_EQ_INT(Th01Test_Pixel(page, 144, 48), 10);
@@ -52,10 +51,10 @@ TEST(snapshots_follow_selected_page_and_completion_is_equality)
     memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
     Video_SelectDrawingPage(1);
     CHECK(!HudHp_Increment(8, 0));
-    CHECK_EQ_INT(m_Health.backgrounds[0], 6);
+    CHECK_EQ_INT(p_Health->backgrounds[0], 6);
     CHECK(!HudHp_Increment(8, 8));
     CHECK(HudHp_Increment(8, 7));
-    CHECK_EQ_INT(m_Health.backgrounds[7 * 256], 3);
+    CHECK_EQ_INT(p_Health->backgrounds[7 * 256], 3);
     HudHp_Decrement(0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 128, 48), 6);
     CHECK_EQ_INT(Th01Test_Pixel(1, 128, 48), 6);

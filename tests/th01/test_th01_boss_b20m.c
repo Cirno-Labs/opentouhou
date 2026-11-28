@@ -3,7 +3,7 @@
 #include "tests/th01/th01_world.h"
 #include "th01/boss/b20m.c"
 #include "th01/gameplay.h"
-#include "th01/hud/hp.c"
+#include "th01/hud/hp_private.h"
 #include "th01/input.c"
 #include "th01/orb_private.h"
 #include "th01/pellets.h"
@@ -86,7 +86,7 @@ TEST(setup_preserves_patterns)
     m_B20M.hit.frame = 17;
     m_B20M.hit.invincible = true;
     memset(p_Palette, 0, sizeof(*p_Palette));
-    memset(&m_Health, 0, sizeof(m_Health));
+    memset(p_Health, 0, sizeof(*p_Health));
     p_Palette->saved.colors[6][0] = 9;
 
     const size_t used = arena.used;
@@ -108,8 +108,8 @@ TEST(setup_preserves_patterns)
     CHECK_EQ_INT(m_B20M.dress.sprites.slot, 1);
     CHECK_EQ_INT(m_B20M.wand.left, 296);
     CHECK_EQ_INT(m_B20M.dress.top, 192);
-    CHECK_EQ_INT(m_Health.first_white, 8);
-    CHECK_EQ_INT(m_Health.first_redwhite, 2);
+    CHECK_EQ_INT(p_Health->first_white, 8);
+    CHECK_EQ_INT(p_Health->first_redwhite, 2);
     CHECK_EQ_INT(m_B20M.boss_palette.colors[6][0], 9);
     Arena_Free(&arena);
 }
@@ -361,8 +361,8 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     CHECK_EQ_INT(p_Player->invincibility_time, 0);
     CHECK(!p_Player->invincible);
     CHECK_EQ_INT(m_B20M.leaves.flag[7], 0);
-    CHECK_EQ_INT(m_Health.first_white, 10);
-    CHECK_EQ_INT(m_Health.first_redwhite, 3);
+    CHECK_EQ_INT(p_Health->first_white, 10);
+    CHECK_EQ_INT(p_Health->first_redwhite, 3);
     CHECK(g_Stage->first_stage);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);

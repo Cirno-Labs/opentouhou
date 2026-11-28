@@ -3,7 +3,7 @@
 #include "tests/th01/th01_world.h"
 #include "th01/boss/b20j.c"
 #include "th01/gameplay.h"
-#include "th01/hud/hp.c"
+#include "th01/hud/hp_private.h"
 #include "th01/orb_private.h"
 #include "th01/pellets/private.h"
 #include "th01/player_private.h"
@@ -77,7 +77,7 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     M_Assets(&assets, &arena);
     memset(p_Palette, 0, sizeof(*p_Palette));
     p_Palette->saved.colors[10][1] = 7;
-    memset(&m_Health, 0, sizeof(m_Health));
+    memset(p_Health, 0, sizeof(*p_Health));
 
     memset(&m_B20J, 0xa5, sizeof(m_B20J));
     g_BossKonngara.init();
@@ -99,8 +99,8 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     CHECK_EQ_INT(m_B20J.face_expression, 0);
     CHECK(m_B20J.direction_can_change);
     CHECK(!m_B20J.finished);
-    CHECK_EQ_INT(m_Health.first_white, 16);
-    CHECK_EQ_INT(m_Health.first_redwhite, 10);
+    CHECK_EQ_INT(p_Health->first_white, 16);
+    CHECK_EQ_INT(p_Health->first_redwhite, 10);
     CHECK_EQ_INT(m_B20J.boss_palette.colors[10][1], 7);
     CHECK_EQ_INT(m_B20J.hit.frame, 27);
     CHECK(m_B20J.hit.invincible);

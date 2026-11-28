@@ -3,7 +3,7 @@
 #include "tests/th01/th01_world.h"
 #include "th01/boss/b15m.c"
 #include "th01/boss/entity.c"
-#include "th01/hud/hp.c"
+#include "th01/hud/hp_private.h"
 #include "th01/missiles.c"
 #include "th01/orb_private.h"
 #include "th01/pellets/private.h"
@@ -100,8 +100,8 @@ TEST(setup_reseeds_without_resetting_actor_or_missile_history)
     CHECK_EQ_INT(m_B15M.status.hp, 14);
     CHECK_EQ_INT(m_B15M.status.phase, B15M_PHASE_ENTRANCE);
     CHECK_EQ_INT(m_B15M.status.frame, 0);
-    CHECK_EQ_INT(m_Health.first_white, 10);
-    CHECK_EQ_INT(m_Health.first_redwhite, 6);
+    CHECK_EQ_INT(p_Health->first_white, 10);
+    CHECK_EQ_INT(p_Health->first_redwhite, 6);
     CHECK_EQ_INT(g_Rng, 0x12345678);
     CHECK(p_Pellets->interlace);
     CHECK(memcmp(&m_Missiles, &missiles, sizeof(missiles)) == 0);
