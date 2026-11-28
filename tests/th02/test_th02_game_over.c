@@ -1,7 +1,7 @@
 #include "tests/test.h"
 #include "tests/th02/th02_palette_fixture.h"
 #include "tests/th02/th02_tram_fixture.h"
-#include "th02/game_over.c"
+#include "th02/game_over_private.h"
 #include "th02/input.h"
 
 #include <string.h>
@@ -33,7 +33,7 @@ static void M_Register(void)
     for (size_t frame = 0; frame < 124; frame++) {
         CHECK_EQ_INT(M_Frame(0), GAME_OVER_WAIT);
     }
-    CHECK_EQ_INT(m_GameOver.phase, GAME_OVER_KEY);
+    CHECK_EQ_INT(p_GameOver->phase, GAME_OVER_KEY);
     CHECK_EQ_INT(GameOver_Update(GAME_KEY_BOMB), GAME_OVER_NAME);
 }
 
@@ -44,9 +44,9 @@ TEST(overlays_and_animation_wait_before_accepting_held_input)
     CHECK_EQ_INT(p_Palette->tone, 100);
     for (size_t frame = 0; frame < 124; frame++) {
         CHECK_EQ_INT(GameOver_Update(GAME_KEY_SHOT), GAME_OVER_WAIT);
-        const GAME_OVER saved = m_GameOver;
+        const GAME_OVER saved = *p_GameOver;
         CHECK_EQ_INT(GameOver_Update(GAME_KEY_SHOT), GAME_OVER_WAIT);
-        CHECK(memcmp(&saved, &m_GameOver, sizeof(saved)) == 0);
+        CHECK(memcmp(&saved, p_GameOver, sizeof(saved)) == 0);
         const GAME_OVER_EVENT event = M_Frame(GAME_KEY_SHOT);
         CHECK_EQ_INT(p_Palette->tone, frame < 41 ? 100 : 50);
         CHECK_EQ_INT(event, frame == 123 ? GAME_OVER_NAME : GAME_OVER_WAIT);
@@ -54,8 +54,8 @@ TEST(overlays_and_animation_wait_before_accepting_held_input)
     CHECK_EQ_INT(g_VSync.count2, 108);
     CHECK_EQ_INT(GameOver_Update(0), GAME_OVER_NAME);
     GameOver_Resume();
-    CHECK_EQ_INT(m_GameOver.phase, GAME_OVER_CHOICE);
-    CHECK(m_GameOver.yes);
+    CHECK_EQ_INT(p_GameOver->phase, GAME_OVER_CHOICE);
+    CHECK(p_GameOver->yes);
     CHECK_EQ_INT(p_Tram->attributes[14 * 80 + 24], 0xe5);
     CHECK_EQ_INT(GameOver_Update(GAME_KEY_SHOT), GAME_OVER_WAIT);
     CHECK_EQ_INT(M_Frame(GAME_KEY_OK), GAME_OVER_WAIT);
@@ -74,7 +74,7 @@ TEST(down_wins_over_up_and_cancel_wins_over_confirmation)
         GameOver_Resume();
         CHECK_EQ_INT(GameOver_Update(0), GAME_OVER_WAIT);
         CHECK_EQ_INT(M_Frame(GAME_KEY_UP | GAME_KEY_DOWN), GAME_OVER_WAIT);
-        CHECK(!m_GameOver.yes);
+        CHECK(!p_GameOver->yes);
         CHECK_EQ_INT(p_Tram->attributes[15 * 80 + 25], 0xe5);
         const uint16_t keys = cancel != 0
             ? GAME_KEY_UP | GAME_KEY_SHOT | GAME_KEY_CANCEL

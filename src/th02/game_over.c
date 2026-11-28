@@ -1,5 +1,6 @@
 #include "th02/game_over.h"
 
+#include "th02/game_over_private.h"
 #include "th02/hud.h"
 #include "th02/input.h"
 #include "th02/palette.h"
@@ -10,28 +11,6 @@
 
 #include <string.h>
 
-typedef enum {
-    GAME_OVER_ANIMATE,
-    GAME_OVER_DELAY,
-    GAME_OVER_KEY,
-    GAME_OVER_REGISTER,
-    GAME_OVER_CHOICE,
-    GAME_OVER_DONE,
-    GAME_OVER_COVER,
-    GAME_OVER_REVEAL,
-} GAME_OVER_PHASE;
-
-typedef struct {
-    const TH02_SESSION *session;
-    WAIT wait;
-    GAME_OVER_PHASE phase;
-    GAME_OVER_EVENT event;
-    uint8_t row;
-    uint8_t input_state;
-    bool yes;
-    HUD_WIPE wipe;
-} GAME_OVER;
-
 static const uint8_t m_GameOverText[] = { 0xb0, 0xaa, 0xb7, 0xae, 0xb8,
                                           0xbf, 0xae, 0xbb, 0 };
 static const uint8_t m_Continue[] = { 0xac, 0xb8, 0xb6, 0xbd, 0xb2,
@@ -41,6 +20,7 @@ static const uint8_t m_No[] = { 0xb6, 0xb8, 0 };
 static const uint8_t m_Credit[] = { 0xac, 0xbb, 0xae, 0xad, 0xb2, 0xbd, 0 };
 
 static GAME_OVER m_GameOver;
+GAME_OVER *const p_GameOver = &m_GameOver;
 
 static void M_Blank(const uint16_t x, const uint16_t y)
 {
