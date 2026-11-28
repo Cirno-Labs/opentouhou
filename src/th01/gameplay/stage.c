@@ -104,7 +104,7 @@ static void M_StageBackground(void)
 static void M_StageBegin(const uint64_t host_tick)
 {
     Pellets_RemoveAll();
-    Shots_EraseAndReset();
+    Shots_RemoveAll();
     const int16_t stage = g_Session->stage_id;
     p_Gameplay->boss_stage = stage % 5 == 4;
     Stage_SetBoss(BossStrategy_ForStage(stage, g_Session->route));

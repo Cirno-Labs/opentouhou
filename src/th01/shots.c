@@ -70,7 +70,7 @@ bool Shots_Add(const int16_t left, const int16_t top)
     return false;
 }
 
-void Shots_EraseAndReset(void)
+void Shots_RemoveAll(void)
 {
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
         SHOT *const shot = &m_Shots.slots[i];

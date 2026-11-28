@@ -64,7 +64,7 @@ static void M_Reset(const PTN *const miko, const PTN *const stage)
 {
     const PLAYER *const player = g_Player;
     Sprite_Restore16(Math16_Wrap(player->left - 8), 352, 48, 48);
-    Shots_EraseAndReset();
+    Shots_RemoveAll();
     Pellets_Decay();
     Player_Reset(g_Session->settings.difficulty);
     m_Miss.target_right = Math16_Wrap(player->left + 160);

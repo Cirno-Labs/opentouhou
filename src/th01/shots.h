@@ -27,7 +27,9 @@ RESULT Shots_ValidateSprites(const PTN *sprites);
 // Zero-initialize once. Add selects the first idle, non-decaying slot and
 // plays SOUND_EFFECT_SHOT only on success. Accepts X from 0 through 639.
 bool Shots_Add(int16_t left, int16_t top);
-void Shots_EraseAndReset(void);
+
+// Erases and frees every slot, moving or decaying.
+void Shots_RemoveAll(void);
 
 // Moves, hit-tests and draws shots with stage PTN image 1. Called only by
 // Pellets_Update, between pellet motion and pellet drawing.

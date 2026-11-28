@@ -140,7 +140,7 @@ TEST(reset_erases_moving_and_decaying_in_slot_order)
     m_Shots.slots[0] = (SHOT) { 10, 100, true, 0 };
     m_Shots.slots[1] = (SHOT) { 20, 200, false, 3 };
     m_Shots.slots[2] = (SHOT) { 30, 300, true, 0 };
-    Shots_EraseAndReset();
+    Shots_RemoveAll();
     for (int32_t i = 0; i < 3; i++) {
         CHECK(!m_Shots.slots[i].moving);
         CHECK_EQ_INT(m_Shots.slots[i].decay_frame, 0);

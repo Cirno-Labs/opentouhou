@@ -388,7 +388,7 @@ bool Bonus_BeginTotal(
     m_Total.phase = BONUS_TOTAL_INITIAL_WAIT;
     m_Total.stage_number = stage_number;
     m_Total.last_tick = host_tick;
-    Shots_EraseAndReset();
+    Shots_RemoveAll();
     Pellets_RemoveAll();
     return Bonus_ResumeTotal(assets, raw, host_tick);
 }

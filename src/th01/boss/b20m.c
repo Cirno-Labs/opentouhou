@@ -2057,7 +2057,7 @@ static void M_BeginTransform(const B20M_ASSETS *const assets)
 {
     m_B20M.status.frame = 0;
     m_B20M.hit.frame = 399;
-    Shots_EraseAndReset();
+    Shots_RemoveAll();
     Pellets_RemoveAll();
     ShootoutLasers_EraseAndReset(10);
     Orb_Relaunch();
