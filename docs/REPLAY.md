@@ -65,8 +65,9 @@ lost life, made of random and mutated segments of holds; `--seed` seeds
 the search. Each game scores its runs: th01 by the boss's phase or the
 cards removed, th06 and th07 by the stage frames. The run ends with the
 game, at the game's frame cap, or with `--until` once the first value of
-its score reaches a value; when the search runs out first, the recorder
-saves its best run. With `--minimize`, the search keeps only
+its score reaches a value; when the search runs out first (after
+`--budget` candidates, or the game's own budget), the recorder saves its
+best run. With `--minimize`, the search keeps only
 segments that add a setback, for a game over.
 [recorder.h](../replay/bot/recorder.h) describes the search. The same
 arguments always give the same run.

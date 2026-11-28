@@ -27,6 +27,7 @@ typedef struct {
     ARG_ITEMS starts;
     int32_t seed;
     int32_t until;
+    int32_t budget;
     bool minimize;
     bool no_fork;
 } M_ARGS;
@@ -146,6 +147,10 @@ static const ARG_OPTION m_Options[] = {
     ARG_INT_OF(
         M_ARGS, "--until", until, "<n>",
         "end the run once its score's first value reaches n",
+        ARG_FALLBACK_INT(-1)),
+    ARG_INT_OF(
+        M_ARGS, "--budget", budget, "<n>",
+        "the candidates to try before keeping the best run",
         ARG_FALLBACK_INT(-1)),
     ARG_FLAG_OF(
         M_ARGS, "--minimize", minimize,
@@ -788,7 +793,9 @@ static RESULT M_RunSearch(M_SEARCH *const search, int32_t *const result)
         M_Store(search, 0, root);
     }
     const bool minimize = search->args->minimize;
-    const int32_t budget = game->budget > 0 ? game->budget : M_DEFAULT_BUDGET;
+    const int32_t budget = search->args->budget > 0 ? search->args->budget
+        : game->budget > 0                          ? game->budget
+                                                    : M_DEFAULT_BUDGET;
     while (search->goal < 0 && !search->nodes[0].exhausted
            && search->evaluated < budget) {
         MUST(minimize ? M_Descend(search) : M_Expand(search));
