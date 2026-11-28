@@ -75,7 +75,7 @@ static void M_TitleChar(void)
     const uint32_t chars[] = { 0x6771, 0x65b9, 0x2605, 0x9748, 0x7570, 0x4f1d };
     Sound_Effect(SOUND_EFFECT_TITLE_TEXT);
     Tram_PutKanji16Reverse(GameText_Find(
-        &g_GameplayAssets->menu_font, chars[g_Gameplay.animation_frame]));
+        &g_GameplayAssets->menu_font, chars[g_Gameplay->animation_frame]));
 }
 
 static void M_StageBackground(void)
@@ -106,7 +106,7 @@ static void M_StageBegin(const uint64_t host_tick)
     Pellets_EraseAndResetMoving();
     Shots_EraseAndReset();
     const int16_t stage = g_Session.stage_id;
-    g_Gameplay.boss_stage = stage % 5 == 4;
+    p_Gameplay->boss_stage = stage % 5 == 4;
     Stage_SetBoss(
         stage == 4       ? BOSS_SINGYOKU
             : stage == 9 ? (g_Session.route == 0 ? BOSS_YUUGENMAGAN : BOSS_MIMA)
@@ -118,7 +118,7 @@ static void M_StageBegin(const uint64_t host_tick)
         &g_GameplayAssets->hud_font);
     Player_EndInvincibility();
     M_BossSetup(host_tick);
-    if (g_Gameplay.boss_stage) {
+    if (g_Gameplay->boss_stage) {
         Stage_SetFirstStage(true);
         Items_Reset();
     }
@@ -142,7 +142,7 @@ static void M_StageReady(void)
     Player_SetBombFrame(0);
     Stage_SetFrame(0);
     Orb_ResetFlight();
-    if (g_Session.stage_id % 5 == 0 || g_Gameplay.boss_stage) {
+    if (g_Session.stage_id % 5 == 0 || g_Gameplay->boss_stage) {
         Player_Center();
     }
     Player_StopActions();
@@ -152,7 +152,7 @@ static void M_StageReady(void)
 
 void GameplayStage_Begin(void)
 {
-    g_Gameplay.sequence = GAMEPLAY_SEQUENCE_STAGE;
+    p_Gameplay->sequence = GAMEPLAY_SEQUENCE_STAGE;
     m_StagePhase = GP_STAGE_BEGIN;
 }
 
@@ -193,8 +193,8 @@ bool GameplayStage_Step(const uint64_t host_tick)
             && Gameplay_Boss()->finish_entrance != nullptr) {
             Gameplay_Boss()->finish_entrance();
         }
-        g_Gameplay.animation_frame = 0;
-        if (g_Session.stage_id % 5 == 0 || g_Gameplay.boss_stage) {
+        p_Gameplay->animation_frame = 0;
+        if (g_Session.stage_id % 5 == 0 || g_Gameplay->boss_stage) {
             M_TitleChar();
             m_StagePhase = GP_STAGE_TITLE;
         } else {
@@ -206,7 +206,7 @@ bool GameplayStage_Step(const uint64_t host_tick)
         if (!VSyncIrq_DelayReady(8)) {
             return false;
         }
-        if (++g_Gameplay.animation_frame < 6) {
+        if (++p_Gameplay->animation_frame < 6) {
             M_TitleChar();
         } else {
             M_Line("STAGE");

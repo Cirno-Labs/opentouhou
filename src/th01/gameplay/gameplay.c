@@ -19,7 +19,9 @@
 
 #include <string.h>
 
-GAMEPLAY g_Gameplay;
+static GAMEPLAY m_Gameplay;
+const GAMEPLAY *const g_Gameplay = &m_Gameplay;
+GAMEPLAY *const p_Gameplay = &m_Gameplay;
 const GAMEPLAY_ASSETS *g_GameplayAssets;
 
 static GAMEPLAY_REQUEST M_Run(
@@ -27,7 +29,7 @@ static GAMEPLAY_REQUEST M_Run(
 {
     for (;;) {
         bool next = false;
-        switch (g_Gameplay.sequence) {
+        switch (g_Gameplay->sequence) {
         case GAMEPLAY_SEQUENCE_STAGE:
             next = GameplayStage_Step(host_tick);
             break;
@@ -47,7 +49,7 @@ static GAMEPLAY_REQUEST M_Run(
             break;
         }
         if (!next) {
-            return g_Gameplay.request;
+            return g_Gameplay->request;
         }
     }
 }
@@ -55,7 +57,7 @@ static GAMEPLAY_REQUEST M_Run(
 const PTN *Gameplay_StageSprites(void)
 {
     const GAMEPLAY_ASSETS *const a = g_GameplayAssets;
-    return g_Gameplay.boss_stage ? &a->boss_stage : &a->stage;
+    return g_Gameplay->boss_stage ? &a->boss_stage : &a->stage;
 }
 
 void Gameplay_SyncSession(void)
@@ -124,9 +126,9 @@ void Gameplay_Init(
     const ALLOCATOR *const allocator, const GAMEPLAY_ASSETS *const assets)
 {
     g_GameplayAssets = assets;
-    memset(&g_Gameplay, 0, sizeof(g_Gameplay));
+    memset(&m_Gameplay, 0, sizeof(m_Gameplay));
     Stage_Leave();
-    g_Gameplay.wait_for_shot = true;
+    p_Gameplay->wait_for_shot = true;
     GameplayStage_Begin();
     StageObjects_Prepare(allocator);
     Hud_Init(allocator);
@@ -138,9 +140,9 @@ void Gameplay_Init(
 
 void Gameplay_Reset(void)
 {
-    memset(&g_Gameplay, 0, sizeof(g_Gameplay));
+    memset(&m_Gameplay, 0, sizeof(m_Gameplay));
     Stage_Leave();
-    g_Gameplay.wait_for_shot = true;
+    p_Gameplay->wait_for_shot = true;
     GameplayStage_Begin();
     Palette_Init(&g_Palette);
     memset(&g_StagePalette, 0, sizeof(g_StagePalette));
@@ -181,7 +183,7 @@ void Gameplay_Reset(void)
     Extend_ResetNext(g_Session.score);
     Rng_Seed(g_Session.frame_rand);
     Stage_SetFlipCycle((uint8_t)(MasterRng_Next(&g_Rng) % 60));
-    g_Gameplay.boss_stage = g_Session.stage_id % 5 == 4;
+    p_Gameplay->boss_stage = g_Session.stage_id % 5 == 4;
     Scene_Activate(&g_GameplayAssets->scenes[Session_Scene()]);
     Video_SelectDrawingPage(0);
     Video_SelectVisiblePage(0);
@@ -195,8 +197,8 @@ void Gameplay_Reset(void)
 void Gameplay_ResumeAfterScore(
     const TH01_INPUT *const raw, const uint64_t host_tick)
 {
-    ASSERT(g_Gameplay.request == GAMEPLAY_REQUEST_SCORE);
-    g_Gameplay.request = GAMEPLAY_REQUEST_NONE;
+    ASSERT(g_Gameplay->request == GAMEPLAY_REQUEST_SCORE);
+    p_Gameplay->request = GAMEPLAY_REQUEST_NONE;
     GameplayEnd_BeginContinue();
     M_Run(raw, host_tick);
 }
@@ -223,7 +225,7 @@ GAMEPLAY_REQUEST Gameplay_Tick(
 
 void Gameplay_Close(void)
 {
-    memset(&g_Gameplay, 0, sizeof(g_Gameplay));
+    memset(&m_Gameplay, 0, sizeof(m_Gameplay));
     Stage_Leave();
     g_GameplayAssets = nullptr;
 }

@@ -22,18 +22,18 @@ static void M_PauseDraw(const bool quit)
         quit ? "　うそですぅ　　はいっ" : "　再開　　終了", quit ? 224 : 256,
         144, 7, GAME_TEXT_BLACK, false);
     Gameplay_Draw("●", quit ? 224 : 256, 144, 7, GAME_TEXT_NORMAL, false);
-    g_Gameplay.menu_selection = 0;
+    p_Gameplay->menu_selection = 0;
     GameInput_ResetMenu();
-    g_Gameplay.waiting = false;
+    p_Gameplay->waiting = false;
 }
 
 static bool M_PausePoll(const TH01_INPUT *const raw, const bool quit)
 {
     for (;;) {
-        if (g_Gameplay.waiting && !VSyncIrq_DelayReady(1)) {
+        if (g_Gameplay->waiting && !VSyncIrq_DelayReady(1)) {
             return false;
         }
-        g_Gameplay.waiting = false;
+        p_Gameplay->waiting = false;
         if (g_GameInput->paused) {
             Gameplay_Sense(raw);
             if (g_Player->is_hit) {
@@ -51,19 +51,19 @@ static bool M_PausePoll(const TH01_INPUT *const raw, const bool quit)
                 Gameplay_Draw(
                     "●", select_second ? second : left, 144, 7,
                     GAME_TEXT_NORMAL, false);
-                g_Gameplay.menu_selection = select_second;
+                p_Gameplay->menu_selection = select_second;
             }
             if (!g_GameInput->shot && !g_GameInput->ok) {
-                g_Gameplay.waiting = true;
+                p_Gameplay->waiting = true;
                 if (!VSyncIrq_DelayReady(1)) {
                     return false;
                 }
-                g_Gameplay.waiting = false;
+                p_Gameplay->waiting = false;
                 continue;
             }
         }
         if (quit) {
-            if (g_Gameplay.menu_selection != 0) {
+            if (g_Gameplay->menu_selection != 0) {
                 Session_CountContinue();
                 GameplayEnd_OpenMenu();
             } else {
@@ -94,7 +94,7 @@ void GameplayPause_Begin(void)
         }
     }
     Palette_Set(&g_Palette, &dark);
-    g_Gameplay.sequence = GAMEPLAY_SEQUENCE_PAUSE;
+    p_Gameplay->sequence = GAMEPLAY_SEQUENCE_PAUSE;
     m_PausePhase = GP_PAUSE_MENU;
 }
 
@@ -108,7 +108,7 @@ bool GameplayPause_Step(const TH01_INPUT *const raw)
             return false;
         }
         GameInput_ResetMenu();
-        if (g_Gameplay.menu_selection != 0 && g_GameInput->paused) {
+        if (g_Gameplay->menu_selection != 0 && g_GameInput->paused) {
             M_PauseDraw(true);
             m_PausePhase = GP_PAUSE_QUIT_CONFIRM;
         } else {

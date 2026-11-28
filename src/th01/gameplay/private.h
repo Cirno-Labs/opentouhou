@@ -40,7 +40,9 @@ typedef struct {
     INVINCIBILITY invincibility;
 } GAMEPLAY;
 
-extern GAMEPLAY g_Gameplay;
+extern const GAMEPLAY *const g_Gameplay;
+// Writable view of g_Gameplay for the module's own files and tests.
+extern GAMEPLAY *const p_Gameplay;
 extern const GAMEPLAY_ASSETS *g_GameplayAssets;
 
 // Returns the sprites of a boss stage or of an ordinary stage.
