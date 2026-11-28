@@ -121,7 +121,7 @@ TEST(map_end_boss_waits_share_vsync_and_disable_ordinary_enemy_calls)
     for (unsigned frame = 0; frame < 20 && !complete; frame++) {
         VSyncIrq_VSync();
         complete = Gameplay_Update(&input) != GAMEPLAY_RUNNING;
-        if (m_Flow.phase == STAGE_FLOW_FIGHT && !checked_gate) {
+        if (p_Flow->phase == STAGE_FLOW_FIGHT && !checked_gate) {
             checked_gate = true;
             p_Enemies->slots[0].state = ENTITY_REMOVE;
             p_Shots->target = (ENTITY_POINT) { 123, 45 };
@@ -133,7 +133,7 @@ TEST(map_end_boss_waits_share_vsync_and_disable_ordinary_enemy_calls)
     CHECK_EQ_INT(p_Shots->target.x, 123);
     CHECK_EQ_INT(p_Shots->target.y, 45);
     CHECK_EQ_INT(TestGameplay_State()->loop.wait, STAGE_NEXT);
-    CHECK_EQ_INT(m_Flow.phase, STAGE_FLOW_DONE);
+    CHECK_EQ_INT(p_Flow->phase, STAGE_FLOW_DONE);
     CHECK_EQ_INT(g_Stage->world.frame, 2);
     CHECK_EQ_INT(f.session.frame, 715);
     CHECK_EQ_INT(state.begins, 3);
@@ -281,7 +281,7 @@ TEST(next_stage_keeps_run_state_and_resets_only_stage_state)
     TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     const TH02_INPUT input = {};
-    m_Flow.phase = STAGE_FLOW_DONE;
+    p_Flow->phase = STAGE_FLOW_DONE;
     bool done = false;
     for (size_t frame = 0; frame < 160 && !done; frame++) {
         VSyncIrq_VSync();

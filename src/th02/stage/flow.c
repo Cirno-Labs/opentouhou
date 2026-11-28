@@ -1,29 +1,23 @@
-#include "th02/stage/flow.h"
-
 #include "th02/enemies.h"
 #include "th02/stage.h"
 #include "th02/stage/private.h"
+#include "th02/stage/private_flow.h"
 #include "th02/stage_effects.h"
 
 #include "core/base/assert.h"
 
 #include <string.h>
 
-typedef enum {
-    STAGE_FLOW_SCROLL,
-    STAGE_FLOW_ENTER,
-    STAGE_FLOW_FIGHT,
-    STAGE_FLOW_LEAVE,
-    STAGE_FLOW_DONE,
-} STAGE_FLOW_PHASE;
-
-typedef struct {
-    STAGE_FLOW_PHASE phase;
-    bool enemy_updates;
-    bool after_tile_effect;
-} STAGE_FLOW;
+const STAGE_FLOW_BOSS g_StageFlowBoss = {
+    .begin = BossFight_Begin,
+    .invalidate = BossFight_Invalidate,
+    .update = BossFight_Update,
+    .end = BossFight_End,
+};
 
 static STAGE_FLOW m_Flow;
+STAGE_FLOW *const p_Flow = &m_Flow;
+static const STAGE_FLOW_BOSS *m_Boss = &g_StageFlowBoss;
 
 static void M_Black(void)
 {
@@ -31,6 +25,11 @@ static void M_Black(void)
         Palette_SetColor(0, 0, 0, 0);
         Palette_Show();
     }
+}
+
+void StageFlow_Init(const STAGE_FLOW_BOSS *const boss)
+{
+    m_Boss = boss;
 }
 
 void StageFlow_Begin(const uint8_t stage, const bool reduce_effects)
@@ -64,7 +63,7 @@ STAGE_FLOW_RESULT StageFlow_Enter(
     if (m_Flow.phase != STAGE_FLOW_ENTER) {
         return STAGE_FLOW_RUNNING;
     }
-    if (!BossFight_Begin(patterns, assets, music, session, input)) {
+    if (!m_Boss->begin(patterns, assets, music, session, input)) {
         return STAGE_FLOW_WAIT;
     }
     Enemies_RemoveAll();
@@ -77,7 +76,7 @@ STAGE_FLOW_RESULT StageFlow_Enter(
 void StageFlow_Invalidate(const uint8_t stage, const bool reduce_effects)
 {
     if (m_Flow.phase == STAGE_FLOW_FIGHT) {
-        BossFight_Invalidate(stage, reduce_effects);
+        m_Boss->invalidate(stage, reduce_effects);
     }
 }
 
@@ -118,7 +117,7 @@ STAGE_FLOW_RESULT StageFlow_Update(
         return STAGE_FLOW_RUNNING;
     }
     const BOSS_RESULT result =
-        BossFight_Update(patterns, assets, music, session, input);
+        m_Boss->update(patterns, assets, music, session, input);
     if (result == BOSS_WAIT) {
         return STAGE_FLOW_WAIT;
     }
@@ -136,7 +135,7 @@ STAGE_FLOW_RESULT StageFlow_End(
         m_Flow.phase = STAGE_FLOW_LEAVE;
     }
     if (m_Flow.phase == STAGE_FLOW_LEAVE) {
-        if (!BossFight_End(patterns, assets, music, session, input)) {
+        if (!m_Boss->end(patterns, assets, music, session, input)) {
             return STAGE_FLOW_WAIT;
         }
         m_Flow.phase = STAGE_FLOW_DONE;

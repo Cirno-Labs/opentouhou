@@ -324,7 +324,6 @@ foreach part : [
   'marisa',
   'mima',
   'sigma',
-  'stage_flow',
   'gameplay',
   'gameplay_memory',
   'story',
@@ -349,6 +348,20 @@ foreach part : [
     suite: 'unit',
   )
 endforeach
+test(
+  'th02/stage_flow',
+  executable(
+    'test_th02_stage_flow',
+    'test_th02_stage_flow.c',
+    'th02_stage_flow.c',
+    implicit_include_directories: false,
+    link_with: [
+      th02_lib, core_io_lib, core_vfs_lib, core_hash_lib, core_base_lib,
+    ],
+    dependencies: [pc98_dep, sdl3],
+  ),
+  suite: 'unit',
+)
 test(
   'th02/stage_data',
   executable(

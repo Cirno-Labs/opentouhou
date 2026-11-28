@@ -137,7 +137,7 @@ TEST(mima_suspension_preserves_stage_progression)
     M_MimaPatterns(&f);
     f.session.stage = 4;
     p_Stage->index = 4;
-    m_Flow.phase = STAGE_FLOW_FIGHT;
+    p_Flow->phase = STAGE_FLOW_FIGHT;
     p_Mima->phase = MIMA_FORM;
     p_Stage->world.progression = 1;
     const MIMA mima = *p_Mima;
@@ -148,7 +148,7 @@ TEST(mima_suspension_preserves_stage_progression)
     for (unsigned attempt = 0; attempt < 2; attempt++) {
         CHECK_EQ_INT(TestGameplay_FlowUpdate(&f), STAGE_FLOW_WAIT);
         CHECK_EQ_INT(g_Stage->world.progression, 1);
-        CHECK_EQ_INT(m_Flow.phase, STAGE_FLOW_FIGHT);
+        CHECK_EQ_INT(p_Flow->phase, STAGE_FLOW_FIGHT);
         CHECK(memcmp(&mima, p_Mima, sizeof(mima)) == 0);
         CHECK(memcmp(&boss, TestBossFight_State(), sizeof(boss)) == 0);
         CHECK(memcmp(&random, p_Rng, sizeof(random)) == 0);
@@ -351,7 +351,7 @@ TEST(mima_form_dialogue_resumes_once_or_aborts_before_final_score_commit)
         GAMEPLAY *const g = TestGameplay_State();
         f.session.stage = 4;
         p_Stage->index = 4;
-        m_Flow.phase = STAGE_FLOW_FIGHT;
+        p_Flow->phase = STAGE_FLOW_FIGHT;
         f.session.continues_used = continued;
         DIALOGUE_BOX boxes[57] = {};
         DIALOGUE_ASSETS assets[6] = {};

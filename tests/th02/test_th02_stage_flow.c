@@ -1,10 +1,11 @@
 #include "tests/test.h"
 #include "tests/th02/th02_palette_fixture.h"
-#include "tests/th02/th02_stage_flow.c"
-#include "th02/enemies.c"
+#include "tests/th02/th02_stage_flow.h"
 #include "th02/enemies.h"
+#include "th02/enemies_private.h"
 #include "th02/stage.h"
 #include "th02/stage/private.h"
+#include "th02/stage/private_flow.h"
 
 #include <string.h>
 
@@ -28,8 +29,8 @@ static bool M_Boss(
     switch (call) {
     case TEST_BOSS_BEGIN:
         CHECK_EQ_INT(g_Stage->world.progression, 1);
-        CHECK(m_Flow.enemy_updates);
-        CHECK_EQ_INT(m_Enemies.count, 3);
+        CHECK(p_Flow->enemy_updates);
+        CHECK_EQ_INT(p_Enemies->count, 3);
         f->begins++;
         if (f->begin_wait != 0) {
             f->begin_wait--;
@@ -39,7 +40,7 @@ static bool M_Boss(
 
     case TEST_BOSS_END:
         CHECK_EQ_INT(g_Stage->world.progression, 2);
-        CHECK(!m_Flow.enemy_updates);
+        CHECK(!p_Flow->enemy_updates);
         f->ends++;
         if (f->end_wait != 0) {
             f->end_wait--;
@@ -69,14 +70,15 @@ static void M_Init(FIXTURE *const f, const uint8_t stage, const bool reduced)
     Palette_Init();
     Enemies_Init();
     memset(p_Palette->colors[0], 0x70, 3);
-    m_Enemies.count = 3;
-    m_Enemies.slots[0].state = ENTITY_ACTIVE;
-    m_Enemies.slots[1].state = ENTITY_REMOVE;
-    m_Enemies.slots[2].state = ENTITY_FREE;
+    p_Enemies->count = 3;
+    p_Enemies->slots[0].state = ENTITY_ACTIVE;
+    p_Enemies->slots[1].state = ENTITY_REMOVE;
+    p_Enemies->slots[2].state = ENTITY_FREE;
     p_Stage->world.frame = 159;
     p_Stage->scroll.rows = 123;
     p_Stage->scroll.cycle = 7;
     f->boss = (TEST_BOSS) { M_Boss, f };
+    TestStageFlow_Init();
     StageFlow_Begin(stage, reduced);
     TestStageFlow_Boss(&f->boss);
 }
@@ -98,9 +100,9 @@ TEST(stage_flow_selects_rules_and_does_not_start_a_boss_early)
             CHECK_EQ_INT(g_Stage->world.frame, 159);
             CHECK_EQ_INT(g_Stage->scroll.rows, 123);
             CHECK_EQ_INT(g_Stage->scroll.cycle, 7);
-            CHECK(m_Flow.enemy_updates);
+            CHECK(p_Flow->enemy_updates);
             CHECK_EQ_INT(
-                m_Flow.after_tile_effect,
+                p_Flow->after_tile_effect,
                 stage < 3 || (stage == 3 && reduced == 0));
             CHECK_EQ_INT(
                 StageFlow_Enter(
@@ -139,21 +141,21 @@ TEST(stage_flow_preserves_entry_and_exit_order_across_nested_waits)
         CHECK_EQ_INT(
             StageFlow_Enter(nullptr, nullptr, nullptr, &f.session, &f.input),
             STAGE_FLOW_WAIT);
-        CHECK_EQ_INT(m_Enemies.count, 3);
-        CHECK_EQ_INT(m_Enemies.slots[0].state, ENTITY_ACTIVE);
+        CHECK_EQ_INT(p_Enemies->count, 3);
+        CHECK_EQ_INT(p_Enemies->slots[0].state, ENTITY_ACTIVE);
         CHECK_EQ_INT(g_Stage->scroll.cycle, 7);
         CHECK_EQ_INT(p_Palette->colors[0][0], stage == 2 ? 0 : 0x70);
         CHECK_EQ_INT(g_Stage->world.frame, 159);
         CHECK_EQ_INT(
             StageFlow_Enter(nullptr, nullptr, nullptr, &f.session, &f.input),
             STAGE_FLOW_BOSS_STARTED);
-        CHECK_EQ_INT(m_Enemies.count, 0);
-        CHECK_EQ_INT(m_Enemies.slots[0].state, ENTITY_REMOVE);
-        CHECK_EQ_INT(m_Enemies.slots[1].state, ENTITY_REMOVE);
-        CHECK_EQ_INT(m_Enemies.slots[2].state, ENTITY_FREE);
+        CHECK_EQ_INT(p_Enemies->count, 0);
+        CHECK_EQ_INT(p_Enemies->slots[0].state, ENTITY_REMOVE);
+        CHECK_EQ_INT(p_Enemies->slots[1].state, ENTITY_REMOVE);
+        CHECK_EQ_INT(p_Enemies->slots[2].state, ENTITY_FREE);
         CHECK_EQ_INT(g_Stage->scroll.cycle, 255);
-        CHECK(!m_Flow.enemy_updates);
-        CHECK(!m_Flow.after_tile_effect || stage != 3);
+        CHECK(!p_Flow->enemy_updates);
+        CHECK(!p_Flow->after_tile_effect || stage != 3);
         CHECK_EQ_INT(
             StageFlow_Enter(nullptr, nullptr, nullptr, &f.session, &f.input),
             STAGE_FLOW_RUNNING);

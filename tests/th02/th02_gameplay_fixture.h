@@ -13,6 +13,7 @@
 #include "th02/player.h"
 #include "th02/stage.h"
 #include "th02/stage/private.h"
+#include "th02/stage/private_flow.h"
 
 #include "core/base/arena.h"
 
@@ -52,6 +53,7 @@ static inline void TestGameplay_Start(FIXTURE *const fixture)
 
 static inline void TestGameplay_FixtureInit(FIXTURE *const fixture)
 {
+    TestStageFlow_Init();
     TestStageFlow_Boss(nullptr);
     TestBossExplosion_Observe(nullptr);
     SoundEffects_Init(nullptr);
