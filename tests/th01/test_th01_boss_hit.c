@@ -2,8 +2,8 @@
 #include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_video.h"
 #include "tests/th01/th01_world.h"
-#include "th01/boss/boss.c"
 #include "th01/boss/private.h"
+#include "th01/boss/private_boss.h"
 #include "th01/orb_private.h"
 #include "th01/player_private.h"
 #include "th01/session_private.h"
@@ -74,13 +74,13 @@ TEST(debug_damage_precedes_shot_collision_while_invincible)
     Th01Test_ResetWorld();
     FIXTURE f;
     M_Init(&f);
-    m_TestDamage = true;
+    *p_TestDamage = true;
     f.hit = (BOSS_HIT) { .frame = 1, .invincible = true };
     p_Shots->slots[0] = (SHOT) { .left = 120, .top = 100, .moving = true };
     BossHit_UpdateAndRender(
         &f.hit, &f.hp, &f.baseline, nullptr, 0, 3000, true,
         (BOSS_SHOT_HITBOX) { 100, 100, 40, 40 });
-    CHECK(!m_TestDamage);
+    CHECK(!*p_TestDamage);
     CHECK_EQ_INT(f.hp, 7);
     CHECK_EQ_INT(g_Stage->score, 0);
     CHECK(!p_Shots->slots[0].moving);

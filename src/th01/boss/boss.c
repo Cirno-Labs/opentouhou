@@ -1,5 +1,4 @@
-#include "th01/boss/boss.h"
-
+#include "th01/boss/private_boss.h"
 #include "th01/ptn.h"
 #include "th01/session.h"
 
@@ -8,6 +7,7 @@
 static BOSS_STATE *m_Boss;
 BOSS_STATE *const *const g_Boss = &m_Boss;
 static bool m_TestDamage;
+bool *const p_TestDamage = &m_TestDamage;
 const bool *const g_TestDamage = &m_TestDamage;
 
 void Boss_Init(void)

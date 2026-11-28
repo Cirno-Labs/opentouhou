@@ -1,7 +1,7 @@
 #include "tests/test.h"
 #include "tests/th01/th01_assets.h"
 #include "tests/th01/th01_world.h"
-#include "th01/boss/boss.c"
+#include "th01/boss/private_boss.h"
 #include "th01/gameplay/end.c"
 #include "th01/gameplay/exit.c"
 #include "th01/gameplay/gameplay.c"
@@ -290,11 +290,11 @@ TEST(miss_clears_debug_damage_without_losing_active_boss_state)
     M_EnterExit(GP_EXIT_WAIT);
     VSyncIrq_BeginWait(&p_Gameplay->wait);
     p_Player->is_hit = true;
-    m_TestDamage = true;
+    *p_TestDamage = true;
     const TH01_INPUT raw = {};
     CHECK_EQ_INT(Gameplay_Tick(&raw, true, 1), GAMEPLAY_REQUEST_NONE);
     CHECK(M_InExit(GP_EXIT_MISS));
-    CHECK(!m_TestDamage);
+    CHECK(!*p_TestDamage);
     CHECK_EQ_INT(p_Session->lives, 3);
     CHECK((*g_Boss) == boss);
     CHECK(memcmp((*g_Boss), &state, sizeof(state)) == 0);

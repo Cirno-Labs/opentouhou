@@ -2,7 +2,7 @@
 #include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_world.h"
 #include "th01/boss/b15j.c"
-#include "th01/boss/boss.c"
+#include "th01/boss/private_boss.h"
 #include "th01/boss/private_entity.h"
 #include "th01/hud/hp_private.h"
 #include "th01/orb_private.h"
@@ -424,10 +424,10 @@ TEST(timeout_forces_one_hp_before_damage_without_a_health_draw)
     CHECK_EQ_INT(m_B15J.status.hp, 1);
     CHECK(memcmp(p_Health, &health, sizeof(health)) == 0);
     CHECK_EQ_INT(g_Stage->score, 0);
-    m_TestDamage = true;
+    *p_TestDamage = true;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 0);
-    CHECK(!m_TestDamage);
+    CHECK(!*p_TestDamage);
     CHECK(m_B15J.defeating);
     CHECK_EQ_INT(g_Stage->score, 0);
     Arena_Free(&arena);
