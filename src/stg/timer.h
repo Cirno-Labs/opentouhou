@@ -8,6 +8,7 @@
 // from `current` directly leaves `previous` unchanged, as the original
 // does at full speed. A game that never runs slow leaves `sub_frame` at
 // 0.
+
 typedef struct {
     int32_t previous;
     int32_t current;

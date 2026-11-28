@@ -9,4 +9,5 @@
 // MS UI Gothic, as the originals' GDI links them, else IPAGothic linked with
 // IPAPGothic sized em to cell, so that lines keep MS Gothic's widths.
 // Reports failure when no font opens.
+
 RESULT GameFont_Open(const char *family, float pixel_height, FONT **out);

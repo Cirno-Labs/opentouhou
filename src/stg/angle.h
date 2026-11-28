@@ -4,6 +4,7 @@
 
 // Returns a + b brought into [-pi, pi]. The two loops that bring it there
 // stop after 18 turns between them, so a sum further out stays outside.
+
 float Angle_AddNormalize(float a, float b);
 
 // Rotates in by angle in the x-y plane into out and leaves out->z

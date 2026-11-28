@@ -8,6 +8,7 @@
 // A game's own opcodes say which fields an instruction uses; removes_note
 // marks a line that MsgDiff_Apply replaced, for the drawing code to hide
 // a shown translator note.
+
 typedef struct {
     int32_t time;
     uint8_t opcode;
