@@ -30,8 +30,8 @@ bool Shots_Add(int16_t left, int16_t top);
 void Shots_EraseAndReset(void);
 
 // Moves, hit-tests and draws shots with stage PTN image 1. Called only by
-// Pellets_UpdateAndRender, between pellet motion and pellet drawing.
-void Shots_UpdateAndRender(const PTN *sprites);
+// Pellets_Update, between pellet motion and pellet drawing.
+void Shots_Update(const PTN *sprites);
 bool Shots_HitTestOrb(int32_t slot);
 
 // Tests inclusive overlap with an 8 by 8 pellet, with two-pixel margins.

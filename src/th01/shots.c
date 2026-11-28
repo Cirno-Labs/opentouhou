@@ -106,7 +106,7 @@ bool Shots_HitTestOrb(const int32_t slot)
     return true;
 }
 
-void Shots_UpdateAndRender(const PTN *const sprites)
+void Shots_Update(const PTN *const sprites)
 {
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
         SHOT *const shot = &m_Shots.slots[i];

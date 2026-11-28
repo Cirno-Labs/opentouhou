@@ -74,7 +74,7 @@ TEST(update_tests_orb_before_top_clip_and_skips_portals)
     memset(&m_Orb, 0, sizeof(m_Orb));
     m_Orb.left = 300;
     m_Orb.top = 64;
-    Shots_UpdateAndRender(&sprites);
+    Shots_Update(&sprites);
     CHECK(!m_Shots.slots[0].moving);
     CHECK(m_Shots.slots[1].moving);
     CHECK_EQ_INT(m_Shots.slots[1].top, 64);
@@ -83,7 +83,7 @@ TEST(update_tests_orb_before_top_clip_and_skips_portals)
     m_Orb.left = 300;
     m_Orb.top = 64;
     m_Orb.in_portal = true;
-    Shots_UpdateAndRender(&sprites);
+    Shots_Update(&sprites);
     CHECK_EQ_INT(m_Orb.left, 300);
     CHECK_EQ_INT(m_Orb.top, 64);
     CHECK(!m_Shots.slots[0].moving);
@@ -124,7 +124,7 @@ TEST(boss_inclusive_hit_and_decay_image_sequence)
     m_Orb.in_portal = true;
     g_Rng = 1;
     for (int32_t frame = 1; frame <= 7; frame++) {
-        Shots_UpdateAndRender(&sprites);
+        Shots_Update(&sprites);
         CHECK_EQ_INT(m_Shots.slots[0].decay_frame, frame == 7 ? 0 : frame + 1);
         CHECK(!m_Shots.slots[0].moving);
     }
