@@ -3,7 +3,7 @@
 #include "tests/th02/th02_score_fixture.h"
 #include "tests/th02/th02_sound.h"
 #include "th02/hud.h"
-#include "th02/stage_bonus/logic.c"
+#include "th02/stage_bonus/private.h"
 
 #include <string.h>
 
@@ -50,18 +50,18 @@ TEST(bonus_awards_once_then_waits_for_counted_release_and_press)
     for (unsigned i = 0; i < 8; i++) {
         CHECK(!StageBonus_Update(&held));
     }
-    CHECK_EQ_INT(m_Bonus.wait.key_frames, 0);
+    CHECK_EQ_INT(p_Bonus->wait.key_frames, 0);
     for (unsigned i = 0; i < 8; i++) {
         VSyncIrq_VSync();
         CHECK(!StageBonus_Update(&held));
     }
-    CHECK_EQ_INT(m_Bonus.wait.key.phase, KEY_WAIT_RELEASE);
+    CHECK_EQ_INT(p_Bonus->wait.key.phase, KEY_WAIT_RELEASE);
     const TH02_INPUT release = {};
     for (unsigned i = 0; i < 8; i++) {
         VSyncIrq_VSync();
         CHECK(!StageBonus_Update(&release));
     }
-    CHECK_EQ_INT(m_Bonus.wait.key.phase, KEY_WAIT_PRESS);
+    CHECK_EQ_INT(p_Bonus->wait.key.phase, KEY_WAIT_PRESS);
     const TH02_INPUT ignored = { .space = true, .right = true };
     for (unsigned i = 0; i < 8; i++) {
         VSyncIrq_VSync();
@@ -77,12 +77,12 @@ TEST(bonus_awards_once_then_waits_for_counted_release_and_press)
     CHECK_EQ_INT(p_Score->transferred, 17);
     TestSound_Check(&f.sound, -1);
     CHECK_EQ_INT(p_Palette->tone, 62);
-    CHECK_EQ_INT(m_Bonus.waits, 1);
+    CHECK_EQ_INT(p_Bonus->waits, 1);
     for (unsigned i = 0; i < 6; i++) {
         VSyncIrq_VSync();
         CHECK(!StageBonus_Update(&held));
     }
-    CHECK_EQ_INT(m_Bonus.wait.key.phase, KEY_WAIT_RELEASE);
+    CHECK_EQ_INT(p_Bonus->wait.key.phase, KEY_WAIT_RELEASE);
     for (unsigned i = 0; i < 6; i++) {
         VSyncIrq_VSync();
         CHECK(!StageBonus_Update(&release));
@@ -98,7 +98,7 @@ TEST(bonus_awards_once_then_waits_for_counted_release_and_press)
     const SCORE awarded = *g_Score;
     StageBonus_Init();
     const BONUS empty = {};
-    CHECK(memcmp(&m_Bonus, &empty, sizeof(empty)) == 0);
+    CHECK(memcmp(p_Bonus, &empty, sizeof(empty)) == 0);
     CHECK(memcmp(g_Score, &awarded, sizeof(awarded)) == 0);
     TestSound_Check(&f.sound, -1);
     TestSound_Free(&f.sound);
@@ -130,9 +130,9 @@ TEST(extra_bonus_consumes_explicit_boss_duration_without_a_countdown)
         complete = StageBonus_Update(&press);
     }
     CHECK(complete);
-    CHECK_EQ_INT(m_Bonus.waits, 0);
+    CHECK_EQ_INT(p_Bonus->waits, 0);
     CHECK(StageBonus_Update(nullptr));
-    CHECK_EQ_INT(m_Bonus.waits, 0);
+    CHECK_EQ_INT(p_Bonus->waits, 0);
     CHECK_EQ_INT(p_Score->value, 6876);
     TestSound_Free(&f.sound);
 }

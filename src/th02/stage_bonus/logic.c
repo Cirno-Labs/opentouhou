@@ -2,6 +2,7 @@
 
 #include "th02/score.h"
 #include "th02/sound_effects.h"
+#include "th02/stage_bonus/private.h"
 #include "th02/stage_bonus/render.h"
 #include "th02/wait.h"
 
@@ -9,13 +10,8 @@
 
 #include <string.h>
 
-typedef struct {
-    WAIT wait;
-    bool complete;
-    uint8_t waits;
-} BONUS;
-
 static BONUS m_Bonus;
+BONUS *const p_Bonus = &m_Bonus;
 
 static int16_t M_Word(const int32_t value)
 {
