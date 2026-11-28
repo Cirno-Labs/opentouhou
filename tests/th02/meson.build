@@ -1,3 +1,17 @@
+# Stands in for src/th02/draw/{circles,shapes,sprites,glyphs}.c: a test
+# that links this before th02_lib in link_with never gets those real
+# objects, since the fakes define every function their headers declare.
+# draw/text.c stays out: DrawText_Read renders into a glyph mask, not
+# VRAM, and is its own object, so it is never pulled in just for drawing.
+th02_fakes_lib = static_library(
+  'th02_fakes_lib',
+  'fake_draw_circles.c',
+  'fake_draw_shapes.c',
+  'fake_draw_sprites.c',
+  'fake_draw_glyphs.c',
+  implicit_include_directories: false,
+)
+
 foreach part : [
     'input',
     'tram',
@@ -87,6 +101,20 @@ test(
     implicit_include_directories: false,
     link_with: [th02_lib, core_io_lib, core_base_lib],
     dependencies: [sdl3],
+  ),
+  suite: 'unit',
+)
+# Links the fake draw modules in place of the real ones: th02_lib is an
+# archive, so its draw objects are left out once these define every
+# function their headers declare.
+test(
+  'th02/boss_explosion',
+  executable(
+    'test_th02_boss_explosion',
+    'test_th02_boss_explosion.c',
+    implicit_include_directories: false,
+    link_with: [th02_fakes_lib, th02_lib, core_hash_lib, core_io_lib, core_base_lib],
+    dependencies: [pc98_dep, sdl3],
   ),
   suite: 'unit',
 )
@@ -351,7 +379,6 @@ foreach part : ['meira', 'marisa', 'mima', 'sigma', 'gameplay']
     executable(
       'test_th02_' + part,
       'test_th02_' + part + '.c',
-      'th02_boss_explosion.c',
       'th02_gameplay.c',
       'th02_stage_flow.c',
       implicit_include_directories: false,

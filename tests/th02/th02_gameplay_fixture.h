@@ -1,7 +1,6 @@
 #pragma once
 
 #include "tests/test.h"
-#include "tests/th02/th02_boss_explosion.h"
 #include "tests/th02/th02_clip_fixture.h"
 #include "tests/th02/th02_gameplay.h"
 #include "tests/th02/th02_palette_fixture.h"
@@ -55,7 +54,6 @@ static inline void TestGameplay_FixtureInit(FIXTURE *const fixture)
 {
     TestStageFlow_Init();
     TestStageFlow_Boss(nullptr);
-    TestBossExplosion_Observe(nullptr);
     SoundEffects_Init(nullptr);
     memset(p_Palette, 0, sizeof(*p_Palette));
     Grcg_Init();

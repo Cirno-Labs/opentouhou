@@ -7,14 +7,6 @@
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"
 
-const BOSS_EXPLOSION_DOT g_BossExplosionDot = { .dot = Draw_Dot };
-static const BOSS_EXPLOSION_DOT *m_Dot = &g_BossExplosionDot;
-
-void BossExplosion_Init(const BOSS_EXPLOSION_DOT *const dot)
-{
-    m_Dot = dot;
-}
-
 static void M_Sides(void)
 {
     CLIP clip = *g_Clip;
@@ -48,7 +40,7 @@ static void M_Circle(
             if (rolled >= 400) {
                 rolled -= 400;
             }
-            m_Dot->dot(left, rolled, size);
+            Draw_Dot(left, rolled, size);
         }
     }
 }
