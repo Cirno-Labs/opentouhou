@@ -16,7 +16,7 @@
 #include "th01/shots.c"
 #include "th01/shots.h"
 #include "th01/stage/private.h"
-#include "th01/vsync_irq.c"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 #include "core/base/memory.h"
@@ -76,8 +76,8 @@ TEST(row_transition_empty_scan_fades_and_final_delay)
         const BONUS_ROW_TRANSITION frozen = m_Transition;
         CHECK(!Bonus_ResumeRowTransition(&target));
         CHECK(memcmp(&frozen, &m_Transition, sizeof(m_Transition)) == 0);
-        m_VSync.count1 = 2;
-        m_VSync.count2 = g_VSync->count2;
+        p_VSync->count1 = 2;
+        p_VSync->count2 = g_VSync->count2;
         const bool ready = Bonus_ResumeRowTransition(&target);
         CHECK(ready == (step == 69));
         CHECK_EQ_INT(g_VSync->count1, 0);
@@ -152,8 +152,8 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
         const BONUS frozen = m_Bonus;
         CHECK(!Bonus_Resume(&f.assets, &f.font, &raw));
         CHECK(memcmp(&frozen, &m_Bonus, sizeof(frozen)) == 0);
-        m_VSync.count1 = 1;
-        m_VSync.count2 = g_VSync->count2;
+        p_VSync->count1 = 1;
+        p_VSync->count2 = g_VSync->count2;
         CHECK(!Bonus_Resume(&f.assets, &f.font, &raw));
     }
     CHECK_EQ_INT(m_Bonus.run.phase, BONUS_CONFIRM);
@@ -194,13 +194,13 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
     p_Stage->time = 20000;
     p_Stage->maximum_combo = 100;
     VSyncIrq_Reset();
-    m_VSync.count1 = 100;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = 100;
+    p_VSync->count2 = g_VSync->count2;
     const TH01_INPUT raw = { .ok = true };
     CHECK(!Bonus_BeginStage(&f.assets, &f.font, 19, &raw));
     for (int32_t i = 0; i < 24; i++) {
-        m_VSync.count1 = 1;
-        m_VSync.count2 = g_VSync->count2;
+        p_VSync->count1 = 1;
+        p_VSync->count2 = g_VSync->count2;
         CHECK(!Bonus_Resume(&f.assets, &f.font, &raw));
     }
     // Signed timer product wraps to -5536; combo clamps to 6553.
@@ -278,23 +278,23 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK_EQ_INT(m_Pellets.slots[1].cloud_frame, 5);
     CHECK_EQ_INT(m_Total.phase, BONUS_TOTAL_INITIAL_WAIT);
     CHECK_EQ_INT(Th01Test_Pixel(1, 0, 0), 6);
-    m_VSync.count1 = 50;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = 50;
+    p_VSync->count2 = g_VSync->count2;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(m_Total.phase, BONUS_TOTAL_TRANSITION);
     CHECK_EQ_INT(Th01Test_Pixel(1, 0, 0), 14);
     CHECK_EQ_INT(g_Palette->resource.colors[0][0], 13);
     for (int32_t i = 0; i < 70; i++) {
-        m_VSync.count1 = 2;
-        m_VSync.count2 = g_VSync->count2;
+        p_VSync->count1 = 2;
+        p_VSync->count2 = g_VSync->count2;
         CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     }
     CHECK_EQ_INT(m_Total.phase, BONUS_TOTAL_STAGE_WAIT);
     CHECK_EQ_INT(Th01Test_Pixel(0, 224, 14), 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 256, 14), 5);
     CHECK_EQ_INT(g_Palette->saved.colors[0][0], 13);
-    m_VSync.count1 = 30;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = 30;
+    p_VSync->count2 = g_VSync->count2;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(m_Bonus.score_bonus, 16050);
     CHECK_EQ_INT(g_Stage->score, 390000);
@@ -372,8 +372,8 @@ TEST(total_millisecond_credit_crosses_digits_and_count1_can_satisfy_wait)
     M_InitTotal(&f, Arena_Allocator(&arena));
     const TH01_INPUT raw = {};
     VSyncIrq_Reset();
-    m_VSync.count1 = 5;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = 5;
+    p_VSync->count2 = g_VSync->count2;
     Bonus_InitTotal();
     m_Total.phase = BONUS_TOTAL_DIGIT;
     m_Total.top = 196;

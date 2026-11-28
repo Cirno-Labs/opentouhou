@@ -6,7 +6,7 @@
 #include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/shots.h"
-#include "th01/vsync_irq.c"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 
@@ -72,9 +72,9 @@ TEST(raw_wait_reuses_counter_without_replaying_lines)
     FIXTURE f;
     M_Init(&f, &arena, 14);
     VSyncIrq_Reset();
-    m_VSync.edge = 42;
-    m_VSync.count1 = 1000;
-    m_VSync.count2 = 8;
+    p_VSync->edge = 42;
+    p_VSync->count1 = 1000;
+    p_VSync->count2 = 8;
     BOSS_DEFEAT defeat = {};
     Video_SetScroll(12);
     BossDefeat_Begin(&defeat, m_Regular);
@@ -145,8 +145,8 @@ TEST(singyoku_parameters_leave_route_and_gameplay_flags_pending)
     M_Init(&f, &arena, 15);
     f.origin = 80;
     VSyncIrq_Reset();
-    m_VSync.count1 = 10;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = 10;
+    p_VSync->count2 = g_VSync->count2;
     BOSS_DEFEAT defeat = {};
     BossDefeat_Begin(&defeat, m_Singyoku);
     VSyncIrq_Edge();

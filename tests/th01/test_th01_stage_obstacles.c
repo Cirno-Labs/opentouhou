@@ -9,7 +9,7 @@
 #include "th01/shots.h"
 #include "th01/stage.h"
 #include "th01/stage/objects.c"
-#include "th01/vsync_irq.c"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 #include "pc98/zun/master_rng.h"
@@ -305,8 +305,8 @@ TEST(orb_composite_reuses_ready_count_and_never_replays_motion)
         p_Orb->previous_top = 349;
         StageOrb_Init();
         VSyncIrq_Reset();
-        m_VSync.count1 = counts[variant];
-        m_VSync.count2 = 44;
+        p_VSync->count1 = counts[variant];
+        p_VSync->count2 = 44;
         CHECK_EQ_INT(
             Stage_BeginOrbComposite(&state.sprites, nullptr, nullptr),
             variant != 0);
@@ -406,8 +406,8 @@ TEST(card_completion_sets_hit_after_lethal_test_and_suppresses_orb_put)
     p_Orb->previous_left = 500;
     p_Orb->previous_top = 350;
     VSyncIrq_Reset();
-    m_VSync.count1 = -1;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = -1;
+    p_VSync->count2 = g_VSync->count2;
     StageOrb_Init();
     CHECK(Stage_BeginOrbComposite(&state.sprites, nullptr, nullptr));
     CHECK(p_Player->is_hit);

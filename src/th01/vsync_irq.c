@@ -1,8 +1,9 @@
-#include "th01/vsync_irq.h"
+#include "th01/vsync_irq_private.h"
 
 #include <string.h>
 
 static VSYNC_COUNTERS m_VSync;
+VSYNC_COUNTERS *const p_VSync = &m_VSync;
 const VSYNC_COUNTERS *const g_VSync = &m_VSync;
 
 static int16_t M_Increment(const int16_t value)

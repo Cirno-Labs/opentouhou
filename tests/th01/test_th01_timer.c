@@ -12,7 +12,7 @@
 #include "th01/stage/private.h"
 #include "th01/timer.c"
 #include "th01/timer.h"
-#include "th01/vsync_irq.c"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 #include "pc98/zun/master_rng.h"
@@ -111,13 +111,13 @@ TEST(ready_count_is_consumed_before_first_suspension_and_extension_wraps)
     FIXTURE f;
     M_Init(&f);
     p_Stage->time = 2;
-    m_VSync.count1 = 31;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = 31;
+    p_VSync->count2 = g_VSync->count2;
     CHECK(!StageTimer_TickAndPut());
     CHECK_EQ_INT(m_Timer.phase, TIMER_WAIT_UP);
     CHECK_EQ_INT(g_VSync->count1, 0);
-    m_VSync.count1 = 27;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = 27;
+    p_VSync->count2 = g_VSync->count2;
     CHECK(StageTimer_TickAndPut());
     m_Timer.hurry_cycle = 81;
     m_Timer.frames_since_hurry = 500;

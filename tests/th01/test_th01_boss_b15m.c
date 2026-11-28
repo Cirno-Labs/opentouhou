@@ -15,7 +15,7 @@
 #include "th01/shootout_lasers.c"
 #include "th01/shots.h"
 #include "th01/sound.h"
-#include "th01/vsync_irq.c"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 #include "core/io/reader.h"
@@ -219,8 +219,8 @@ TEST(entrance_waits_preserve_prefix_once_and_source_counter_history)
                                           .velocity = { 16, 0 },
                                           .flag = MISSILE_MOVING };
         VSyncIrq_Reset();
-        m_VSync.count1 = initial[i];
-        m_VSync.count2 = 9;
+        p_VSync->count1 = initial[i];
+        p_VSync->count2 = 9;
         uint64_t tick = 0;
         CHECK(!M_BossUpdate(&f.assets, &f.miko, tick));
         CHECK(m_B15M.entrance_active);
@@ -261,8 +261,8 @@ TEST(raw_scroll_wait_freezes_then_runs_only_the_remaining_call)
     m_B15M.teleport_done = true;
     m_B15M.hit.frame = 17;
     VSyncIrq_Reset();
-    m_VSync.count1 = 12;
-    m_VSync.count2 = 25;
+    p_VSync->count1 = 12;
+    p_VSync->count2 = 25;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 0));
     CHECK_EQ_INT(m_B15M.wait.kind, WAIT_SCROLL);
     CHECK_EQ_INT(m_B15M.status.frame, 20);

@@ -13,7 +13,7 @@
 #include "th01/shots.c"
 #include "th01/shots.h"
 #include "th01/timer.h"
-#include "th01/vsync_irq.c"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 #include "pc98/zun/master_rng.h"
@@ -118,8 +118,8 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 const ORB orb = *p_Orb;
                 const size_t used = state.arena.used;
                 VSyncIrq_Reset();
-                m_VSync.count1 = counts[variant];
-                m_VSync.count2 = 32760;
+                p_VSync->count1 = counts[variant];
+                p_VSync->count2 = 32760;
                 memset(&m_Miss, 0, sizeof(m_Miss));
                 Miss_Begin(&state.miko, &state.stage);
                 const uint32_t rng = g_Rng;

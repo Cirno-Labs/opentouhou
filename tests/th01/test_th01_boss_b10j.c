@@ -14,7 +14,7 @@
 #include "th01/shootout_lasers.c"
 #include "th01/shots.h"
 #include "th01/sound.h"
-#include "th01/vsync_irq.c"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 #include "core/io/reader.h"
@@ -129,8 +129,8 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     m_Missiles.slots[0].flag = MISSILE_MOVING;
     m_Missiles.slots[0].previous_top = 36;
     VSyncIrq_Reset();
-    m_VSync.count1 = 12;
-    m_VSync.count2 = 19;
+    p_VSync->count1 = 12;
+    p_VSync->count2 = 19;
     M_BossSetup(&f.assets, &f.miko);
     CHECK((*g_Boss) == &m_B10J.status);
     const size_t used = arena.used;
@@ -222,8 +222,8 @@ TEST(entrance_preserves_prefix_and_requires_every_delay)
     M_Battle(&f, &arena);
     VSyncIrq_Reset();
     M_SetupFixture(&f);
-    m_VSync.count1 = 0;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = 0;
+    p_VSync->count2 = g_VSync->count2;
     m_Missiles.slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
                                       .left = 200 * 16,
                                       .top = 200 * 16,
@@ -469,8 +469,8 @@ TEST(entrance_reuses_the_live_interrupt_counter)
         M_Battle(&f, &arena);
         VSyncIrq_Reset();
         M_SetupFixture(&f);
-        m_VSync.count1 = initial[run];
-        m_VSync.count2 = 33;
+        p_VSync->count1 = initial[run];
+        p_VSync->count2 = 33;
         int32_t edges = 0;
         while (!M_BossUpdate(&f.assets, &f.miko) && edges < 110) {
             VSyncIrq_Edge();

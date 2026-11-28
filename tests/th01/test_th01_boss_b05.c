@@ -14,7 +14,7 @@
 #include "th01/session_private.h"
 #include "th01/shots.h"
 #include "th01/sound.h"
-#include "th01/vsync_irq.c"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 #include "core/io/reader.h"
@@ -231,8 +231,8 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         M_BossSetup(&f.assets);
         const size_t used = arena.used;
         VSyncIrq_Reset();
-        m_VSync.count1 = (uint16_t)reuse;
-        m_VSync.count2 = g_VSync->count2;
+        p_VSync->count1 = (uint16_t)reuse;
+        p_VSync->count2 = g_VSync->count2;
         const TH01_INPUT raw = {};
         const PLAYER player = *p_Player;
         const ORB orb = *p_Orb;

@@ -2,7 +2,7 @@
 #include "th01/input.c"
 #include "th01/score.h"
 #include "th01/score/score.c"
-#include "th01/vsync_irq.c"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 #include "core/base/memory.h"
@@ -51,8 +51,8 @@ TEST(gameover_fades_before_input_and_preserves_shared_counters)
 {
     FIXTURE f;
     M_Init(&f);
-    m_VSync.count1 = 100;
-    m_VSync.count2 = -20;
+    p_VSync->count1 = 100;
+    p_VSync->count2 = -20;
     M_Begin(&f, SCORE_GAMEOVER, 9999);
     CHECK_EQ_INT(m_Registration.phase, SCORE_FADE_WAIT);
     CHECK_EQ_INT(g_VSync->count1, 100);

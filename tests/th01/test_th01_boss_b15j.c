@@ -15,7 +15,7 @@
 #include "th01/shootout_lasers.c"
 #include "th01/shots.h"
 #include "th01/sound.h"
-#include "th01/vsync_irq.c"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 #include "core/io/reader.h"
@@ -227,8 +227,8 @@ TEST(entrance_suspends_without_aging_actors_and_retains_interrupt_history)
             const PALETTE saved = g_Palette->saved;
             const size_t used = arena.used;
             VSyncIrq_Reset();
-            m_VSync.count1 = count == 0 ? 0 : 17;
-            m_VSync.count2 = 21;
+            p_VSync->count1 = count == 0 ? 0 : 17;
+            p_VSync->count2 = 21;
             M_Enter(&f);
             CHECK_EQ_INT(m_B15J.status.phase, B15J_PHASE_SPIRAL);
             CHECK_EQ_INT(m_B15J.status.frame, 0);

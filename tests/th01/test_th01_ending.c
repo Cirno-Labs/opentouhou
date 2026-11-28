@@ -2,7 +2,7 @@
 #include "th01/ending/ending.c"
 #include "th01/music.h"
 #include "th01/session_private.h"
-#include "th01/vsync_irq.c"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 
@@ -212,8 +212,8 @@ TEST(entry_wait_resets_at_start_and_retains_elapsed_count)
     M_Init(&f);
     p_Session->ending = SESSION_END_MAKAI;
     Ending_Begin();
-    m_VSync.count1 = 300;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = 300;
+    p_VSync->count2 = g_VSync->count2;
     CHECK(!Ending_Tick(&(TH01_INPUT) {}, false));
     CHECK_EQ_INT(g_VSync->count1, 0);
     for (int32_t i = 0; i < 5; i++) {
@@ -227,8 +227,8 @@ TEST(entry_wait_resets_at_start_and_retains_elapsed_count)
     f.ending->count = 1;
     f.ending->next = 0;
     f.ending->waiting = false;
-    m_VSync.count1 = 999;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = 999;
+    p_VSync->count2 = g_VSync->count2;
     CHECK(Ending_Tick(&(TH01_INPUT) {}, false));
     CHECK_EQ_INT(g_VSync->count1, 0);
     Arena_Free(&f.arena);

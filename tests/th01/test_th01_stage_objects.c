@@ -9,7 +9,7 @@
 #include "th01/stage/objects.c"
 #include "th01/stage/objects.h"
 #include "th01/video_private.h"
-#include "th01/vsync_irq.c"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 #include "pc98/zun/master_rng.h"
@@ -56,7 +56,7 @@ static void M_Use(CASE *const state)
         m_Active->saved_objects = m_StageObjects;
     }
     *p_Video = state->saved_video;
-    m_VSync = state->saved_vsync;
+    *p_VSync = state->saved_vsync;
     m_StageObjects = state->saved_objects;
     m_Active = state;
 }
@@ -149,8 +149,8 @@ TEST(entrance_consumes_ready_delays_and_preserves_blocked_polls)
             M_Begin(&state, false);
             const size_t used = state.arena.used;
             VSyncIrq_Reset();
-            m_VSync.count1 = raw_counts[timing];
-            m_VSync.count2 = 42;
+            p_VSync->count1 = raw_counts[timing];
+            p_VSync->count2 = 42;
             int32_t edges = 0;
             while (!StageObjects_ResumeEntrance(&state.sprites)
                    && edges < 240) {
