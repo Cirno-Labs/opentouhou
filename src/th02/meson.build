@@ -92,7 +92,6 @@ th02_lib = static_library(
   'menu.c',
   'mpn.c',
   'music/assets.c',
-  'music_room/polygons.c',
   'music_room/logic.c',
   'music_room/render.c',
   'music/wait.c',
