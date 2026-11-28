@@ -14,7 +14,7 @@
 #include "th01/music.c"
 #include "th01/opening.h"
 #include "th01/score.h"
-#include "th01/sound.c"
+#include "th01/sound_private.h"
 
 #include "core/audio.h"
 #include "core/base/arena.h"

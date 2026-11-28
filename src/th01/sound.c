@@ -1,9 +1,9 @@
-#include "th01/sound.h"
-
 #include "th01/music.h"
 #include "th01/session.h"
+#include "th01/sound_private.h"
 
 static size_t m_Song;
+size_t *const p_Song = &m_Song;
 
 void Sound_Effect(const SOUND_EFFECT number)
 {

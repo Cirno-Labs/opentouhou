@@ -21,7 +21,7 @@
 #include "th01/score/score.c"
 #include "th01/session_private.h"
 #include "th01/shots.h"
-#include "th01/sound.c"
+#include "th01/sound_private.h"
 #include "th01/stage/private.h"
 #include "th01/timer_private.h"
 
@@ -641,7 +641,7 @@ TEST(disabled_gameplay_preserves_an_existing_opening_fade)
     Sound_Fade();
     Sound_Stop();
     Sound_Stop();
-    CHECK_EQ_INT(m_Song, 3);
+    CHECK_EQ_INT((*p_Song), 3);
     static MDRV_FRAME expected[4800];
     static MDRV_FRAME actual[4800];
     Mdrv_Render(twin, expected, 4800);
@@ -664,7 +664,7 @@ TEST(enabled_gameplay_controls_the_prepared_producer)
     Sound_Fade();
     Sound_Load(4);
     Sound_Play();
-    CHECK_EQ_INT(m_Song, 4);
+    CHECK_EQ_INT((*p_Song), 4);
     CHECK(!M_EffectSounds());
     Sound_Effect(SOUND_EFFECT_MISS);
     Sound_Stop();
