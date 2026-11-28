@@ -27,15 +27,18 @@ typedef struct {
 // Returns the state replays observe.
 OPENING_SAMPLE Opening_Sample(void);
 
-// Starts the opening at the launcher logo. music_room_render draws the
-// music room: the real functions in production, a fake observer in
-// tests.
+// Starts the opening at the launcher logo. The render hooks draw the
+// music room, high score view and shot select screens: the real
+// functions in production, a fake observer in tests; later re-entries
+// (Opening_BeginProgram, Opening_Shutdown) keep reusing them.
 void Opening_Begin(
     const OPENING_ASSETS *assets, TH02_SESSION *session,
     TH02_SETTINGS *settings, const HIGH_SCORES *scores,
     OPTIONS_MENU_SOUND *sound, TRAM_CONSOLE *console,
     const OPENING_AUDIO *audio, uint8_t next_demo,
-    const MUSIC_ROOM_RENDER *music_room_render);
+    const MUSIC_ROOM_RENDER *music_room_render,
+    const HIGH_SCORE_VIEW_RENDER *high_score_view_render,
+    const SHOT_SELECT_RENDER *shot_select_render);
 
 // Reenters OP without the logo, keeping the music room's state and
 // rechecking whether Extra is open.

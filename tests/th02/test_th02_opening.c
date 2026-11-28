@@ -3,6 +3,7 @@
 #include "tests/th02/th02_menu.c"
 #include "tests/th02/th02_music_room.c"
 #include "tests/th02/th02_palette_fixture.h"
+#include "th02/high_score_view/private.h"
 #include "th02/music_room/private.h"
 #include "th02/opening/logic.c"
 #define M_Audio M_TitleAudio
@@ -64,7 +65,8 @@ static void M_Begin(FIXTURE *const fixture, const HIGH_SCORES *const scores)
     const OPENING_AUDIO audio = { .title = M_RecordAudio, .context = fixture };
     Opening_Begin(
         &fixture->assets, &fixture->session, &fixture->settings, scores,
-        &fixture->sound, nullptr, &audio, 1, &g_TestMusicRoomRender);
+        &fixture->sound, nullptr, &audio, 1, &g_TestMusicRoomRender,
+        &g_TestHighScoreViewRender, &g_ShotSelectRender);
 }
 
 static void M_Init(FIXTURE *const fixture)
@@ -281,15 +283,15 @@ TEST(score_viewer_holds_twenty_frames_then_resumes_with_zero_keys)
     const int32_t before = fixture.session.frame;
     CHECK_EQ_INT(M_Edge(&fixture, GAME_KEY_OK).action, MAIN_MENU_NONE);
     CHECK_EQ_INT(m_Opening.program.phase, OPENING_SCORES);
-    CHECK_EQ_INT(m_Viewer.frame, 1);
-    CHECK(!m_Viewer.input_allowed);
+    CHECK_EQ_INT(p_Viewer->frame, 1);
+    CHECK(!p_Viewer->input_allowed);
     CHECK_EQ_INT(fixture.session.frame, before);
     Opening_Update(false, 0, false);
-    CHECK(!m_Viewer.input_allowed);
+    CHECK(!p_Viewer->input_allowed);
     M_Edge(&fixture, 0);
-    CHECK(m_Viewer.input_allowed);
+    CHECK(p_Viewer->input_allowed);
     M_Edge(&fixture, GAME_KEY_CANCEL);
-    CHECK_EQ_INT(m_Viewer.phase, HIGH_SCORE_VIEW_HOLD);
+    CHECK_EQ_INT(p_Viewer->phase, HIGH_SCORE_VIEW_HOLD);
     CHECK_EQ_INT(m_Opening.program.wait.count, 20);
     for (int frame = 0; frame < 19; frame++) {
         CHECK(!M_Edge(&fixture, GAME_KEY_CANCEL).quit);
@@ -298,7 +300,7 @@ TEST(score_viewer_holds_twenty_frames_then_resumes_with_zero_keys)
     }
     CHECK(!M_Edge(&fixture, GAME_KEY_CANCEL).quit);
     CHECK_EQ_INT(m_Opening.program.phase, OPENING_MENU);
-    CHECK_EQ_INT(m_Viewer.phase, HIGH_SCORE_VIEW_DONE);
+    CHECK_EQ_INT(p_Viewer->phase, HIGH_SCORE_VIEW_DONE);
     CHECK_EQ_INT(fixture.session.frame, before + 1);
     CHECK(!m_Menu.initialized);
     CHECK(!m_Menu.suspended);
@@ -485,8 +487,8 @@ TEST(
     Palette_SetTone(0);
     Opening_BeginDemoReturn(0);
     CHECK_EQ_INT(m_Opening.program.phase, OPENING_RETURN_SCORES);
-    CHECK_EQ_INT(m_Viewer.duration, 350);
-    CHECK_EQ_INT(m_Viewer.frame, 1);
+    CHECK_EQ_INT(p_Viewer->duration, 350);
+    CHECK_EQ_INT(p_Viewer->frame, 1);
     CHECK_EQ_INT(p_Palette->tone, 100);
     CHECK_EQ_INT(f.audio_count, 0);
     for (unsigned edge = 0; edge < 370; edge++) {
@@ -522,12 +524,12 @@ TEST(demo_return_keeps_held_keys_locked_until_release_and_discards_exit_key)
     for (unsigned edge = 0; edge < 3; edge++) {
         M_Edge(&f, GAME_KEY_CANCEL);
         CHECK_EQ_INT(m_Opening.program.phase, OPENING_RETURN_SCORES);
-        CHECK(!m_Viewer.input_allowed);
+        CHECK(!p_Viewer->input_allowed);
     }
     M_Edge(&f, 0);
-    CHECK(m_Viewer.input_allowed);
+    CHECK(p_Viewer->input_allowed);
     M_Edge(&f, GAME_KEY_CANCEL);
-    CHECK_EQ_INT(m_Viewer.phase, HIGH_SCORE_VIEW_HOLD);
+    CHECK_EQ_INT(p_Viewer->phase, HIGH_SCORE_VIEW_HOLD);
     CHECK_EQ_INT(f.audio_count, 0);
     for (unsigned edge = 0; edge < 19; edge++) {
         M_Edge(&f, GAME_KEY_CANCEL);

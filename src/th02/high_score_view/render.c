@@ -125,3 +125,10 @@ void HighScoreViewRender_End(void)
 {
     Clip_Reset();
 }
+
+const HIGH_SCORE_VIEW_RENDER g_HighScoreViewRender = {
+    .begin = HighScoreViewRender_Begin,
+    .frame = HighScoreViewRender_Frame,
+    .flip = HighScoreViewRender_Flip,
+    .end = HighScoreViewRender_End,
+};

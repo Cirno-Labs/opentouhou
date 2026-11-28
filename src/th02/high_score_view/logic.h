@@ -7,7 +7,9 @@ typedef struct {
     bool done;
 } HIGH_SCORE_VIEW_EVENTS;
 
-void HighScoreView_Init(void);
+// render draws the screen: the real functions in production, a fake
+// observer in tests.
+void HighScoreView_Init(const HIGH_SCORE_VIEW_RENDER *render);
 
 // Shows the scores for duration+1 frames and a 20-frame hold; null assets
 // run it without drawing.
