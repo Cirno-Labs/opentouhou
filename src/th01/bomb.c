@@ -1,5 +1,4 @@
-#include "th01/bomb.h"
-
+#include "th01/bomb_private.h"
 #include "th01/pellets.h"
 #include "th01/sound.h"
 
@@ -8,19 +7,8 @@
 
 #include <string.h>
 
-typedef struct {
-    PALETTE white;
-    PALETTE bright;
-    int16_t left[18];
-    int16_t top[18];
-    int16_t frame;
-    int16_t scroll;
-    int8_t tint_offset;
-    VSYNC_WAIT wait;
-    bool waiting;
-} BOMB;
-
 static BOMB m_Bomb;
+BOMB *const p_Bomb = &m_Bomb;
 
 static RESULT M_Load(
     VFS *const vfs, const char *const name, const ALLOCATOR *const allocator,

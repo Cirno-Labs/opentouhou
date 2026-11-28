@@ -1,8 +1,8 @@
 #include "tests/test.h"
 #include "tests/th01/th01_video.h"
 #include "tests/th01/th01_world.h"
-#include "th01/bomb.c"
 #include "th01/bomb.h"
+#include "th01/bomb_private.h"
 #include "th01/hud.h"
 #include "th01/input_private.h"
 #include "th01/orb_private.h"
@@ -91,11 +91,11 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
             CHECK_EQ_INT(g_Palette->saved.colors[7][0], 14);
             CHECK_EQ_INT(g_Palette->saved.colors[7][1], 14);
             CHECK_EQ_INT(g_Palette->saved.colors[7][2], 15);
-            CHECK_EQ_INT(m_Bomb.left[0], Math16_PolarX(304, 252, 2));
-            CHECK_EQ_INT(m_Bomb.top[9], Math16_PolarY(184, 162, -2));
+            CHECK_EQ_INT(p_Bomb->left[0], Math16_PolarX(304, 252, 2));
+            CHECK_EQ_INT(p_Bomb->top[9], Math16_PolarY(184, 162, -2));
         }
         if (frame == 40) {
-            CHECK_EQ_INT(m_Bomb.tint_offset, -9);
+            CHECK_EQ_INT(p_Bomb->tint_offset, -9);
         }
     }
     CHECK_EQ_INT(waits, 23);
@@ -104,11 +104,11 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
     CHECK_EQ_INT(p_Player->invincibility_time, 100);
     CHECK(memcmp(g_Video->pages[0], g_Video->pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK(memcmp(&g_Palette->saved, &state.stage, sizeof(PALETTE)) == 0);
-    const int16_t previous_x = m_Bomb.left[0];
-    const int16_t previous_y = m_Bomb.top[0];
+    const int16_t previous_x = p_Bomb->left[0];
+    const int16_t previous_y = p_Bomb->top[0];
     Bomb_BeginUpdate(&state.miko, &state.assets, 0);
-    CHECK_EQ_INT(m_Bomb.left[0], previous_x);
-    CHECK_EQ_INT(m_Bomb.top[0], previous_y);
+    CHECK_EQ_INT(p_Bomb->left[0], previous_x);
+    CHECK_EQ_INT(p_Bomb->top[0], previous_y);
     CHECK_EQ_INT(p_Pellets->slots[0].decay_frame, 1);
     Arena_Free(&state.arena);
 }
