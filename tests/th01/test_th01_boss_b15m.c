@@ -2,7 +2,7 @@
 #include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_world.h"
 #include "th01/boss/b15m.c"
-#include "th01/boss/entity.c"
+#include "th01/boss/private_entity.h"
 #include "th01/hud/hp_private.h"
 #include "th01/missiles.c"
 #include "th01/orb_private.h"
@@ -128,9 +128,9 @@ TEST(setup_reseeds_without_resetting_actor_or_missile_history)
     CHECK_EQ_INT(m_B15M.bat.orb_hitbox.bottom, 24);
     CHECK_EQ_INT(m_B15M.attack.orb_hitbox.left, 1);
     CHECK_EQ_INT(m_B15M.attack.orb_hitbox.bottom, 4);
-    CHECK(m_Sprites.entities[0] == &f.assets.girl);
-    CHECK(m_Sprites.entities[1] == &f.assets.attack);
-    CHECK(m_Sprites.entities[2] == &f.assets.bat);
+    CHECK(p_Sprites->entities[0] == &f.assets.girl);
+    CHECK(p_Sprites->entities[1] == &f.assets.attack);
+    CHECK(p_Sprites->entities[2] == &f.assets.bat);
     const PALETTE black = {};
     CHECK(memcmp(&m_B15M.post_defeat, &black, sizeof(black)) == 0);
     Arena_Free(&arena);

@@ -1,16 +1,10 @@
-#include "th01/boss/entity.h"
-
+#include "th01/boss/private_entity.h"
 #include "th01/sprite.h"
 
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"
 
 #include <string.h>
-
-typedef struct {
-    const BOS *entities[BOSS_ENTITY_SLOTS];
-    const BOS *animations[BOSS_ANIMATION_SLOTS];
-} BOSS_SPRITES;
 
 typedef enum {
     BOSS_PUT,
@@ -20,6 +14,7 @@ typedef enum {
 } BOSS_PUT_KIND;
 
 static BOSS_SPRITES m_Sprites;
+BOSS_SPRITES *const p_Sprites = &m_Sprites;
 
 static RESULT M_Validate(const BOS *const sprites)
 {

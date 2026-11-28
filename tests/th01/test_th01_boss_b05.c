@@ -2,7 +2,7 @@
 #include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_world.h"
 #include "th01/boss/b05.c"
-#include "th01/boss/entity.c"
+#include "th01/boss/private_entity.h"
 #include "th01/hud/hp_private.h"
 #include "th01/orb_private.h"
 #include "th01/particles.c"
@@ -168,9 +168,9 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     M_BossSetup(&f.assets);
     CHECK((*g_Boss) == &m_B05.status);
     CHECK_EQ_INT(arena.used, used);
-    CHECK(m_Sprites.entities[0] == &f.assets.sphere);
-    CHECK(m_Sprites.entities[1] == &f.assets.flash);
-    CHECK(m_Sprites.entities[2] == &f.assets.person);
+    CHECK(p_Sprites->entities[0] == &f.assets.sphere);
+    CHECK(p_Sprites->entities[1] == &f.assets.flash);
+    CHECK(p_Sprites->entities[2] == &f.assets.person);
     CHECK_EQ_INT(m_B05.sphere.left, 640);
     CHECK_EQ_INT(m_B05.sphere.top, 64);
     CHECK_EQ_INT(m_B05.sphere.orb_hitbox.left, 24);

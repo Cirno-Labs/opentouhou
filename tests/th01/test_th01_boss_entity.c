@@ -1,6 +1,5 @@
 #include "tests/test.h"
-#include "th01/boss/entity.c"
-#include "th01/boss/entity.h"
+#include "th01/boss/private_entity.h"
 #include "th01/orb_private.h"
 
 #include <string.h>
@@ -20,18 +19,18 @@ TEST(shared_slots_rebind_without_changing_other_metadata)
     CHECK_EQ_INT(b.left, 200);
     CHECK_EQ_INT(b.sprites.slot, 2);
     CHECK(IS_OK(BossEntity_Bind(&a, 2, &second)));
-    CHECK(m_Sprites.entities[b.sprites.slot] == &second);
+    CHECK(p_Sprites->entities[b.sprites.slot] == &second);
     CHECK_EQ_INT(a.image, 5);
     BOSS_ANIMATION animation = {};
     CHECK(IS_OK(BossAnimation_Bind(&animation, 1, &first)));
-    CHECK(m_Sprites.animations[1] == &first);
-    CHECK(m_Sprites.entities[2] == &second);
+    CHECK(p_Sprites->animations[1] == &first);
+    CHECK(p_Sprites->entities[2] == &second);
     BOS invalid = first;
     invalid.count = 28;
     RESULT result = BossEntity_Bind(&a, 2, &invalid);
     CHECK(!IS_OK(result));
     Result_Ignore(result);
-    CHECK(m_Sprites.entities[2] == &second);
+    CHECK(p_Sprites->entities[2] == &second);
     CHECK_EQ_INT(a.sprites.count, 1);
     result = BossAnimation_Bind(&animation, 2, &first);
     CHECK(!IS_OK(result));

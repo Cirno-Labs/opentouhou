@@ -3,7 +3,7 @@
 #include "tests/th01/th01_video.h"
 #include "tests/th01/th01_world.h"
 #include "th01/boss/b10m.c"
-#include "th01/boss/entity.c"
+#include "th01/boss/private_entity.h"
 #include "th01/hud/hp_private.h"
 #include "th01/missiles.c"
 #include "th01/orb_private.h"
@@ -148,7 +148,7 @@ TEST(setup_shares_eye_assets_and_retains_static_history)
     CHECK_EQ_INT(m_B10M.pentagram.angle, 450);
     CHECK_EQ_INT(p_Health->first_white, 12);
     CHECK_EQ_INT(p_Health->first_redwhite, 8);
-    CHECK(m_Sprites.entities[0] == &f.assets.eyes);
+    CHECK(p_Sprites->entities[0] == &f.assets.eyes);
     const int16_t left[] = { 64, 512, 192, 384, 288 };
     const int16_t top[] = { 128, 128, 176, 176, 64 };
     for (int32_t i = 0; i < 5; i++) {
