@@ -11,7 +11,7 @@
 #include "th01/hud/hp_private.h"
 #include "th01/hud/hud_private.h"
 #include "th01/miss_private.h"
-#include "th01/music.c"
+#include "th01/music_private.h"
 #include "th01/orb_private.h"
 #include "th01/pellets/private.h"
 #include "th01/player_private.h"
@@ -90,7 +90,7 @@ static void M_EnterEnd(const GAMEPLAY_END_PHASE phase)
 static bool M_EffectSounds(void)
 {
     MDRV_FRAME frames[2400];
-    Mdrv_Render(m_Driver, frames, 2400);
+    Mdrv_Render((*p_Driver), frames, 2400);
     for (size_t i = 0; i < 2400; i++) {
         if (frames[i].effects[0] != 0 || frames[i].effects[1] != 0) {
             return true;
@@ -645,7 +645,7 @@ TEST(disabled_gameplay_preserves_an_existing_opening_fade)
     static MDRV_FRAME expected[4800];
     static MDRV_FRAME actual[4800];
     Mdrv_Render(twin, expected, 4800);
-    Mdrv_Render(m_Driver, actual, 4800);
+    Mdrv_Render((*p_Driver), actual, 4800);
     CHECK(memcmp(expected, actual, sizeof(actual)) == 0);
     Music_Stop();
     CHECK_EQ_INT(f.arena.used, used);
@@ -689,7 +689,7 @@ TEST(prepared_output_survives_world_reset_and_opening_controls)
     Music_Update();
     const size_t used = f.arena.used;
     Gameplay_Reset();
-    CHECK(m_Output == output);
+    CHECK((*p_Output) == output);
     Music_Fade();
     Music_Update();
     float samples[3200];

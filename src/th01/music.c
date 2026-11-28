@@ -1,7 +1,9 @@
-#include "th01/music.h"
+#include "th01/music_private.h"
 
 static MDRV *m_Driver;
 static GAME_AUDIO *m_Output;
+MDRV **const p_Driver = &m_Driver;
+GAME_AUDIO **const p_Output = &m_Output;
 
 RESULT Music_Init(
     const ALLOCATOR *const allocator, const MDRV_MUSIC *const songs,

@@ -11,7 +11,7 @@
 #include "th01/hud/hp_private.h"
 #include "th01/hud/hud_private.h"
 #include "th01/main.h"
-#include "th01/music.c"
+#include "th01/music_private.h"
 #include "th01/opening.h"
 #include "th01/score.h"
 #include "th01/sound_private.h"
@@ -387,7 +387,7 @@ TEST(real_main_initializes_public_gameplay_headless_and_with_audio)
         CHECK(Result_Log(g_GameDesc.init(), LOG_LEVEL_ERROR));
         CHECK_EQ_INT(m_Fixture.textures_live, 3);
         M_Play();
-        CHECK((m_Output != nullptr) == (audio != 0));
+        CHECK(((*p_Output) != nullptr) == (audio != 0));
         M_Shutdown();
     }
 }
