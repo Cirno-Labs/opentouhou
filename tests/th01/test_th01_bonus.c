@@ -5,7 +5,7 @@
 #include "tests/th01/th01_world.h"
 #include "th01/bonus.c"
 #include "th01/bonus_transition.c"
-#include "th01/hud.c"
+#include "th01/hud/hud.c"
 #include "th01/input.c"
 #include "th01/orb.h"
 #include "th01/pellets.c"

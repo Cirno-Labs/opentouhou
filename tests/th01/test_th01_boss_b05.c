@@ -3,7 +3,7 @@
 #include "tests/th01/th01_world.h"
 #include "th01/boss/b05.c"
 #include "th01/boss/entity.c"
-#include "th01/hud_hp.c"
+#include "th01/hud/hp.c"
 #include "th01/orb.c"
 #include "th01/orb.h"
 #include "th01/particles.c"

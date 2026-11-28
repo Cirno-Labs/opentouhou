@@ -1,4 +1,4 @@
-#include "th01/hud_hp.h"
+#include "th01/hud/hp.h"
 
 #include <string.h>
 

@@ -1,4 +1,4 @@
-#include "th01/hud.h"
+#include "th01/hud/hud.h"
 
 #include "th01/session.h"
 #include "th01/sprite.h"

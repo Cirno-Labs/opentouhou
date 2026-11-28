@@ -2,7 +2,7 @@
 #include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_world.h"
 #include "th01/boss/b10j.c"
-#include "th01/hud_hp.c"
+#include "th01/hud/hp.c"
 #include "th01/missiles.c"
 #include "th01/orb.c"
 #include "th01/orb.h"

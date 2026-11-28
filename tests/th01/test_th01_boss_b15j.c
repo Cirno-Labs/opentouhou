@@ -4,7 +4,7 @@
 #include "th01/boss/b15j.c"
 #include "th01/boss/boss.c"
 #include "th01/boss/entity.c"
-#include "th01/hud_hp.c"
+#include "th01/hud/hp.c"
 #include "th01/orb.c"
 #include "th01/orb.h"
 #include "th01/pellets.c"

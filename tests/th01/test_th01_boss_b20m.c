@@ -3,7 +3,7 @@
 #include "tests/th01/th01_world.h"
 #include "th01/boss/b20m.c"
 #include "th01/gameplay.h"
-#include "th01/hud_hp.c"
+#include "th01/hud/hp.c"
 #include "th01/input.c"
 #include "th01/orb.c"
 #include "th01/orb.h"

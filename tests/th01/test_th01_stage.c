@@ -2,7 +2,7 @@
 #include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_video.h"
 #include "tests/th01/th01_world.h"
-#include "th01/hud.c"
+#include "th01/hud/hud.c"
 #include "th01/items.c"
 #include "th01/orb.c"
 #include "th01/orb.h"

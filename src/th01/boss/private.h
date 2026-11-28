@@ -5,7 +5,7 @@
 #include "th01/boss/entity.h"
 #include "th01/boss/strategy.h"
 #include "th01/hud.h"
-#include "th01/hud_hp.h"
+#include "th01/hud/hp.h"
 #include "th01/palette.h"
 #include "th01/player.h"
 #include "th01/shots.h"

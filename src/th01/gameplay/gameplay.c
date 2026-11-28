@@ -3,7 +3,7 @@
 #include "th01/boss/entity.h"
 #include "th01/boss/strategy.h"
 #include "th01/gameplay/private.h"
-#include "th01/hud_hp.h"
+#include "th01/hud/hp.h"
 #include "th01/items.h"
 #include "th01/miss.h"
 #include "th01/missiles.h"

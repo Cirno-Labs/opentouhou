@@ -6,7 +6,7 @@
 #include "th01/extend.h"
 #include "th01/gameplay.h"
 #include "th01/hud.h"
-#include "th01/hud_hp.h"
+#include "th01/hud/hp.h"
 #include "th01/items.h"
 #include "th01/miss.h"
 #include "th01/missiles.h"

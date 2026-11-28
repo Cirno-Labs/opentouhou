@@ -1,7 +1,7 @@
 #include "tests/test.h"
 #include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_world.h"
-#include "th01/hud.c"
+#include "th01/hud/hud.c"
 #include "th01/orb.h"
 #include "th01/pellets.c"
 #include "th01/pellets.h"
