@@ -23,6 +23,7 @@ CHECKS = [
     ("check_header_spacing", r"\.h$", None),
     ("check_header_order", r"\.h$", None),
     ("check_umbrella_header", r"\.h$", None),
+    ("check_module_intro", r"^src/(core|shell|stg|pc98|othpatch)/.*\.h$", None),
     ("check_global_reset", r"^(src|tests)/.*\.[ch]$", None),
     ("check_single_declaration", r"\.[ch]$", None),
     ("check_include_paths", r"\.[ch]$", None),

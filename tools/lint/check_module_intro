@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+"""Fail when a public header does not open with its purpose.
+
+Takes the paths of C headers in the shared layers. A private header
+(private.h or private_*.h) is skipped. In every other header, after
+`#pragma once` and any blank lines, the first non-include, non-blank
+block is a `//` comment of at least two lines, followed by a blank line
+so that it does not read as the comment of the first declaration. A
+missing or single-line comment is an error, and so is code right after
+it. --fix inserts the missing blank line.
+"""
+
+import argparse
+import sys
+from pathlib import Path
+
+
+def is_private(path: Path) -> bool:
+    """Return whether path is a private header, exempt from the rule."""
+    return path.name == "private.h" or path.name.startswith("private_")
+
+
+def intro_span(lines: list[str]) -> tuple[int, int]:
+    """Return the index and length of the module intro comment lines starts
+    with, after skipping `#pragma once` and blank lines and any leading
+    `#include` block; the length is 0 when none comes first."""
+    index = 0
+    n = len(lines)
+    while index < n and (
+        lines[index].strip() == "" or lines[index].strip() == "#pragma once"
+    ):
+        index += 1
+    while index < n and (
+        lines[index].startswith("#include") or lines[index].strip() == ""
+    ):
+        index += 1
+    start = index
+    while index < n and lines[index].startswith("//"):
+        index += 1
+    return start, index - start
+
+
+def intro_length(lines: list[str]) -> int:
+    """Return the length of the module intro comment, 0 when none."""
+    return intro_span(lines)[1]
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fix", action="store_true")
+    parser.add_argument("paths", nargs="*")
+    args = parser.parse_args(sys.argv[1:] if argv is None else argv)
+    failed = False
+    for name in args.paths:
+        path = Path(name)
+        if is_private(path):
+            continue
+        lines = path.read_text(encoding="utf-8").split("\n")
+        start, length = intro_span(lines)
+        end = start + length
+        if length < 2:
+            print(f"{path}: opens with no two-line module purpose comment")
+            failed = True
+        elif end < len(lines) and lines[end].strip():
+            if args.fix:
+                lines.insert(end, "")
+                path.write_text("\n".join(lines), encoding="utf-8")
+            else:
+                print(f"{path}:{end + 1}: leave a blank line after the module comment")
+                failed = True
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
