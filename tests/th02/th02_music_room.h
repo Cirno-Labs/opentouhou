@@ -1,6 +1,7 @@
 #pragma once
 
 #include "th02/music_room/logic.h"
+#include "th02/music_room/render.h"
 
 typedef struct {
     void (*begin)(void *context, uint8_t selection);
@@ -12,3 +13,4 @@ typedef struct {
     void *context;
 } TEST_MUSIC_VIEW;
 void TestMusicRoom_Observe(const TEST_MUSIC_VIEW *view);
+extern const MUSIC_ROOM_RENDER g_TestMusicRoomRender;

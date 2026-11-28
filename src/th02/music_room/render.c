@@ -8,6 +8,7 @@
 #include <string.h>
 
 static MUSIC_ROOM_RENDER_STATE m_Render;
+MUSIC_ROOM_RENDER_STATE *const p_Render = &m_Render;
 
 static void M_Clear(void)
 {
@@ -186,3 +187,12 @@ void MusicRoomRender_End(void)
     Video_CopyPage(0);
     Video_AccessPage(0);
 }
+
+const MUSIC_ROOM_RENDER g_MusicRoomRender = {
+    .begin = MusicRoomRender_Begin,
+    .track = MusicRoomRender_Track,
+    .comment = MusicRoomRender_Comment,
+    .frame = MusicRoomRender_Frame,
+    .flip = MusicRoomRender_Flip,
+    .end = MusicRoomRender_End,
+};

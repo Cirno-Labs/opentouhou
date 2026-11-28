@@ -115,7 +115,7 @@ RESULT Program_Init(void)
     Opening_Begin(
         &p_Program->assets.opening, &p_Program->scenes.session, &g_Th02Settings,
         &p_Program->scenes.scores, &p_Program->audio.sound,
-        &p_Program->display.console, &opening_audio, 1);
+        &p_Program->display.console, &opening_audio, 1, &g_MusicRoomRender);
     MUST(Presenter_Init());
     p_Program->initialized = true;
     return OK;

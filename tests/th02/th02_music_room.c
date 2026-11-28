@@ -53,19 +53,14 @@ static void M_MusicRoomEnd(void)
     }
 }
 
-#define MusicRoomRender_Begin M_MusicRoomBegin
-#define MusicRoomRender_Track M_MusicRoomTrack
-#define MusicRoomRender_Comment M_MusicRoomComment
-#define MusicRoomRender_Frame M_MusicRoomFrame
-#define MusicRoomRender_Flip M_MusicRoomFlip
-#define MusicRoomRender_End M_MusicRoomEnd
-#include "th02/music_room/logic.c"
-#undef MusicRoomRender_Begin
-#undef MusicRoomRender_Track
-#undef MusicRoomRender_Comment
-#undef MusicRoomRender_Frame
-#undef MusicRoomRender_Flip
-#undef MusicRoomRender_End
+const MUSIC_ROOM_RENDER g_TestMusicRoomRender = {
+    .begin = M_MusicRoomBegin,
+    .track = M_MusicRoomTrack,
+    .comment = M_MusicRoomComment,
+    .frame = M_MusicRoomFrame,
+    .flip = M_MusicRoomFlip,
+    .end = M_MusicRoomEnd,
+};
 
 void TestMusicRoom_Observe(const TEST_MUSIC_VIEW *view)
 {

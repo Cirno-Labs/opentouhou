@@ -3,6 +3,7 @@
 #include "tests/th02/th02_menu.c"
 #include "tests/th02/th02_music_room.c"
 #include "tests/th02/th02_palette_fixture.h"
+#include "th02/music_room/private.h"
 #include "th02/opening/logic.c"
 #define M_Audio M_TitleAudio
 #include "th02/title.c"
@@ -63,7 +64,7 @@ static void M_Begin(FIXTURE *const fixture, const HIGH_SCORES *const scores)
     const OPENING_AUDIO audio = { .title = M_RecordAudio, .context = fixture };
     Opening_Begin(
         &fixture->assets, &fixture->session, &fixture->settings, scores,
-        &fixture->sound, nullptr, &audio, 1);
+        &fixture->sound, nullptr, &audio, 1, &g_TestMusicRoomRender);
 }
 
 static void M_Init(FIXTURE *const fixture)
@@ -331,18 +332,18 @@ TEST(music_room_waits_for_release_and_keeps_playing_track_across_visits)
     const int32_t before = fixture.session.frame;
     CHECK_EQ_INT(M_Edge(&fixture, GAME_KEY_OK).action, MAIN_MENU_NONE);
     CHECK_EQ_INT(m_Opening.program.phase, OPENING_MUSIC);
-    CHECK_EQ_INT(m_Room.phase, MUSIC_ROOM_RELEASE);
+    CHECK_EQ_INT(p_Room->phase, MUSIC_ROOM_RELEASE);
     CHECK_EQ_INT(m_Opening.program.wait.count, 1);
     CHECK_EQ_INT(fixture.music_audio_count, 0);
     CHECK_EQ_INT(fixture.session.frame, before);
     Opening_Update(false, 0, false);
-    CHECK_EQ_INT(m_Room.phase, MUSIC_ROOM_RELEASE);
+    CHECK_EQ_INT(p_Room->phase, MUSIC_ROOM_RELEASE);
     M_Edge(&fixture, 0);
     M_Edge(&fixture, GAME_KEY_DOWN);
-    CHECK_EQ_INT(m_Room.selection, 1);
+    CHECK_EQ_INT(p_Room->selection, 1);
     M_Edge(&fixture, 0);
     M_Edge(&fixture, GAME_KEY_OK);
-    CHECK_EQ_INT(m_Room.playing, 1);
+    CHECK_EQ_INT(p_Room->playing, 1);
     CHECK_EQ_INT(fixture.music_audio_count, 3);
     CHECK_EQ_INT(fixture.music_audio[0].action, MUSIC_ROOM_LOAD);
     CHECK(fixture.music_audio[0].midi);
@@ -350,7 +351,7 @@ TEST(music_room_waits_for_release_and_keeps_playing_track_across_visits)
     CHECK_EQ_INT(fixture.music_audio[2].action, MUSIC_ROOM_PLAY);
     CHECK(fixture.music_audio[2].midi);
     CHECK_EQ_INT(fixture.music_audio[2].track, 1);
-    CHECK_EQ_INT(m_Room.phase, MUSIC_ROOM_COMMENT);
+    CHECK_EQ_INT(p_Room->phase, MUSIC_ROOM_COMMENT);
     M_Edge(&fixture, 0);
     M_Edge(&fixture, GAME_KEY_CANCEL);
     CHECK_EQ_INT(m_Opening.program.phase, OPENING_MUSIC);
@@ -364,8 +365,8 @@ TEST(music_room_waits_for_release_and_keeps_playing_track_across_visits)
     fixture.sound.midi_active = false;
     M_Edge(&fixture, GAME_KEY_OK);
     CHECK_EQ_INT(m_Opening.program.phase, OPENING_MUSIC);
-    CHECK_EQ_INT(m_Room.selection, 1);
-    CHECK(!m_Room.midi_active);
+    CHECK_EQ_INT(p_Room->selection, 1);
+    CHECK(!p_Room->midi_active);
     CHECK_EQ_INT(fixture.music_audio_count, 3);
     Arena_Free(&fixture.arena);
 }

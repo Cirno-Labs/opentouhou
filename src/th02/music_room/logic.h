@@ -22,8 +22,9 @@ typedef struct {
     bool done;
 } MUSIC_ROOM_EVENTS;
 
-// Resets the track, renderer and animation, once at startup.
-void MusicRoom_Init(void);
+// Resets the track, renderer and animation, once at startup; render
+// draws the room, the real one in production, a fake in tests.
+void MusicRoom_Init(const MUSIC_ROOM_RENDER *render);
 
 // Resets the room's input state between visits, keeping the playing
 // track.

@@ -1,6 +1,7 @@
 #include "th02/opening/logic.h"
 
 #include "th02/high_score_view.h"
+#include "th02/music_room/render.h"
 #include "th02/shot_select.h"
 #include "th02/wait.h"
 
@@ -349,7 +350,8 @@ void Opening_Begin(
     const OPENING_ASSETS *const assets, TH02_SESSION *const session,
     TH02_SETTINGS *const settings, const HIGH_SCORES *const scores,
     OPTIONS_MENU_SOUND *const sound, TRAM_CONSOLE *const console,
-    const OPENING_AUDIO *const audio, const uint8_t next_demo)
+    const OPENING_AUDIO *const audio, const uint8_t next_demo,
+    const MUSIC_ROOM_RENDER *const music_room_render)
 {
     memset(&m_Opening, 0, sizeof(m_Opening));
     Title_Init();
@@ -357,7 +359,7 @@ void Opening_Begin(
     MainMenu_Init();
     ShotSelect_Init();
     HighScoreView_Init();
-    MusicRoom_Init();
+    MusicRoom_Init(music_room_render);
     m_Opening.assets = assets;
     m_Opening.session = session;
     m_Opening.settings = settings;
@@ -437,5 +439,5 @@ void Opening_Shutdown(void)
     MainMenu_Init();
     ShotSelect_Init();
     HighScoreView_Init();
-    MusicRoom_Init();
+    MusicRoom_Init(&g_MusicRoomRender);
 }
