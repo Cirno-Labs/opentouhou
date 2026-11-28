@@ -1,7 +1,7 @@
 #pragma once
 
 #include "th01/orb.h"
-#include "th01/stage_data.h"
+#include "th01/stage/data.h"
 #include "th01/vsync_irq.h"
 
 #define STAGE_OBJECT_NONE (-1)

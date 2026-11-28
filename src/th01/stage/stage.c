@@ -1,4 +1,4 @@
-#include "th01/stage.h"
+#include "th01/stage/stage.h"
 
 #include "th01/boss.h"
 #include "th01/hud.h"

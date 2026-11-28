@@ -25,7 +25,7 @@
 #include "th01/session.h"
 #include "th01/shots.h"
 #include "th01/sound.c"
-#include "th01/stage_private.h"
+#include "th01/stage/private.h"
 #include "th01/timer.c"
 
 #include "core/audio.h"

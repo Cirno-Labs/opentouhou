@@ -9,7 +9,7 @@
 #include "th01/shootout_lasers.h"
 #include "th01/sound.h"
 #include "th01/sprite.h"
-#include "th01/stage_objects.h"
+#include "th01/stage/objects.h"
 #include "th01/timer.h"
 #include "th01/tram.h"
 #include "th01/transition.h"

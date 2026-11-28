@@ -10,7 +10,7 @@
 #include "th01/session.h"
 #include "th01/shots.h"
 #include "th01/stage.h"
-#include "th01/stage_objects.c"
+#include "th01/stage/objects.c"
 #include "th01/vsync_irq.c"
 
 #include "core/base/arena.h"

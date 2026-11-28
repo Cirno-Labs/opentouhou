@@ -14,7 +14,7 @@
 #include "th01/shots.h"
 #include "th01/sound.h"
 #include "th01/sprite.h"
-#include "th01/stage_objects.h"
+#include "th01/stage/objects.h"
 #include "th01/text.h"
 #include "th01/timer.h"
 #include "th01/tram.h"

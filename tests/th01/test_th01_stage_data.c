@@ -1,5 +1,5 @@
 #include "tests/test.h"
-#include "th01/stage_data.h"
+#include "th01/stage/data.h"
 
 #include "core/base/arena.h"
 #include "core/io/file.h"

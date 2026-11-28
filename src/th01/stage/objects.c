@@ -1,4 +1,4 @@
-#include "th01/stage_objects.h"
+#include "th01/stage/objects.h"
 
 #include "th01/rng.h"
 #include "th01/sprite.h"

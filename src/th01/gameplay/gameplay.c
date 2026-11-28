@@ -11,7 +11,7 @@
 #include "th01/rng.h"
 #include "th01/sound.h"
 #include "th01/stage.h"
-#include "th01/stage_objects.h"
+#include "th01/stage/objects.h"
 #include "th01/tram.h"
 
 #include "core/base/assert.h"

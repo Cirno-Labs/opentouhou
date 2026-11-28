@@ -6,8 +6,8 @@
 #include "th01/player.h"
 #include "th01/rng.h"
 #include "th01/shots.h"
-#include "th01/stage_objects.c"
-#include "th01/stage_objects.h"
+#include "th01/stage/objects.c"
+#include "th01/stage/objects.h"
 #include "th01/vsync_irq.c"
 
 #include "core/base/arena.h"

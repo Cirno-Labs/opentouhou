@@ -14,7 +14,7 @@
 #include "th01/sound.h"
 #include "th01/sprite.h"
 #include "th01/stage.h"
-#include "th01/stage_objects.h"
+#include "th01/stage/objects.h"
 #include "th01/video.h"
 #include "th01/vsync_irq.h"
 

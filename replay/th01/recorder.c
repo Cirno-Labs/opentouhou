@@ -9,7 +9,7 @@
 #include "th01/session.h"
 #include "th01/settings.h"
 #include "th01/stage.h"
-#include "th01/stage_objects.h"
+#include "th01/stage/objects.h"
 
 #include "core/config.h"
 #include "core/io/file.h"

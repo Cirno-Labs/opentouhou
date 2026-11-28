@@ -15,7 +15,7 @@
 #include "th01/shootout_lasers.c"
 #include "th01/shots.h"
 #include "th01/sound.h"
-#include "th01/stage_objects.c"
+#include "th01/stage/objects.c"
 
 #include "core/base/arena.h"
 

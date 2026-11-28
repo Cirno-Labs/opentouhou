@@ -21,7 +21,7 @@
 #include "th01/shootout_lasers.h"
 #include "th01/shots.h"
 #include "th01/stage.h"
-#include "th01/stage_objects.h"
+#include "th01/stage/objects.h"
 
 #include <string.h>
 
