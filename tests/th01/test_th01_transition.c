@@ -1,5 +1,5 @@
 #include "tests/test.h"
-#include "th01/transition.c"
+#include "th01/transition_private.h"
 
 #include "core/base/arena.h"
 
@@ -19,8 +19,8 @@ TEST(zero_delay_finishes_and_supports_saved_palette_alias)
     Transition_Init();
     CHECK(Transition_BeginDiagonal(
         &palette, &palette.saved, &palette.saved, &assets, 0, 123));
-    CHECK(!m_Transition.active);
-    CHECK_EQ_INT(m_Transition.frame, 130);
+    CHECK(!p_Transition->active);
+    CHECK_EQ_INT(p_Transition->frame, 130);
     CHECK(memcmp(g_Video->pages[0], g_Video->pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK_EQ_INT(palette.saved.colors[0][0], 3);
     CHECK_EQ_INT(g_Video->palette[0].red, 51);
@@ -44,30 +44,30 @@ TEST(fractional_delays_include_the_final_empty_frame)
     Transition_Init();
     CHECK(!Transition_BeginDiagonal(
         &palette, &current, &target, &assets, 40, 100));
-    CHECK_EQ_INT(m_Transition.frame, 1);
+    CHECK_EQ_INT(p_Transition->frame, 1);
     CHECK_EQ_INT(current.colors[0][0], 1);
-    const PAGE_TRANSITION waiting = m_Transition;
+    const PAGE_TRANSITION waiting = *p_Transition;
     uint8_t *const frozen = Arena_Alloc(&arena, VIDEO_PAGE_SIZE * 2);
     memcpy(frozen, g_Video->pages[0], VIDEO_PAGE_SIZE * 2);
     CHECK(!Transition_Advance(&palette, &current, &target, &assets, 100));
-    CHECK(memcmp(&m_Transition, &waiting, sizeof(waiting)) == 0);
+    CHECK(memcmp(p_Transition, &waiting, sizeof(*p_Transition)) == 0);
     CHECK(memcmp(frozen, g_Video->pages[0], VIDEO_PAGE_SIZE * 2) == 0);
     CHECK(!Transition_Advance(&palette, &current, &target, &assets, 102));
-    CHECK_EQ_INT(m_Transition.frame, 1);
+    CHECK_EQ_INT(p_Transition->frame, 1);
     CHECK(!Transition_Advance(&palette, &current, &target, &assets, 103));
-    CHECK_EQ_INT(m_Transition.frame, 2);
-    CHECK_EQ_INT(m_Transition.credit, 30);
+    CHECK_EQ_INT(p_Transition->frame, 2);
+    CHECK_EQ_INT(p_Transition->credit, 30);
     CHECK(!Transition_Advance(&palette, &current, &target, &assets, 105));
-    CHECK_EQ_INT(m_Transition.frame, 3);
-    CHECK_EQ_INT(m_Transition.credit, 10);
+    CHECK_EQ_INT(p_Transition->frame, 3);
+    CHECK_EQ_INT(p_Transition->credit, 10);
     CHECK(!Transition_Advance(&palette, &current, &target, &assets, 408));
-    CHECK_EQ_INT(m_Transition.frame, 129);
+    CHECK_EQ_INT(p_Transition->frame, 129);
     CHECK(memcmp(g_Video->pages[0], g_Video->pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK(!Transition_Advance(&palette, &current, &target, &assets, 410));
-    CHECK_EQ_INT(m_Transition.frame, 130);
+    CHECK_EQ_INT(p_Transition->frame, 130);
     CHECK(!Transition_Advance(&palette, &current, &target, &assets, 411));
     CHECK(Transition_Advance(&palette, &current, &target, &assets, 412));
-    CHECK(!m_Transition.active);
+    CHECK(!p_Transition->active);
     CHECK_EQ_INT(current.colors[0][0], 15);
     Arena_Free(&arena);
 }
@@ -91,7 +91,7 @@ TEST(live_target_mutation_and_large_tick_gap)
     CHECK(Transition_Advance(&palette, &current, &target, &assets, UINT64_MAX));
     CHECK_EQ_INT(current.colors[2][1], 0);
     CHECK_EQ_INT(palette.saved.colors[2][1], 0);
-    CHECK_EQ_INT(m_Transition.frame, 130);
+    CHECK_EQ_INT(p_Transition->frame, 130);
     Arena_Free(&arena);
 }
 
@@ -132,11 +132,11 @@ TEST(sub_tick_delays_catch_up_without_rounding_each_step)
         &palette, &palette.saved, &palette.saved, &assets, 1, 0));
     CHECK(!Transition_Advance(
         &palette, &palette.saved, &palette.saved, &assets, 1));
-    CHECK_EQ_INT(m_Transition.frame, 17);
-    CHECK_EQ_INT(m_Transition.credit, 2);
+    CHECK_EQ_INT(p_Transition->frame, 17);
+    CHECK_EQ_INT(p_Transition->credit, 2);
     CHECK(!Transition_Advance(
         &palette, &palette.saved, &palette.saved, &assets, 7));
-    CHECK_EQ_INT(m_Transition.frame, 117);
+    CHECK_EQ_INT(p_Transition->frame, 117);
     CHECK(Transition_Advance(
         &palette, &palette.saved, &palette.saved, &assets, 8));
     Arena_Free(&arena);
