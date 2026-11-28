@@ -2,7 +2,7 @@
 #include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_video.h"
 #include "tests/th01/th01_world.h"
-#include "th01/hud/hud.c"
+#include "th01/hud/hud_private.h"
 #include "th01/items.c"
 #include "th01/items.h"
 #include "th01/orb.h"
@@ -93,7 +93,7 @@ TEST(strict_collision_and_immediate_popup_with_bomb_cap)
     CHECK_EQ_INT(m_Items.bombs[3].flag, ITEM_COLLECTED_OVER_CAP);
     CHECK_EQ_INT(p_Player->remaining_bombs, 5);
     CHECK_EQ_INT(g_Stage->score, 10000);
-    CHECK_EQ_INT(m_Hud.score_previous, 10000);
+    CHECK_EQ_INT(p_Hud->score_previous, 10000);
     for (int32_t i = 0; i < 15; i++) {
         Items_Update(&c.sprites, &c.font);
     }
@@ -117,7 +117,7 @@ TEST(point_width_wrap_cap_and_live_popup_on_drop)
         Items_Update(&c.sprites, &c.font);
         CHECK_EQ_INT(p_Session->point_value, after[i]);
         CHECK_EQ_INT(g_Stage->score, score + after[i]);
-        CHECK_EQ_INT(m_Hud.score_previous, g_Stage->score);
+        CHECK_EQ_INT(p_Hud->score_previous, g_Stage->score);
     }
     Items_ResetStage();
     p_Session->point_value = 10000;

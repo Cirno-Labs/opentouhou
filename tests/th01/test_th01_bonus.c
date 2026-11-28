@@ -5,7 +5,7 @@
 #include "tests/th01/th01_world.h"
 #include "th01/bonus/bonus.c"
 #include "th01/bonus/transition.c"
-#include "th01/hud/hud.c"
+#include "th01/hud/hud_private.h"
 #include "th01/input_private.h"
 #include "th01/orb.h"
 #include "th01/pellets/private.h"
@@ -314,7 +314,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK_EQ_INT(m_Bonus.score_bonus, 96050);
     CHECK_EQ_INT(g_Stage->score, 486050);
     CHECK_EQ_INT(p_Session->lives, 2);
-    CHECK_EQ_INT(m_Hud.score_previous, 0);
+    CHECK_EQ_INT(p_Hud->score_previous, 0);
     CHECK_EQ_INT(p_Session->bonus_per_stage[0], 0);
     CHECK_EQ_INT(p_Session->continues_per_scene[0], 3);
     CHECK_EQ_INT(g_GameInput->bomb_frame, 123);

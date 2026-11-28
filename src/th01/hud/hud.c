@@ -1,5 +1,4 @@
-#include "th01/hud/hud.h"
-
+#include "th01/hud/hud_private.h"
 #include "th01/session.h"
 #include "th01/sprite.h"
 #include "th01/tram.h"
@@ -8,26 +7,8 @@
 
 #include <string.h>
 
-#define HUD_RESOURCE_CAPACITY 32
-
-typedef struct {
-    uint8_t *lives;
-    uint8_t *bombs;
-    uint8_t *numbers;
-    uint8_t *stage;
-    uint8_t *timer;
-    uint32_t score_previous;
-    uint32_t high_previous;
-    int16_t combo_previous;
-    int16_t max_previous;
-    uint8_t maximum_combo;
-    bool force_numbers;
-    const GRF *mask;
-    const PTN *sprites;
-    const GAME_TEXT_FONT *font;
-} HUD;
-
 static HUD m_Hud;
+HUD *const p_Hud = &m_Hud;
 
 static const char m_HudCharacters[] =
     " !\"#$%&'()*+,-./"

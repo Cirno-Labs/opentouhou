@@ -9,7 +9,7 @@
 #include "th01/gameplay/pause.c"
 #include "th01/gameplay/stage.c"
 #include "th01/hud/hp_private.h"
-#include "th01/hud/hud.c"
+#include "th01/hud/hud_private.h"
 #include "th01/miss.c"
 #include "th01/music.c"
 #include "th01/orb_private.h"
@@ -115,7 +115,7 @@ static void M_Init(FIXTURE *const f)
     p_Session->settings.music = SETTINGS_MUSIC_FM;
     f->assets = Th01TestAssets_Create(a);
     Gameplay_Init(a, f->assets);
-    CHECK(m_Hud.numbers != nullptr);
+    CHECK(p_Hud->numbers != nullptr);
     CHECK(Result_Log(
         Music_Init(
             a, f->assets->songs, GAMEPLAY_SONG_COUNT, &f->assets->effects),
@@ -724,7 +724,7 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     Sound_Load(4);
     Sound_Play();
     Music_Update();
-    const void *const numbers = m_Hud.numbers;
+    const void *const numbers = p_Hud->numbers;
     const void *const backgrounds = p_Health->backgrounds;
     const size_t used = f.arena.used;
     BossStrategy_Get(BOSS_SINGYOKU)
@@ -743,8 +743,8 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK_EQ_INT(g_Stage->boss, BOSS_NONE);
     CHECK_EQ_INT(g_VSync->edge, 0);
     CHECK_EQ_INT(p_Player->left, 304);
-    CHECK_EQ_INT(m_Hud.score_previous, 0);
-    CHECK(m_Hud.numbers == numbers);
+    CHECK_EQ_INT(p_Hud->score_previous, 0);
+    CHECK(p_Hud->numbers == numbers);
     CHECK(p_Health->backgrounds == backgrounds);
     CHECK(g_Tram->visible);
     CHECK_EQ_INT(g_Tram->pixels[VIDEO_PAGE_SIZE - 1], 0);

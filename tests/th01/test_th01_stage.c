@@ -2,7 +2,7 @@
 #include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_video.h"
 #include "tests/th01/th01_world.h"
-#include "th01/hud/hud.c"
+#include "th01/hud/hud_private.h"
 #include "th01/items.c"
 #include "th01/orb_private.h"
 #include "th01/pellets.h"
@@ -107,7 +107,7 @@ TEST(card_scores_caps_widths_and_synchronous_order)
             CHECK_EQ_INT(m_StageObjects.cards[0].flag, STAGE_CARD_FLIPPING);
             CHECK(memcmp(&orb, p_Orb, sizeof(ORB)) == 0);
             CHECK_EQ_INT(g_Rng, rng);
-            CHECK_EQ_INT(m_Hud.score_previous, expected);
+            CHECK_EQ_INT(p_Hud->score_previous, expected);
             CHECK_EQ_INT(M_Items(m_Items.points, ITEMS_POINT_COUNT), 1);
             Arena_Free(&state.arena);
         }

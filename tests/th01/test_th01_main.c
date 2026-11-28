@@ -9,7 +9,7 @@
 #include "th01/gameplay/pause.c"
 #include "th01/gameplay/stage.c"
 #include "th01/hud/hp_private.h"
-#include "th01/hud/hud.c"
+#include "th01/hud/hud_private.h"
 #include "th01/main.h"
 #include "th01/music.c"
 #include "th01/opening.h"
@@ -366,7 +366,7 @@ static void M_Play(void)
         CHECK(M_Tick((TH01_INPUT) {}));
     }
     CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_GAMEPLAY);
-    CHECK(m_Hud.numbers != nullptr);
+    CHECK(p_Hud->numbers != nullptr);
     CHECK(p_Health->backgrounds != nullptr);
 }
 

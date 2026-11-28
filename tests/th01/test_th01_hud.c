@@ -3,7 +3,7 @@
 #include "tests/th01/th01_video.h"
 #include "tests/th01/th01_world.h"
 #include "th01/hud.h"
-#include "th01/hud/hud.c"
+#include "th01/hud/hud_private.h"
 #include "th01/orb.h"
 #include "th01/pellets.h"
 #include "th01/player_private.h"
@@ -85,7 +85,7 @@ TEST(resources_snap_before_selection_and_restore_opaque_color15)
     Video_SelectDrawingPage(1);
     p_Session->lives = 2;
     Hud_LivesPut(1);
-    CHECK_EQ_INT(m_Hud.lives[256], 15);
+    CHECK_EQ_INT(p_Hud->lives[256], 15);
     CHECK_EQ_INT(g_Video->drawing_page, 0);
     p_Player->remaining_bombs = 0;
     Hud_BombsPut(1);
@@ -122,22 +122,22 @@ TEST(force_draws_leading_zeroes_and_preserves_resident_high_score)
     p_Session->high_score = 100;
     Hud_SnapNumbers(true);
     p_Stage->score = 1;
-    m_Hud.force_numbers = true;
+    p_Hud->force_numbers = true;
     Hud_ScoreAndCombo();
     CHECK_EQ_INT(p_Session->high_score, 100);
     CHECK_EQ_INT(Th01Test_Pixel(0, 256, 16), 7);
     CHECK_EQ_INT(Th01Test_Pixel(1, 256, 16), 7);
-    m_Hud.force_numbers = false;
+    p_Hud->force_numbers = false;
     p_Stage->score = 101;
     p_Stage->combo = 257;
     Hud_ScoreAndCombo();
     CHECK_EQ_INT(p_Session->high_score, 101);
-    CHECK_EQ_INT(m_Hud.maximum_combo, 1);
-    CHECK_EQ_INT(m_Hud.max_previous, 257);
+    CHECK_EQ_INT(p_Hud->maximum_combo, 1);
+    CHECK_EQ_INT(p_Hud->max_previous, 257);
     Hud_SnapNumbers(false);
-    CHECK_EQ_INT(m_Hud.score_previous, 101);
-    CHECK_EQ_INT(m_Hud.combo_previous, 257);
-    CHECK_EQ_INT(m_Hud.maximum_combo, 0);
+    CHECK_EQ_INT(p_Hud->score_previous, 101);
+    CHECK_EQ_INT(p_Hud->combo_previous, 257);
+    CHECK_EQ_INT(p_Hud->maximum_combo, 0);
     Arena_Free(&f.arena);
 }
 
@@ -150,7 +150,7 @@ TEST(negative_unchanged_combo_keeps_glyphs_and_background)
         memset(g_Video->pages[page] + 17 * 640 + 400, 7, 32);
     }
     p_Stage->combo = -1;
-    m_Hud.combo_previous = -1;
+    p_Hud->combo_previous = -1;
     Hud_ScoreAndCombo();
     CHECK_EQ_INT(Th01Test_Pixel(0, 400, 17), 7);
     CHECK_EQ_INT(Th01Test_Pixel(1, 400, 17), 7);

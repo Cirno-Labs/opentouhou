@@ -1,7 +1,7 @@
 #include "tests/test.h"
 #include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_world.h"
-#include "th01/hud/hud.c"
+#include "th01/hud/hud_private.h"
 #include "th01/orb.h"
 #include "th01/pellets/private.h"
 #include "th01/player.h"
@@ -174,7 +174,7 @@ TEST(redraw_does_not_claim_world_timer_initialization)
     p_Stage->time = 750;
     StageTimer_Redraw(false, true, 0);
     CHECK_EQ_INT(g_Stage->time, 750);
-    CHECK(!m_Hud.force_numbers);
+    CHECK(!p_Hud->force_numbers);
     StageTimer_Redraw(false, false, 0);
     CHECK_EQ_INT(g_Stage->time, 6000);
     Arena_Free(&f.arena);
