@@ -24,6 +24,10 @@ class TestIncludesTest(unittest.TestCase):
         text = '#include "th02/gameplay/private.h"\n'
         self.assertEqual(MODULE.errors(text.split("\n")), [])
 
+    def test_including_a_th01_c_file_fails(self) -> None:
+        text = '#include "th01/boss/b05.c"\n'
+        self.assertEqual(MODULE.errors(text.split("\n")), [0])
+
     def test_check_fails_and_names_the_file(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "test_th02_foo.c"

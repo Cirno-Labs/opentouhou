@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Fail when a th02 test file includes a .c file instead of a header.
+"""Fail when a th01 or th02 test file includes a .c file instead of a header.
 
 A test gets at another file's internals through a private view (a
 p_<Module> pointer) or a hook, never by #including its .c directly: that
 either compiles production code twice or fakes a function by #defining
-its name. Takes the paths of files under tests/th02.
+its name. Takes the paths of files under tests/th01 or tests/th02.
 """
 
 import re
