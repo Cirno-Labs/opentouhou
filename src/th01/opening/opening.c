@@ -1,5 +1,4 @@
-#include "th01/opening/opening.h"
-
+#include "th01/opening/private.h"
 #include "th01/opening/strings.h"
 #include "th01/palette.h"
 #include "th01/settings.h"
@@ -10,28 +9,11 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef struct {
-    PALETTE_STATE palette;
-    PALETTE_FADE fade;
-    MENU_INPUT input;
-    OPENING_ACTION exit_action;
-    int32_t line_count;
-    int32_t line_y[2];
-    int32_t prompt_frame;
-    int32_t selection;
-    int32_t option_item_count;
-    int32_t music_mode;
-    int32_t wait;
-    bool drawn_rows[VIDEO_HEIGHT];
-    bool entering;
-    bool left_locked[2];
-    bool right_locked[2];
-    bool confirm_locked;
-} OPENING_MENU;
-
 static OPENING m_Opening;
 const OPENING *const g_Opening = &m_Opening;
+OPENING *const p_Opening = &m_Opening;
 static OPENING_MENU m_Menu;
+OPENING_MENU *const p_Menu = &m_Menu;
 static const OPENING_ASSETS *m_Assets;
 
 static void M_Image(const PI_IMAGE *const image, const int32_t key)
