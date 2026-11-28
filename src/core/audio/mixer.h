@@ -3,6 +3,9 @@
 #include "core/audio/types.h"
 #include "core/base/result.h"
 
+// Controls playback volume and mute per group and overall, read by the
+// mixer callback on the audio thread.
+
 RESULT Audio_SetMasterVolume(float volume);
 void Audio_SetMuted(bool muted);
 RESULT Audio_SetGroupVolume(AUDIO_GROUP group, float volume);

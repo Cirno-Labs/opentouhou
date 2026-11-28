@@ -1,6 +1,7 @@
 #pragma once
 
-// Includes every part of core/base.
+// Holds the foundations every other module builds on: memory, strings,
+// containers, logging and error reporting.
 
 #include "core/base/arena.h"
 #include "core/base/array.h"

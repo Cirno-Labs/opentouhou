@@ -8,6 +8,7 @@
 // modifiers ctrl, shift, alt and gui take the codes from KEY_GENERIC_MODIFIERS
 // up, in the same order, outside the HID range so that no key can have
 // them. A generic modifier is held while its left or right key is held.
+
 #define KEY_LEFT_MODIFIERS 0xE0
 #define KEY_RIGHT_MODIFIERS 0xE4
 #define KEY_GENERIC_MODIFIERS 0x100

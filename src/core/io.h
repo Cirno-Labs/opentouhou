@@ -1,6 +1,8 @@
 #pragma once
 
-// Includes every part of core/io.
+// Reads and writes files and byte streams, finds the user's locale and
+// runs other programs: the platform-facing I/O every other module goes
+// through.
 
 #include "core/io/file.h"
 #include "core/io/locale.h"

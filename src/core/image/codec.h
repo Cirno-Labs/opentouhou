@@ -4,6 +4,7 @@
 
 // Sets the largest width or height Image_Decode accepts. A larger image is
 // refused before any pixel buffer is allocated for it.
+
 #define IMAGE_MAX_SIZE 16384
 
 // Sets how libswscale converts and scales: bilinear, with chroma read and

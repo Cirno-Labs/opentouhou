@@ -6,6 +6,7 @@
 
 // Copies the UTF-8 path and queues opening, reading and decoding on a worker.
 // Returns whether the request was accepted, before any audio is decoded.
+
 RESULT AudioSample_LoadFile(const char *path, AUDIO_SAMPLE **out);
 
 // Transfers an independently owned reader on success and leaves it empty.

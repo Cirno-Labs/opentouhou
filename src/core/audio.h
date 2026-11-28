@@ -1,5 +1,8 @@
 #pragma once
 
+// Plays and mixes audio for the games: samples, streams and live buses,
+// resampled and decoded behind one mixer and output device.
+
 #include "core/audio/device.h"
 #include "core/audio/live.h"
 #include "core/audio/mixer.h"

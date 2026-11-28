@@ -2,7 +2,8 @@
 
 #include "core/base/result.h"
 
-// Runs other programs.
+// Runs other programs and captures their output, for tools that shell
+// out to an external command.
 
 // Runs the program at args[0] with the arguments args, a list that ends
 // with nullptr, and waits until it ends. Its standard input and standard

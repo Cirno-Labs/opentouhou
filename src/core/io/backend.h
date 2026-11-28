@@ -2,7 +2,9 @@
 
 #include <stdio.h>
 
-// Holds the parts of core/io that differ between platforms.
+// Holds the parts of core/io that differ between platforms: path
+// handling and process spawning. The rest of io/ is platform-independent
+// and calls through here instead of the OS directly.
 
 // Returns path in the form that the platform's file functions take, as a new
 // string that Mem_Free releases. On Windows, this is the extended form

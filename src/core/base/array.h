@@ -23,6 +23,7 @@
 // from the array, so an item of another type fails to compile, and they
 // evaluate each argument once. They call the one generic implementation,
 // the ArrayImpl_ functions, which are not meant to be called directly.
+
 #define ARRAY(type_)                                                           \
     struct {                                                                   \
         type_ *items;                                                          \

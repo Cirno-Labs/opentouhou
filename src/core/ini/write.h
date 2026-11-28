@@ -4,7 +4,10 @@
 #include "core/ini/types.h"
 #include "core/io/writer.h"
 
+// Serializes an INI value back to text, the reverse of ini/parse.h.
+//
 // Writes ini to path, atomically, through Writer_OpenFile.
+
 RESULT Ini_Save(const INI *ini, const char *path);
 
 // Writes every line of ini to writer, in order.

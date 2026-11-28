@@ -3,7 +3,9 @@
 #include "core/base/result.h"
 #include "core/base/types.h"
 
-// A font opens through FontRegistry_Open. Use fonts from the main thread.
+// Rasterizes text with a loaded font. A font opens through
+// FontRegistry_Open; use fonts from the main thread.
+
 typedef struct FONT FONT;
 
 // Initializes font rasterization. Free every font before shutdown.

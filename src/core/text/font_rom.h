@@ -11,6 +11,7 @@
 // with the leftmost pixel in bit 15, and a half-width row uses bits 15
 // through 8. A cell lands on screen as it is, without a baseline or
 // scaling.
+
 typedef struct FONT_ROM FONT_ROM;
 
 // Reads FONT.ROM as T98Tools dumps it: 288768 bytes, with the 8x16 cells

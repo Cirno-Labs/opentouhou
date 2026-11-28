@@ -5,6 +5,7 @@
 
 // Names the source position where a failure was raised. Each failure site
 // has one static RESULT_SITE, so a RESULT refers to it by pointer.
+
 typedef struct {
     const char *file;
     int line;

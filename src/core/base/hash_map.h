@@ -32,6 +32,7 @@
 // compile, and they evaluate each argument once. They call the one generic
 // implementation, the HashMapImpl_ functions, which are not meant to be
 // called directly.
+
 #define HASH_MAP(key_, value_)                                                 \
     struct {                                                                   \
         uint64_t *hashes;                                                      \

@@ -5,6 +5,7 @@
 // Writes the name of a binding into out, such as "left_shift", "south",
 // "alt+return" or "back+start". The parts of a chord are joined with "+".
 // An unknown control gives an empty name.
+
 void Input_BindingName(
     INPUT_BINDING binding, char out[INPUT_BINDING_NAME_SIZE]);
 

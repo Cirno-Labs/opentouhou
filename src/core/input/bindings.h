@@ -8,6 +8,7 @@
 
 // Writes up to capacity bindings of an action of schema into
 // out and returns how many the action has.
+
 size_t Input_GetBindings(
     const INPUT_STATE *input, const INPUT_SCHEMA *schema, int32_t player,
     size_t action, INPUT_BINDING *out, size_t capacity);

@@ -20,5 +20,6 @@
 // not released, because they can be part of the block from Json_Parse. The
 // allocator is meant to be the arena that holds target. When target or
 // source is nullptr or not an object, nothing changes.
+
 void Json_Merge(
     JSON_VALUE *target, const JSON_VALUE *source, const ALLOCATOR *allocator);

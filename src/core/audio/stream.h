@@ -6,6 +6,7 @@
 
 // Describes raw PCM: signed 16-bit little-endian samples, the channels of
 // each sample frame interleaved. One or two channels.
+
 typedef struct {
     uint32_t sample_rate;
     uint32_t channels;
