@@ -1,6 +1,5 @@
-#include "th02/score.h"
-
 #include "th02/hud.h"
+#include "th02/score_private.h"
 #include "th02/sound_effects.h"
 
 #include "core/base/assert.h"
@@ -9,6 +8,7 @@
 
 static SCORE m_Score;
 const SCORE *const g_Score = &m_Score;
+SCORE *const p_Score = &m_Score;
 
 static const int32_t m_Thresholds[] = { 100000, 200000, 300000,
                                         500000, 800000, 99999999 };

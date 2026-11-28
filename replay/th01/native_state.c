@@ -82,7 +82,7 @@ static void M_Double(const double value, uint32_t *const lo, uint32_t *hi)
 
 static void M_Boss(uint32_t *const row)
 {
-    if (g_Stage.boss != BOSS_NONE && (*g_Boss) != nullptr) {
+    if (g_Stage->boss != BOSS_NONE && (*g_Boss) != nullptr) {
         row[TH01_COLUMN_boss_hp] = M_I32((*g_Boss)->hp);
         row[TH01_COLUMN_boss_phase] = M_I32((*g_Boss)->phase);
         row[TH01_COLUMN_boss_phase_frame] = M_I32((*g_Boss)->frame);
@@ -92,16 +92,16 @@ static void M_Boss(uint32_t *const row)
 static void M_Gameplay(uint32_t *const row)
 {
     row[TH01_COLUMN_vsync_count1] = M_I32(g_VSync->count1);
-    row[TH01_COLUMN_frame_rand] = g_Session.frame_rand;
+    row[TH01_COLUMN_frame_rand] = g_Session->frame_rand;
     row[TH01_COLUMN_rng] = g_Rng;
-    row[TH01_COLUMN_game_frames] = g_Stage.frame;
-    row[TH01_COLUMN_stage] = (uint32_t)g_Session.stage_id;
-    row[TH01_COLUMN_route] = g_Session.route;
-    row[TH01_COLUMN_score] = g_Stage.score;
-    row[TH01_COLUMN_lives] = M_I32(g_Session.lives);
+    row[TH01_COLUMN_game_frames] = g_Stage->frame;
+    row[TH01_COLUMN_stage] = (uint32_t)g_Session->stage_id;
+    row[TH01_COLUMN_route] = g_Session->route;
+    row[TH01_COLUMN_score] = g_Stage->score;
+    row[TH01_COLUMN_lives] = M_I32(g_Session->lives);
     row[TH01_COLUMN_bombs] = M_I32(g_Player->remaining_bombs);
     row[TH01_COLUMN_pellet_speed] = M_I32(g_Pellets->speed);
-    row[TH01_COLUMN_stage_time] = g_Stage.time;
+    row[TH01_COLUMN_stage_time] = g_Stage->time;
 
     const PLAYER *const player = g_Player;
     row[TH01_COLUMN_player_left] = M_I32(player->left);
@@ -123,12 +123,12 @@ static void M_Gameplay(uint32_t *const row)
         &row[TH01_COLUMN_orb_force_hi]);
     row[TH01_COLUMN_orb_force_frame] = M_I32(orb->force_frame);
 
-    row[TH01_COLUMN_card_combo] = M_I32(g_Stage.combo);
-    row[TH01_COLUMN_card_flip_cycle] = g_Stage.flip_cycle;
+    row[TH01_COLUMN_card_combo] = M_I32(g_Stage->combo);
+    row[TH01_COLUMN_card_flip_cycle] = g_Stage->flip_cycle;
     row[TH01_COLUMN_card_count] = (uint32_t)g_StageObjects->card_count;
     row[TH01_COLUMN_card_hash] = M_HashCards(g_StageObjects);
 
-    row[TH01_COLUMN_boss] = g_Stage.boss;
+    row[TH01_COLUMN_boss] = g_Stage->boss;
     M_Boss(row);
 
     uint32_t pellet_count;

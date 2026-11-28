@@ -16,7 +16,9 @@ typedef struct {
     uint8_t release_images;
 } SHOT_SELECT_EVENTS;
 
-void ShotSelect_Init(void);
+// render draws the screen: the real functions in production, a fake
+// observer in tests.
+void ShotSelect_Init(const SHOT_SELECT_RENDER *render);
 
 // Draws the shot selection with the mode's clear flags and starts the
 // black-in fade.

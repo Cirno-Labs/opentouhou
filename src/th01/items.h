@@ -7,7 +7,7 @@ void Items_Init(void);
 
 // Caches all popup characters from rom in caller-owned asset storage before
 // ticks.
-RESULT Items_LoadFont(
+RESULT ItemsAssets_LoadFont(
     const FONT_ROM *rom, const ALLOCATOR *allocator, GAME_TEXT_FONT *out);
 
 // Validates immutable sprites and every required glyph before updates.
@@ -18,11 +18,11 @@ RESULT Items_ValidateAssets(const PTN *sprites, const GAME_TEXT_FONT *font);
 void Items_Add(int16_t left, int16_t top, bool bomb);
 
 // Clears the item flags, keeping the shared point value.
-void Items_Reset(void);
+void Items_ResetStage(void);
 
 // Draws visible falling/bouncing sprites, bombs before points.
 void Items_Render(const PTN *sprites);
 
 // Updates and draws all bomb items, then all point items; run it after the
 // player update. Popups show the live point value, as in the original.
-void Items_UpdateAndRender(const PTN *sprites, const GAME_TEXT_FONT *font);
+void Items_Update(const PTN *sprites, const GAME_TEXT_FONT *font);

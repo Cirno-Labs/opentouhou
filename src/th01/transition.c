@@ -1,4 +1,4 @@
-#include "th01/transition.h"
+#include "th01/transition_private.h"
 
 #include "core/base/assert.h"
 
@@ -6,19 +6,8 @@
 
 #define M_FRAME_COUNT 130
 
-typedef struct {
-    uint64_t last_tick;
-    uint32_t credit;
-    uint16_t step_ms;
-    uint16_t frame;
-    int16_t first_left;
-    int16_t first_top;
-    int16_t second_left;
-    int16_t second_top;
-    bool active;
-} PAGE_TRANSITION;
-
 static PAGE_TRANSITION m_Transition;
+PAGE_TRANSITION *const p_Transition = &m_Transition;
 
 static void M_DrawStep(
     PALETTE_STATE *const palette, PALETTE *const current,

@@ -7,15 +7,8 @@
 
 #include <string.h>
 
-typedef struct {
-    int8_t rank;
-    int8_t speed_bias;
-    uint8_t base_layers;
-    uint8_t layers;
-    uint8_t slow_cycle;
-} BULLET_SPAWN;
-
 static BULLET_SPAWN m_Spawn;
+BULLET_SPAWN *const p_Spawn = &m_Spawn;
 
 static int M_Fan(const int count, const int width, const int16_t index)
 {

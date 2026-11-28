@@ -19,3 +19,19 @@ const BOSS_STRATEGY *BossStrategy_Get(const BOSS boss)
     ASSERT(boss > BOSS_NONE && boss < BOSS_COUNT);
     return strategies[boss];
 }
+
+BOSS BossStrategy_ForStage(const int16_t stage, const int16_t route)
+{
+    switch (stage) {
+    case 4:
+        return BOSS_SINGYOKU;
+    case 9:
+        return route == 0 ? BOSS_YUUGENMAGAN : BOSS_MIMA;
+    case 14:
+        return route == 0 ? BOSS_ELIS : BOSS_KIKURI;
+    case 19:
+        return route == 0 ? BOSS_SARIEL : BOSS_KONNGARA;
+    default:
+        return BOSS_NONE;
+    }
+}

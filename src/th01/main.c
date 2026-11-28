@@ -93,7 +93,7 @@ static RESULT M_LoadAssets(void)
         result = M_OpenFont(&rom);
     }
     if (IS_OK(result)) {
-        result = Opening_LoadAssets(
+        result = OpeningAssets_Load(
             vfs, rom, Arena_Allocator(&m_Assets), &m_OpeningAssets);
     }
     if (IS_OK(result)) {
@@ -101,12 +101,12 @@ static RESULT M_LoadAssets(void)
             vfs, rom, Arena_Allocator(&m_Assets), &m_GameplayAssets);
     }
     if (IS_OK(result)) {
-        result = Score_LoadAssets(
+        result = ScoreAssets_Load(
             vfs, Shell_GetUserFiles(), rom, Arena_Allocator(&m_Assets),
             &m_ScoreAssets);
     }
     if (IS_OK(result)) {
-        result = Ending_LoadAssets(
+        result = EndingAssets_Load(
             vfs, rom, Arena_Allocator(&m_Assets), &m_EndingAssets);
     }
     FontRom_Free(rom);
@@ -168,7 +168,7 @@ static RESULT M_Init(void)
         Music_BindOutput(m_Audio);
     }
     Ending_Init(&m_EndingAssets);
-    ZunLogo1_Init(&m_Logo, g_Video.pages);
+    ZunLogo1_Init(&m_Logo, g_Video->pages);
     M_ShowLogoPages();
     MUST(Present_Init(Arena_Allocator(&m_Assets)));
     m_Initialized = true;
@@ -251,15 +251,15 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
         if (request == GAMEPLAY_REQUEST_OPENING) {
             M_BeginOpening(true, raw);
         } else if (request == GAMEPLAY_REQUEST_SCORE) {
-            SCORE_ENTRY entry = { .score = (int32_t)g_Session.score,
-                                  .stage = (int16_t)(g_Session.stage_id + 1) };
+            SCORE_ENTRY entry = { .score = (int32_t)g_Session->score,
+                                  .stage = (int16_t)(g_Session->stage_id + 1) };
             strcpy(
                 entry.route,
-                g_Session.stage_id < 5                       ? "社"
-                    : g_Session.route == SESSION_ROUTE_MAKAI ? "魔"
-                                                             : "地");
+                g_Session->stage_id < 5                       ? "社"
+                    : g_Session->route == SESSION_ROUTE_MAKAI ? "魔"
+                                                              : "地");
             Score_Begin(
-                &m_ScoreAssets, SCORE_GAMEOVER, g_Session.settings.difficulty,
+                &m_ScoreAssets, SCORE_GAMEOVER, g_Session->settings.difficulty,
                 &entry);
             m_Th01Scene = TH01_SCENE_SCORE;
         } else if (request == GAMEPLAY_REQUEST_ENDING) {
@@ -280,7 +280,7 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
                 M_BeginOpening(false, raw);
             } else {
                 const bool running =
-                    ZunLogo1_Tick(&m_Logo, g_Video.pages, m_Sprites.pixels);
+                    ZunLogo1_Tick(&m_Logo, g_Video->pages, m_Sprites.pixels);
                 M_ShowLogoPages();
                 if (!running) {
                     M_BeginOpening(false, raw);
@@ -338,7 +338,7 @@ static void M_Shutdown(void)
     memset(&m_GameplayAssets, 0, sizeof(m_GameplayAssets));
     Arena_Free(&m_Assets);
     memset(&m_Sprites, 0, sizeof(m_Sprites));
-    memset(&g_Video, 0, sizeof(g_Video));
+    Video_Close();
     memset(&m_Logo, 0, sizeof(m_Logo));
     Opening_Close();
     Score_Close();

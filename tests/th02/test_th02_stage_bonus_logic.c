@@ -3,7 +3,7 @@
 #include "tests/th02/th02_score_fixture.h"
 #include "tests/th02/th02_sound.h"
 #include "th02/hud.h"
-#include "th02/stage_bonus/logic.c"
+#include "th02/stage_bonus/private.h"
 
 #include <string.h>
 
@@ -21,10 +21,10 @@ static void M_Init(FIXTURE *const f)
     Tram_Init();
     Palette_Init();
     Score_Init();
-    m_Score.value = 99990;
-    m_Score.delta = 10;
-    m_Score.transferred = 17;
-    m_Score.lives = 4;
+    p_Score->value = 99990;
+    p_Score->delta = 10;
+    p_Score->transferred = 17;
+    p_Score->lives = 4;
     TestSound_Init(&f->sound);
     SoundEffects_Play(SOUND_EFFECT_ITEM);
 }
@@ -41,27 +41,27 @@ TEST(bonus_awards_once_then_waits_for_counted_release_and_press)
         StageBonus_Begin(&f.assets, &run, false, 2, &held);
     CHECK_EQ_INT(result.amount, 2700);
     CHECK_EQ_INT(result.keys, GAME_KEY_UP);
-    CHECK_EQ_INT(m_Score.value, 102700);
-    CHECK_EQ_INT(m_Score.delta, 2710);
-    CHECK_EQ_INT(m_Score.transferred, 17);
-    CHECK_EQ_INT(m_Score.lives, 5);
+    CHECK_EQ_INT(p_Score->value, 102700);
+    CHECK_EQ_INT(p_Score->delta, 2710);
+    CHECK_EQ_INT(p_Score->transferred, 17);
+    CHECK_EQ_INT(p_Score->lives, 5);
     TestSound_Check(&f.sound, 8);
     CHECK_EQ_INT(p_Palette->tone, 62);
     for (unsigned i = 0; i < 8; i++) {
         CHECK(!StageBonus_Update(&held));
     }
-    CHECK_EQ_INT(m_Bonus.wait.key_frames, 0);
+    CHECK_EQ_INT(p_Bonus->wait.key_frames, 0);
     for (unsigned i = 0; i < 8; i++) {
         VSyncIrq_VSync();
         CHECK(!StageBonus_Update(&held));
     }
-    CHECK_EQ_INT(m_Bonus.wait.key.phase, KEY_WAIT_RELEASE);
+    CHECK_EQ_INT(p_Bonus->wait.key.phase, KEY_WAIT_RELEASE);
     const TH02_INPUT release = {};
     for (unsigned i = 0; i < 8; i++) {
         VSyncIrq_VSync();
         CHECK(!StageBonus_Update(&release));
     }
-    CHECK_EQ_INT(m_Bonus.wait.key.phase, KEY_WAIT_PRESS);
+    CHECK_EQ_INT(p_Bonus->wait.key.phase, KEY_WAIT_PRESS);
     const TH02_INPUT ignored = { .space = true, .right = true };
     for (unsigned i = 0; i < 8; i++) {
         VSyncIrq_VSync();
@@ -72,17 +72,17 @@ TEST(bonus_awards_once_then_waits_for_counted_release_and_press)
     VSyncIrq_VSync();
     CHECK(!StageBonus_Update(&held));
     CHECK(!StageBonus_Update(&release));
-    CHECK_EQ_INT(m_Score.value, 102700);
-    CHECK_EQ_INT(m_Score.delta, 2710);
-    CHECK_EQ_INT(m_Score.transferred, 17);
+    CHECK_EQ_INT(p_Score->value, 102700);
+    CHECK_EQ_INT(p_Score->delta, 2710);
+    CHECK_EQ_INT(p_Score->transferred, 17);
     TestSound_Check(&f.sound, -1);
     CHECK_EQ_INT(p_Palette->tone, 62);
-    CHECK_EQ_INT(m_Bonus.waits, 1);
+    CHECK_EQ_INT(p_Bonus->waits, 1);
     for (unsigned i = 0; i < 6; i++) {
         VSyncIrq_VSync();
         CHECK(!StageBonus_Update(&held));
     }
-    CHECK_EQ_INT(m_Bonus.wait.key.phase, KEY_WAIT_RELEASE);
+    CHECK_EQ_INT(p_Bonus->wait.key.phase, KEY_WAIT_RELEASE);
     for (unsigned i = 0; i < 6; i++) {
         VSyncIrq_VSync();
         CHECK(!StageBonus_Update(&release));
@@ -91,14 +91,14 @@ TEST(bonus_awards_once_then_waits_for_counted_release_and_press)
     CHECK(!StageBonus_Update(&held));
     VSyncIrq_VSync();
     CHECK(StageBonus_Update(&held));
-    CHECK_EQ_INT(m_Score.value, 102700);
-    CHECK_EQ_INT(m_Score.delta, 2710);
-    CHECK_EQ_INT(m_Score.transferred, 17);
+    CHECK_EQ_INT(p_Score->value, 102700);
+    CHECK_EQ_INT(p_Score->delta, 2710);
+    CHECK_EQ_INT(p_Score->transferred, 17);
     TestSound_Check(&f.sound, -1);
     const SCORE awarded = *g_Score;
     StageBonus_Init();
     const BONUS empty = {};
-    CHECK(memcmp(&m_Bonus, &empty, sizeof(empty)) == 0);
+    CHECK(memcmp(p_Bonus, &empty, sizeof(empty)) == 0);
     CHECK(memcmp(g_Score, &awarded, sizeof(awarded)) == 0);
     TestSound_Check(&f.sound, -1);
     TestSound_Free(&f.sound);
@@ -108,17 +108,17 @@ TEST(extra_bonus_consumes_explicit_boss_duration_without_a_countdown)
 {
     FIXTURE f;
     M_Init(&f);
-    m_Score.value = m_Score.delta = 0;
+    p_Score->value = p_Score->delta = 0;
     const STAGE_BONUS_RUN run = { .point_items = 1, .sigma_frames = 1234 };
     const TH02_INPUT input = {};
     const STAGE_BONUS_RESULT result =
         StageBonus_Begin(&f.assets, &run, true, 1, &input);
     CHECK_EQ_INT(result.amount, 6876);
-    CHECK_EQ_INT(m_Score.value, 6876);
-    CHECK_EQ_INT(m_Score.delta, 6876);
+    CHECK_EQ_INT(p_Score->value, 6876);
+    CHECK_EQ_INT(p_Score->delta, 6876);
     TestSound_Check(&f.sound, -1);
     CHECK(!StageBonus_Update(&input));
-    CHECK_EQ_INT(m_Score.value, 6876);
+    CHECK_EQ_INT(p_Score->value, 6876);
     TH02_INPUT press = { .shot = true };
     for (unsigned frame = 0; frame < 4; frame++) {
         VSyncIrq_VSync();
@@ -130,9 +130,9 @@ TEST(extra_bonus_consumes_explicit_boss_duration_without_a_countdown)
         complete = StageBonus_Update(&press);
     }
     CHECK(complete);
-    CHECK_EQ_INT(m_Bonus.waits, 0);
+    CHECK_EQ_INT(p_Bonus->waits, 0);
     CHECK(StageBonus_Update(nullptr));
-    CHECK_EQ_INT(m_Bonus.waits, 0);
-    CHECK_EQ_INT(m_Score.value, 6876);
+    CHECK_EQ_INT(p_Bonus->waits, 0);
+    CHECK_EQ_INT(p_Score->value, 6876);
     TestSound_Free(&f.sound);
 }

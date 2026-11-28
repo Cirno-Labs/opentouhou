@@ -2,6 +2,14 @@
 
 #include <string.h>
 
+const AUDIO_CLOCK_RENDER g_AudioClockRender = { .render = GameAudio_Render };
+static const AUDIO_CLOCK_RENDER *m_RenderHook = &g_AudioClockRender;
+
+void AudioClock_InitRender(const AUDIO_CLOCK_RENDER *const render)
+{
+    m_RenderHook = render;
+}
+
 static struct {
     PMD *pmd;
     GAME_AUDIO *output;
@@ -35,7 +43,7 @@ static void M_Render(uint64_t samples)
             samples > UINT32_MAX ? UINT32_MAX : (uint32_t)samples;
         MusicWait_Advance(m_AudioClock.wait, count);
         m_AudioClock.error =
-            GameAudio_Render(m_AudioClock.output, m_AudioClock.pmd, count);
+            m_RenderHook->render(m_AudioClock.output, m_AudioClock.pmd, count);
         samples -= count;
     }
 }

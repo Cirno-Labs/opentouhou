@@ -1,5 +1,4 @@
-#include "th01/route_select.h"
-
+#include "th01/route_select_private.h"
 #include "th01/scale2x.h"
 #include "th01/session.h"
 #include "th01/sound.h"
@@ -16,14 +15,8 @@ typedef struct {
     uint8_t color;
 } ROUTE_LINE;
 
-typedef struct {
-    ROUTE_SELECT_PHASE phase;
-    uint8_t selection;
-    bool holding_up;
-    bool holding_down;
-} ROUTE_SELECT;
-
 static ROUTE_SELECT m_Selection;
+ROUTE_SELECT *const p_Selection = &m_Selection;
 
 static const ROUTE_LINE m_Lines[] = {
     { "ＲＯＵＮＤ　１　ＣＬＥＡＲ", 64, 64, 7 },
@@ -35,24 +28,25 @@ static const ROUTE_LINE m_Lines[] = {
 
 static void M_Palette(const uint8_t route)
 {
-    Palette_SetColor(&g_Palette, route == 0 ? 1 : 3, 15, 15, 15);
-    Palette_SetColor(&g_Palette, route == 0 ? 3 : 1, 9, 9, 9);
+    Palette_SetGlobalColor(route == 0 ? 1 : 3, 15, 15, 15);
+    Palette_SetGlobalColor(route == 0 ? 3 : 1, 9, 9, 9);
 }
 
 static void M_Draw(const ROUTE_SELECT_ASSETS *const assets)
 {
     for (int32_t color = 0; color < 16; color++) {
         for (int32_t component = 0; component < 3; component++) {
-            int8_t *const value = &g_Palette.saved.colors[color][component];
-            if (*value > 0) {
-                *value -= 4;
+            const int8_t value = g_Palette->saved.colors[color][component];
+            if (value > 0) {
+                Palette_SetGlobalSavedComponent(
+                    color, component, (int8_t)(value - 4));
             }
         }
     }
     for (int32_t component = 0; component < 3; component++) {
-        g_Palette.saved.colors[7][component] = 15;
+        Palette_SetGlobalSavedComponent(7, component, 15);
     }
-    Palette_Set(&g_Palette, &g_Palette.saved);
+    Palette_SetGlobal(&g_Palette->saved);
     Video_SelectDrawingPage(1);
     Video_Clear(0);
     const GAME_TEXT_STYLE style = { .clear_background = true };
@@ -73,7 +67,7 @@ static void M_Draw(const ROUTE_SELECT_ASSETS *const assets)
     Sprite_PtnPut(assets->stage, ORB_FIRST_IMAGE, -1, 128, 250);
 }
 
-RESULT RouteSelect_LoadFont(
+RESULT RouteSelectAssets_LoadFont(
     const FONT_ROM *const rom, const ALLOCATOR *const allocator,
     GAME_TEXT_FONT *const out)
 {
@@ -164,8 +158,8 @@ bool RouteSelect_Resume(
                 Scene_Activate(
                     m_Selection.selection == 0 ? assets->makai
                                                : assets->jigoku);
-                g_Session.route = m_Selection.selection;
-                g_Stage.cleared = true;
+                Session_ChooseRoute(m_Selection.selection);
+                Stage_MarkCleared();
                 Player_Hit();
                 m_Selection.phase = ROUTE_SELECT_DONE;
                 return true;

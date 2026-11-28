@@ -14,11 +14,11 @@ typedef enum {
 } PARTICLES_ORIGIN;
 
 // Clears all state for a new gameplay session.
-void Particles_Reset(void);
+void Particles_Init(void);
 
 // Resets the alive flags and spawn settings, keeping motion history.
-void Particles_Init(void);
+void Particles_ResetStage(void);
 
 // Spawns, moves and draws the particles; origin is 0..7.
 // Keeps the original's first-cycle writes past slot 39.
-void Particles_UpdateAndRender(PARTICLES_ORIGIN origin, uint8_t color);
+void Particles_Update(PARTICLES_ORIGIN origin, uint8_t color);

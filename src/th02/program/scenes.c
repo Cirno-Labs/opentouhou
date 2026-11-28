@@ -6,6 +6,30 @@
 static PROGRAM m_Program;
 PROGRAM *const p_Program = &m_Program;
 
+const PROGRAM_HOOKS g_ProgramHooks = {
+    .ending_begin = Ending_Begin,
+    .stage_bonus_update = StageBonus_Update,
+    .ending_update = Ending_Update,
+    .pmd_measure = Pmd_Measure,
+    .high_score_entry_update = HighScoreEntry_Update,
+    .game_over_resume = GameOver_Resume,
+    .game_over_update = GameOver_Update,
+    .opening_update = Opening_Update,
+    .opening_begin_program = Opening_BeginProgram,
+    .high_scores_file_save = HighScoresFile_Save,
+    .shell_get_user_files = Shell_GetUserFiles,
+    .shell_request_save_settings = Shell_RequestSaveSettings,
+    .presenter_draw = Presenter_Draw,
+    .presenter_close = Presenter_Close,
+    .text_font_tram = TextFont_Tram,
+};
+static const PROGRAM_HOOKS *m_Hooks = &g_ProgramHooks;
+
+void Program_InitHooks(const PROGRAM_HOOKS *const hooks)
+{
+    m_Hooks = hooks;
+}
+
 // Fills in the live wall clock and local date for the real program, unless
 // the caller already supplied clock samples or a date of its own.
 // Th02_EnableLiveClock gates this off everywhere else, so a test, a
@@ -111,11 +135,13 @@ RESULT Program_Init(void)
 
     Session_Init(&p_Program->scenes.session);
     p_Program->scenes.session.reduce_effects = g_Th02Settings.reduce_effects;
+    HighScoreEntry_Init(&g_HighScoreEntryRender);
     const OPENING_AUDIO opening_audio = ProgramAudio_Opening();
     Opening_Begin(
         &p_Program->assets.opening, &p_Program->scenes.session, &g_Th02Settings,
         &p_Program->scenes.scores, &p_Program->audio.sound,
-        &p_Program->display.console, &opening_audio, 1);
+        &p_Program->display.console, &opening_audio, 1, &g_MusicRoomRender,
+        &g_HighScoreViewRender, &g_ShotSelectRender, &g_MainMenuRender);
     MUST(Presenter_Init());
     p_Program->initialized = true;
     return OK;
@@ -131,8 +157,9 @@ static void M_Opening(const TH02_INPUT *const input)
     if (p_Program->scenes.session.demo_num != 0) {
         Opening_BeginDemoReturn(GameInput_Sense(input));
     } else {
-        Opening_BeginProgram();
-        Opening_Update(false, GameInput_Sense(input), GameInput_LogoKey(input));
+        m_Hooks->opening_begin_program();
+        m_Hooks->opening_update(
+            false, GameInput_Sense(input), GameInput_LogoKey(input));
     }
 }
 
@@ -140,7 +167,8 @@ static void M_UpdateGameOver(const TH02_INPUT *input);
 
 static void M_UpdateRegistration(const TH02_INPUT *const input)
 {
-    const HIGH_SCORE_ENTRY_EVENTS event = HighScoreEntry_Update(input);
+    const HIGH_SCORE_ENTRY_EVENTS event =
+        m_Hooks->high_score_entry_update(input);
     if (event.save_section) {
         p_Program->scenes.save_scores = true;
     }
@@ -148,14 +176,15 @@ static void M_UpdateRegistration(const TH02_INPUT *const input)
         if (p_Program->scenes.scene == TH02_SCENE_ENDING_REGISTRATION) {
             M_Opening(input);
         } else {
-            GameOver_Resume();
+            m_Hooks->game_over_resume();
             p_Program->scenes.scene = TH02_SCENE_GAME_OVER;
             M_UpdateGameOver(input);
         }
     }
 }
 
-static void M_Registration(const TH02_INPUT *const input, const bool ending)
+void ProgramScenes_Registration(
+    const TH02_INPUT *const input, const bool ending)
 {
     if (!ending) {
         Score_Set(p_Program->scenes.session.score);
@@ -180,9 +209,10 @@ static void M_Registration(const TH02_INPUT *const input, const bool ending)
 
 static void M_UpdateGameOver(const TH02_INPUT *const input)
 {
-    const GAME_OVER_EVENT event = GameOver_Update(GameInput_Sense(input));
+    const GAME_OVER_EVENT event =
+        m_Hooks->game_over_update(GameInput_Sense(input));
     if (event == GAME_OVER_NAME) {
-        M_Registration(input, false);
+        ProgramScenes_Registration(input, false);
     } else if (event == GAME_OVER_RESUME || event == GAME_OVER_EXIT) {
         Gameplay_EndCredit(event == GAME_OVER_RESUME);
         if (event == GAME_OVER_RESUME) {
@@ -200,13 +230,13 @@ static void M_EnterEnding(void)
     p_Program->display.gaiji = p_Program->assets.ending.gaiji;
     HIGH_SCORE_CLEARS clears;
     HighScores_GetClears(&p_Program->scenes.scores, &clears);
-    Ending_Begin(
+    m_Hooks->ending_begin(
         &p_Program->assets.ending, &p_Program->scenes.session,
         ProgramAudio_Story, nullptr, clears.extra_unlocked);
     p_Program->scenes.scene = TH02_SCENE_ENDING;
 }
 
-static void M_Ending(const bool extra)
+void ProgramScenes_Ending(const bool extra)
 {
     if (!extra) {
         Palette_SetTone(0);
@@ -263,7 +293,7 @@ static void M_BeginBonus(const TH02_INPUT *const input)
 
 static void M_UpdateBonus(const TH02_INPUT *const input)
 {
-    if (!StageBonus_Update(input)) {
+    if (!m_Hooks->stage_bonus_update(input)) {
         return;
     }
     if (p_Program->scenes.session.stage == 5) {
@@ -274,7 +304,7 @@ static void M_UpdateBonus(const TH02_INPUT *const input)
             >= 0;
         Score_ClearDelta();
         p_Program->scenes.session.stage = 127;
-        M_Ending(true);
+        ProgramScenes_Ending(true);
         return;
     }
     Hud_BeginWipe(&p_Program->scenes.stage_leave, true);
@@ -339,14 +369,14 @@ static bool M_Update(const void *const input)
             AudioClock_Advance(TH02_CLOCK_MEASURE);
         }
         const uint16_t measure =
-            music_active ? Pmd_Measure(p_Program->audio.pmd) : 0;
-        if (Ending_Update(raw, music_active, measure)) {
-            M_Registration(raw, true);
+            music_active ? m_Hooks->pmd_measure(p_Program->audio.pmd) : 0;
+        if (m_Hooks->ending_update(raw, music_active, measure)) {
+            ProgramScenes_Registration(raw, true);
         }
     } else if (p_Program->scenes.scene == TH02_SCENE_GAMEPLAY) {
         const GAMEPLAY_RESULT result = Gameplay_Update(raw);
         if (result == GAMEPLAY_ENDING) {
-            M_Ending(false);
+            ProgramScenes_Ending(false);
         } else if (result == GAMEPLAY_DEMO_END) {
             M_Opening(raw);
         } else if (
@@ -367,7 +397,7 @@ static bool M_Update(const void *const input)
     } else {
         const bool skip = GameInput_LogoKey(raw);
         const OPENING_EVENTS opening =
-            Opening_Update(edge, GameInput_Sense(raw), skip);
+            m_Hooks->opening_update(edge, GameInput_Sense(raw), skip);
         const MAIN_MENU_EVENTS events = opening.menu;
         text_visible &= !opening.hide_text;
         if (events.quit) {
@@ -395,7 +425,8 @@ static bool M_Update(const void *const input)
             } else {
                 const GAMEPLAY_MUSIC music = ProgramAudio_Gameplay(demo);
                 VSyncIrq_BeginProgram();
-                const TRAM_FONT font = TextFont_Tram(&p_Program->display.font);
+                const TRAM_FONT font =
+                    m_Hooks->text_font_tram(&p_Program->display.font);
                 BombTail_Build(&font, demo, p_Program->assets.bomb_tail);
                 p_Program->display.gaiji = p_Program->assets.gameplay.gaiji;
                 Clip_Reset();
@@ -426,8 +457,8 @@ static bool M_Update(const void *const input)
     if (AudioClock_Failed()) {
         return false;
     }
-    const TRAM_FONT font = TextFont_Tram(&p_Program->display.font);
-    Presenter_Draw(
+    const TRAM_FONT font = m_Hooks->text_font_tram(&p_Program->display.font);
+    m_Hooks->presenter_draw(
         text_visible, &p_Program->display.gaiji, &font,
         p_Program->display.text.first_cell,
         TramDisplay_BlinkVisible(&p_Program->display.text));
@@ -443,13 +474,13 @@ static bool M_FinishTick(void)
     if (p_Program->scenes.save_scores) {
         p_Program->scenes.save_scores = false;
         success = Result_Log(
-            HighScoresFile_Save(
-                Shell_GetUserFiles(), &p_Program->scenes.scores),
+            m_Hooks->high_scores_file_save(
+                m_Hooks->shell_get_user_files(), &p_Program->scenes.scores),
             LOG_LEVEL_ERROR);
     }
     if (p_Program->scenes.save_settings) {
         p_Program->scenes.save_settings = false;
-        Shell_RequestSaveSettings();
+        m_Hooks->shell_request_save_settings();
     }
     if (AudioClock_Failed()) {
         const RESULT error = AudioClock_TakeError();
@@ -492,7 +523,7 @@ void Program_Shutdown(void)
         p_Program->display.gaiji = p_Program->display.saved_gaiji;
         p_Program->display.font_saved = false;
     }
-    Presenter_Close();
+    m_Hooks->presenter_close();
     TextFont_Close(&p_Program->display.font);
     AudioClock_Init(nullptr, nullptr, nullptr);
     GameAudio_Free(p_Program->audio.game);
@@ -510,7 +541,7 @@ void Program_Shutdown(void)
         &p_Program->scenes.stage_leave, 0,
         sizeof(p_Program->scenes.stage_leave));
     Ending_Init();
-    HighScoreEntry_Init();
+    HighScoreEntry_Init(&g_HighScoreEntryRender);
     GameOver_Init();
     p_Program->scenes.save_scores = p_Program->scenes.save_settings = false;
     memset(&p_Program->assets.gameplay, 0, sizeof(p_Program->assets.gameplay));

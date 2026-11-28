@@ -1,12 +1,12 @@
 #include "th01/stage.h"
 
 #include "th01/boss.h"
+#include "th01/boss/strategy.h"
 #include "th01/gameplay/private.h"
 #include "th01/hooks.h"
 #include "th01/hud.h"
 #include "th01/items.h"
 #include "th01/orb.h"
-#include "th01/palette.h"
 #include "th01/pellets.h"
 #include "th01/player.h"
 #include "th01/scene.h"
@@ -14,7 +14,7 @@
 #include "th01/shots.h"
 #include "th01/sound.h"
 #include "th01/sprite.h"
-#include "th01/stage_objects.h"
+#include "th01/stage/objects.h"
 #include "th01/text.h"
 #include "th01/timer.h"
 #include "th01/tram.h"
@@ -25,17 +25,8 @@
 
 #include <string.h>
 
-typedef enum {
-    GP_STAGE_BEGIN,
-    GP_STAGE_BOSS_SETUP,
-    GP_STAGE_FINAL_ENTRANCE,
-    GP_STAGE_OBJECT_ENTRANCE,
-    GP_STAGE_TITLE,
-    GP_STAGE_LABEL,
-    GP_STAGE_NUMBER,
-} GAMEPLAY_STAGE_PHASE;
-
 static GAMEPLAY_STAGE_PHASE m_StagePhase;
+GAMEPLAY_STAGE_PHASE *const p_StagePhase = &m_StagePhase;
 
 static void M_HookBossHp(void)
 {
@@ -75,7 +66,7 @@ static void M_TitleChar(void)
     const uint32_t chars[] = { 0x6771, 0x65b9, 0x2605, 0x9748, 0x7570, 0x4f1d };
     Sound_Effect(SOUND_EFFECT_TITLE_TEXT);
     Tram_PutKanji16Reverse(GameText_Find(
-        &g_GameplayAssets->menu_font, chars[g_Gameplay.animation_frame]));
+        &g_GameplayAssets->menu_font, chars[g_Gameplay->animation_frame]));
 }
 
 static void M_StageBackground(void)
@@ -87,39 +78,35 @@ static void M_StageBackground(void)
         ? boss->background(Gameplay_BossAssets())
         : &a->backgrounds[Session_Scene()];
     Video_SelectDrawingPage(0);
-    if (g_Stage.first_stage) {
-        memcpy(g_Video.pages[0], background->pixels, VIDEO_PAGE_SIZE);
-        Palette_Import(&g_StagePalette, background->palette);
-        Palette_Set(&g_Palette, &g_StagePalette);
+    if (g_Stage->first_stage) {
+        memcpy(g_Video->pages[0], background->pixels, VIDEO_PAGE_SIZE);
+        Palette_ImportStage(background->palette);
+        Palette_SetGlobal(g_StagePalette);
         Gameplay_CopyPage(0, 1);
     } else {
         Gameplay_CopyPage(1, 0);
         Sprite_PtnPut(&a->miko, 0, -1, g_Player->left, PLAYER_TOP);
     }
     Scene_BeginStage(
-        g_Session.stage_id, g_Stage.first_stage, Gameplay_StageSprites());
+        g_Session->stage_id, g_Stage->first_stage, Gameplay_StageSprites());
     m_StagePhase = GP_STAGE_OBJECT_ENTRANCE;
 }
 
 static void M_StageBegin(const uint64_t host_tick)
 {
-    Pellets_EraseAndResetMoving();
-    Shots_EraseAndReset();
-    const int16_t stage = g_Session.stage_id;
-    g_Gameplay.boss_stage = stage % 5 == 4;
-    g_Stage.boss = stage == 4 ? BOSS_SINGYOKU
-        : stage == 9  ? (g_Session.route == 0 ? BOSS_YUUGENMAGAN : BOSS_MIMA)
-        : stage == 14 ? (g_Session.route == 0 ? BOSS_ELIS : BOSS_KIKURI)
-        : stage == 19 ? (g_Session.route == 0 ? BOSS_SARIEL : BOSS_KONNGARA)
-                      : BOSS_NONE;
+    Pellets_RemoveAll();
+    Shots_RemoveAll();
+    const int16_t stage = g_Session->stage_id;
+    p_Gameplay->boss_stage = stage % 5 == 4;
+    Stage_SetBoss(BossStrategy_ForStage(stage, g_Session->route));
     Hud_Load(
         &g_GameplayAssets->hud, Gameplay_StageSprites(),
         &g_GameplayAssets->hud_font);
     Player_EndInvincibility();
     M_BossSetup(host_tick);
-    if (g_Gameplay.boss_stage) {
-        g_Stage.first_stage = true;
-        Items_Reset();
+    if (g_Gameplay->boss_stage) {
+        Stage_SetFirstStage(true);
+        Items_ResetStage();
     }
     const BOSS_STRATEGY *const boss = Gameplay_Boss();
     if (boss != nullptr && boss->resume_setup != nullptr) {
@@ -135,23 +122,23 @@ static void M_StageBegin(const uint64_t host_tick)
 static void M_StageReady(void)
 {
     StageTimer_Redraw(
-        g_Stage.first_stage, g_Stage.timer_initialized, g_Session.route);
-    g_Stage.maximum_combo = 0;
+        g_Stage->first_stage, g_Stage->timer_initialized, g_Session->route);
+    Stage_SetMaximumCombo(0);
     Orb_LeavePortal();
     Player_SetBombFrame(0);
-    g_Stage.frame = 0;
+    Stage_SetFrame(0);
     Orb_ResetFlight();
-    if (g_Session.stage_id % 5 == 0 || g_Gameplay.boss_stage) {
+    if (g_Session->stage_id % 5 == 0 || g_Gameplay->boss_stage) {
         Player_Center();
     }
     Player_StopActions();
-    g_Stage.combo = 0;
+    Stage_SetCombo(0);
     GameplayLife_Begin();
 }
 
 void GameplayStage_Begin(void)
 {
-    g_Gameplay.sequence = GAMEPLAY_SEQUENCE_STAGE;
+    p_Gameplay->sequence = GAMEPLAY_SEQUENCE_STAGE;
     m_StagePhase = GP_STAGE_BEGIN;
 }
 
@@ -180,7 +167,7 @@ bool GameplayStage_Step(const uint64_t host_tick)
         if (!StageObjects_ResumeEntrance(Gameplay_StageSprites())) {
             return false;
         }
-        if (g_Stage.first_stage) {
+        if (g_Stage->first_stage) {
             Gameplay_CopyPage(0, 1);
         } else {
             StageObjects_CopyToBackground();
@@ -192,8 +179,8 @@ bool GameplayStage_Step(const uint64_t host_tick)
             && Gameplay_Boss()->finish_entrance != nullptr) {
             Gameplay_Boss()->finish_entrance();
         }
-        g_Gameplay.animation_frame = 0;
-        if (g_Session.stage_id % 5 == 0 || g_Gameplay.boss_stage) {
+        p_Gameplay->animation_frame = 0;
+        if (g_Session->stage_id % 5 == 0 || g_Gameplay->boss_stage) {
             M_TitleChar();
             m_StagePhase = GP_STAGE_TITLE;
         } else {
@@ -205,7 +192,7 @@ bool GameplayStage_Step(const uint64_t host_tick)
         if (!VSyncIrq_DelayReady(8)) {
             return false;
         }
-        if (++g_Gameplay.animation_frame < 6) {
+        if (++p_Gameplay->animation_frame < 6) {
             M_TitleChar();
         } else {
             M_Line("STAGE");
@@ -217,7 +204,7 @@ bool GameplayStage_Step(const uint64_t host_tick)
             return false;
         }
         {
-            const uint32_t number = (uint32_t)(g_Session.stage_id + 1);
+            const uint32_t number = (uint32_t)(g_Session->stage_id + 1);
             const GAME_TEXT_GLYPH *glyphs[] = {
                 GameText_Find(&g_GameplayAssets->menu_font, '0' + number / 10),
                 GameText_Find(&g_GameplayAssets->menu_font, '0' + number % 10),

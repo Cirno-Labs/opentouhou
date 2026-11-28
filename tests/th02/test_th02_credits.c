@@ -1,7 +1,8 @@
 #include "tests/test.h"
 #include "tests/th02/th02_clip_fixture.h"
 #include "tests/th02/th02_palette_fixture.h"
-#include "th02/ending/credits.c"
+#include "th02/ending/images.h"
+#include "th02/ending/private_credits.h"
 
 #include "core/base/memory.h"
 
@@ -55,7 +56,7 @@ static void M_Init(FIXTURE *const f)
         }
     }
     Credits_Begin(&f->assets);
-    CHECK(m_Credits.assets == &f->assets);
+    CHECK(p_Credits->assets == &f->assets);
 }
 
 static void M_Free(FIXTURE *const f)
@@ -82,18 +83,18 @@ TEST(credits_complete_with_music_or_fallback)
             accepted++;
             done = Credits_Update(&input, music, UINT16_MAX);
             if (!done) {
-                const CREDITS before = m_Credits;
+                const CREDITS before = *p_Credits;
                 const uint16_t counter = g_VSync.count1;
                 CHECK(!Credits_Update(&input, !music, 0));
-                CHECK(memcmp(&before, &m_Credits, sizeof(before)) == 0);
+                CHECK(memcmp(&before, p_Credits, sizeof(before)) == 0);
                 CHECK_EQ_INT(g_VSync.count1, counter);
             }
         }
         CHECK(done);
         CHECK_EQ_INT(accepted, music ? 598 : 2083);
         CHECK_EQ_INT(g_VSync.count2, (uint16_t)(65530 + accepted));
-        CHECK_EQ_INT(m_Credits.image, 11);
-        CHECK_EQ_INT(m_Credits.title_top, 368);
+        CHECK_EQ_INT(p_Credits->image, 11);
+        CHECK_EQ_INT(p_Credits->title_top, 368);
         CHECK_EQ_INT(g_Video.drawing_page, 0);
         CHECK_EQ_INT(g_Video.visible_page, 0);
         CHECK_EQ_INT(g_Grcg->mode, 0);
@@ -119,14 +120,14 @@ TEST(active_music_polls_only_after_a_frame_and_fixes_each_gate_mode)
     for (size_t i = 0; i < 9; i++) {
         VSyncIrq_VSync();
         CHECK(!Credits_Update(&input, false, 5));
-        CHECK_EQ_INT(m_Credits.phase, CREDITS_MEASURE);
+        CHECK_EQ_INT(p_Credits->phase, CREDITS_MEASURE);
         CHECK_EQ_INT(g_VSync.count1, 0);
     }
     CHECK(!Credits_Update(&input, false, 6));
-    CHECK_EQ_INT(m_Credits.title_frame, 0);
+    CHECK_EQ_INT(p_Credits->title_frame, 0);
     VSyncIrq_VSync();
     CHECK(!Credits_Update(&input, false, 6));
-    CHECK_EQ_INT(m_Credits.title_frame, 1);
+    CHECK_EQ_INT(p_Credits->title_frame, 1);
     CHECK_EQ_INT(g_Video.pages[0][184 * 640 + 432], 1);
     M_Free(&f);
 }

@@ -42,7 +42,7 @@ typedef struct {
     SESSION_END ending;
 } SESSION;
 
-extern SESSION g_Session;
+extern const SESSION *const g_Session;
 
 // Zeroes the session.
 void Session_Init(void);
@@ -72,3 +72,53 @@ void Session_ClearHistory(void);
 
 // Clears the ending and returns to the first stage.
 void Session_ClearProgress(void);
+
+// Raises the item point value by 1000 below 10000, then by 10000, capped at
+// 65530. Returns the new value.
+uint16_t Session_RaisePointValue(void);
+
+// Clears the item point value, as a dropped or missed item does.
+void Session_ResetPointValue(void);
+
+// Grants one life below the cap of 6. Returns whether it granted one.
+bool Session_GrantLife(void);
+
+// Spends one life above 0. Returns whether it spent one.
+bool Session_LoseLife(void);
+
+// Advances to the next stage.
+void Session_AdvanceStage(void);
+
+// Saves the frame counter as the ending's RNG seed checkpoint.
+void Session_MarkExitCheckpoint(void);
+
+// Advances the frame counter by one tick.
+void Session_AdvanceFrameRand(void);
+
+// Restores the live high score from the rank table's leader.
+void Session_SyncHighScore(void);
+
+// Records score as the new high score if it exceeds the current one.
+// Returns whether it did.
+bool Session_RecordHighScore(uint32_t score);
+
+// Records a route's final victory: sets the ending from the route and
+// raises the highest score if stage_score exceeds it.
+void Session_RecordVictory(uint32_t stage_score);
+
+// Raises the highest score if stage_score exceeds it, then clears score for
+// the continued run.
+void Session_BeginContinueRun(uint32_t stage_score);
+
+// Sets the chosen route.
+void Session_ChooseRoute(uint8_t route);
+
+// Syncs the live high score table leader from the score table.
+void Session_SyncTableHighScore(uint32_t table_high_score);
+
+// Records a stage's bonus total in its scene history slot.
+void Session_RecordStageBonus(int32_t stage_number, uint32_t bonus);
+
+// Records the run's total continues in the given stage's scene history
+// slot.
+void Session_RecordContinuesForScene(int32_t stage_number);

@@ -27,10 +27,10 @@ static void M_CheckDac(
     const int32_t index, const int32_t red, const int32_t green,
     const int32_t blue)
 {
-    CHECK_EQ_INT(g_Video.palette[index].red, (red & 15) * 17);
-    CHECK_EQ_INT(g_Video.palette[index].green, (green & 15) * 17);
-    CHECK_EQ_INT(g_Video.palette[index].blue, (blue & 15) * 17);
-    CHECK_EQ_INT(g_Video.palette[index].alpha, 255);
+    CHECK_EQ_INT(g_Video->palette[index].red, (red & 15) * 17);
+    CHECK_EQ_INT(g_Video->palette[index].green, (green & 15) * 17);
+    CHECK_EQ_INT(g_Video->palette[index].blue, (blue & 15) * 17);
+    CHECK_EQ_INT(g_Video->palette[index].alpha, 255);
 }
 
 static void M_CheckShown(const PALETTE *const colors)
@@ -168,11 +168,11 @@ TEST(shared_fades_apply_all_sixteen_steps_without_changing_saved_colors)
         state.resource = colors;
         state.tone = 43;
         const PALETTE_STATE original = state;
-        const VIDEO before = g_Video;
+        const VIDEO before = *g_Video;
         PALETTE_FADE fade;
         Palette_BeginFade(&fade, &state, kind);
         CHECK(
-            memcmp(g_Video.palette, before.palette, sizeof(g_Video.palette))
+            memcmp(g_Video->palette, before.palette, sizeof(g_Video->palette))
             == 0);
         for (int32_t step = 1; step <= 16; step++) {
             CHECK(Palette_FadeStep(&fade, &state));
@@ -201,11 +201,11 @@ TEST(shared_fades_apply_all_sixteen_steps_without_changing_saved_colors)
             }
             M_CheckShown(&expected);
         }
-        const VIDEO finished = g_Video;
+        const VIDEO finished = *g_Video;
         CHECK(!Palette_FadeStep(&fade, &state));
         CHECK(!Palette_FadeStep(&fade, &state));
         CHECK(
-            memcmp(g_Video.palette, finished.palette, sizeof(g_Video.palette))
+            memcmp(g_Video->palette, finished.palette, sizeof(g_Video->palette))
             == 0);
     }
     Arena_Free(&arena);

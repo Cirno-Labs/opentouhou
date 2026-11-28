@@ -1,7 +1,7 @@
 #include "tests/test.h"
 #include "tests/th02/th02_clip_fixture.h"
 #include "tests/th02/th02_palette_fixture.h"
-#include "th02/ending/verdict.c"
+#include "th02/ending/private_verdict.h"
 
 #include "core/base/arena.h"
 #include "core/base/memory.h"
@@ -83,7 +83,7 @@ TEST(verdict_runs_all_rows_with_counter_waits_and_separate_skill_reveals)
         const TH02_INPUT none = {};
         CHECK_EQ_INT(g_VSync.count1, 65534);
         CHECK(!Verdict_Update(&none));
-        CHECK_EQ_INT(m_Verdict.phase, VERDICT_FADE_IN);
+        CHECK_EQ_INT(p_Verdict->phase, VERDICT_FADE_IN);
         CHECK_EQ_INT(g_VSync.count1, 65534);
         uint16_t accepted = 0;
         uint8_t rows = 0;
@@ -91,21 +91,22 @@ TEST(verdict_runs_all_rows_with_counter_waits_and_separate_skill_reveals)
         for (size_t tick = 0; tick < 3000 && !done; tick++) {
             VSyncIrq_VSync();
             accepted++;
-            const TH02_INPUT sample = { .ok = m_Verdict.phase == VERDICT_CONFIRM
-                                            && m_Verdict.wait.key.phase
-                                                == KEY_WAIT_PRESS };
-            const uint8_t before = m_Verdict.reveal.step;
+            const TH02_INPUT sample = {
+                .ok = p_Verdict->phase == VERDICT_CONFIRM
+                    && p_Verdict->wait.key.phase == KEY_WAIT_PRESS
+            };
+            const uint8_t before = p_Verdict->reveal.step;
             done = Verdict_Update(&sample);
-            if (m_Verdict.phase == VERDICT_REVEAL && m_Verdict.reveal.step == 1
-                && before != 1) {
+            if (p_Verdict->phase == VERDICT_REVEAL
+                && p_Verdict->reveal.step == 1 && before != 1) {
                 CHECK(rows < ARRAY_SIZE(row_frames));
                 CHECK_EQ_INT(accepted, row_frames[rows]);
-                CHECK_EQ_INT(m_Verdict.row, rows);
+                CHECK_EQ_INT(p_Verdict->row, rows);
                 rows++;
             }
-            const VERDICT unchanged = m_Verdict;
+            const VERDICT unchanged = *p_Verdict;
             CHECK_EQ_INT(Verdict_Update(&sample), done);
-            CHECK(memcmp(&unchanged, &m_Verdict, sizeof(unchanged)) == 0);
+            CHECK(memcmp(&unchanged, p_Verdict, sizeof(unchanged)) == 0);
         }
         CHECK(done);
         CHECK_EQ_INT(rows, 9);
@@ -130,7 +131,7 @@ TEST(
     M_Init(fixture);
     TH02_INPUT sample = { .shot = true };
     CHECK(!Verdict_Update(&sample));
-    while (m_Verdict.phase != VERDICT_CONFIRM) {
+    while (p_Verdict->phase != VERDICT_CONFIRM) {
         VSyncIrq_VSync();
         CHECK(!Verdict_Update(&sample));
     }
@@ -138,22 +139,22 @@ TEST(
         VSyncIrq_VSync();
         CHECK(!Verdict_Update(&sample));
         CHECK_EQ_INT(g_VSync.count1, i % 2 == 0 ? 1 : 0);
-        CHECK_EQ_INT(m_Verdict.wait.key.phase, KEY_WAIT_RELEASE);
+        CHECK_EQ_INT(p_Verdict->wait.key.phase, KEY_WAIT_RELEASE);
     }
     sample = (TH02_INPUT) { .space = true, .up = true, .q = true };
     for (size_t i = 0; i < 12; i++) {
         VSyncIrq_VSync();
         CHECK(!Verdict_Update(&sample));
-        CHECK_EQ_INT(m_Verdict.phase, VERDICT_CONFIRM);
+        CHECK_EQ_INT(p_Verdict->phase, VERDICT_CONFIRM);
     }
-    CHECK_EQ_INT(m_Verdict.wait.key.phase, KEY_WAIT_PRESS);
+    CHECK_EQ_INT(p_Verdict->wait.key.phase, KEY_WAIT_PRESS);
     sample.extra_group_0 = true;
     VSyncIrq_VSync();
     CHECK(!Verdict_Update(&sample));
-    CHECK_EQ_INT(m_Verdict.phase, VERDICT_CONFIRM);
+    CHECK_EQ_INT(p_Verdict->phase, VERDICT_CONFIRM);
     VSyncIrq_VSync();
     CHECK(!Verdict_Update(&sample));
-    CHECK_EQ_INT(m_Verdict.phase, VERDICT_FADE_OUT);
+    CHECK_EQ_INT(p_Verdict->phase, VERDICT_FADE_OUT);
     CHECK_EQ_INT(g_VSync.count1, 2);
     Arena_Free(&fixture->arena);
     Mem_Free(fixture);

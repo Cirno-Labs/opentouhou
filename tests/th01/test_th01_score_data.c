@@ -1,6 +1,6 @@
 #include "tests/test.h"
 #include "tests/test_dir.h"
-#include "th01/score_data.h"
+#include "th01/score/data.h"
 
 #include "core/base/memory.h"
 #include "core/hash/sha256.h"

@@ -15,6 +15,19 @@ typedef struct {
     DRAW_TEXT comments[MUSIC_ROOM_TRACK_COUNT][MUSIC_ROOM_COMMENT_LINES];
 } MUSIC_ROOM_ASSETS;
 
+// The room's drawing, as MusicRoom_Init takes it: the real functions
+// below in production, a fake observer in tests.
+typedef struct {
+    void (*begin)(
+        const MUSIC_ROOM_ASSETS *assets, const TITLE_ASSETS *menu,
+        uint8_t selection);
+    void (*track)(uint8_t selection, uint8_t color);
+    void (*comment)(uint8_t selection);
+    void (*frame)(void);
+    void (*flip)(uint8_t drawing_page, uint8_t visible_page);
+    void (*end)(void);
+} MUSIC_ROOM_RENDER;
+
 // Resets snapshots, animation and seed, once at startup.
 void MusicRoomRender_Init(void);
 
@@ -36,3 +49,5 @@ void MusicRoomRender_Flip(uint8_t drawing_page, uint8_t visible_page);
 
 // Restores both menu pages.
 void MusicRoomRender_End(void);
+
+extern const MUSIC_ROOM_RENDER g_MusicRoomRender;

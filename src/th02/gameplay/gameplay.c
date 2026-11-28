@@ -25,6 +25,7 @@
 #define CONTINUE_INVINCIBILITY_FRAMES 200
 
 static GAMEPLAY m_Gameplay;
+GAMEPLAY *const p_Gameplay = &m_Gameplay;
 
 static bool M_DemoInput(void)
 {
@@ -412,7 +413,7 @@ void Gameplay_Begin(
     }
     m_Gameplay.fix_bomb_transition_overread = fix_bomb_transition_overread;
     m_Gameplay.bomb_transition_tail = bomb_transition_tail;
-    PauseMenu_Init();
+    PauseMenu_Init(&g_PauseMenuRender);
     Score_Init();
     Player_Init();
     PointNumbers_Init();
@@ -544,5 +545,5 @@ void Gameplay_Shutdown(void)
 {
     GameplayMemory_Shutdown();
     memset(&m_Gameplay, 0, sizeof(m_Gameplay));
-    PauseMenu_Init();
+    PauseMenu_Init(&g_PauseMenuRender);
 }

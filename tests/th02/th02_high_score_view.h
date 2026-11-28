@@ -12,3 +12,4 @@ typedef struct {
 void TestHighScoreView_Observe(const TEST_HIGH_SCORE_VIEW *view);
 void TestHighScoreView_Begin(
     uint16_t duration, const TEST_HIGH_SCORE_VIEW *view);
+extern const HIGH_SCORE_VIEW_RENDER g_TestHighScoreViewRender;

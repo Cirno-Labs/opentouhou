@@ -1,6 +1,7 @@
 #pragma once
 
 #include "th01/bos.h"
+#include "th01/ptn.h"
 
 #include "core/vfs/types.h"
 #include "pc98/zun/pi.h"
@@ -43,12 +44,15 @@ void Boss_ClearTestDamage(void);
 int16_t Boss_Rank(int16_t easy, int16_t normal, int16_t hard, int16_t lunatic);
 
 // Loads the named BOS file.
-RESULT Boss_LoadBos(
+RESULT BossAssets_LoadBos(
     VFS *vfs, const char *name, const ALLOCATOR *allocator, BOS *out);
 
 // Loads the named PI image.
-RESULT Boss_LoadBackground(
+RESULT BossAssets_LoadBackground(
     VFS *vfs, const char *name, const ALLOCATOR *allocator, PI_IMAGE *out);
+
+// Loads BOSS3_M.PTN, the missile sprites shared by boss3's two fights.
+RESULT BossAssets_LoadMissiles(VFS *vfs, const ALLOCATOR *allocator, PTN *out);
 
 // A debug request for the current boss to take one point of damage on its
 // next hit test.

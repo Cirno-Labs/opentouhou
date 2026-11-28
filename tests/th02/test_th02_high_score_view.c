@@ -1,5 +1,6 @@
 #include "tests/test.h"
-#include "tests/th02/th02_high_score_view.c"
+#include "tests/th02/th02_high_score_view.h"
+#include "th02/high_score_view/private.h"
 
 #include "core/base/utils.h"
 
@@ -60,10 +61,10 @@ TEST(opening_key_must_be_released_before_a_later_press_exits)
     for (int frame = 1; frame <= 3; frame++) {
         CHECK_EQ_INT(HighScoreView_Update(0x80).wait_frames, 1);
         CHECK_EQ_INT(trace.frame, frame);
-        CHECK(!m_Viewer.input_allowed);
+        CHECK(!p_Viewer->input_allowed);
     }
     CHECK_EQ_INT(HighScoreView_Update(0).wait_frames, 1);
-    CHECK(m_Viewer.input_allowed);
+    CHECK(p_Viewer->input_allowed);
     CHECK_EQ_INT(trace.render_count, 4);
     const HIGH_SCORE_VIEW_EVENTS exit = HighScoreView_Update(0x1);
     CHECK_EQ_INT(exit.wait_frames, 20);
@@ -73,9 +74,9 @@ TEST(opening_key_must_be_released_before_a_later_press_exits)
     CHECK_EQ_INT(trace.end_count, 0);
     CHECK(HighScoreView_Update(0xffff).done);
     CHECK_EQ_INT(trace.end_count, 1);
-    const HIGH_SCORE_VIEWER completed = m_Viewer;
+    const HIGH_SCORE_VIEWER completed = *p_Viewer;
     CHECK(HighScoreView_Update(0).done);
-    CHECK(memcmp(&m_Viewer, &completed, sizeof(completed)) == 0);
+    CHECK(memcmp(p_Viewer, &completed, sizeof(completed)) == 0);
     CHECK_EQ_INT(trace.end_count, 1);
 }
 
@@ -109,7 +110,7 @@ TEST(any_nonzero_gameplay_mask_exits_after_a_clear_poll)
         CHECK_EQ_INT(HighScoreView_Update(0).wait_frames, 1);
         CHECK_EQ_INT(
             HighScoreView_Update((uint16_t)(1u << bit)).wait_frames, 20);
-        CHECK_EQ_INT(m_Viewer.frame, 1);
+        CHECK_EQ_INT(p_Viewer->frame, 1);
         CHECK(HighScoreView_Update(0xffff).done);
     }
 }

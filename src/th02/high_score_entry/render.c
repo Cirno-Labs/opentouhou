@@ -1,6 +1,7 @@
 #include "th02/high_score_entry/render.h"
 
 #include "th02/gaiji.h"
+#include "th02/high_score_entry/logic.h"
 #include "th02/hud.h"
 
 #include "core/base/assert.h"
@@ -79,3 +80,9 @@ void HighScoreEntryRender_Name(
         10 + position * 2, 6 + place,
         section->records[place].name_glyphs[position], 0x85);
 }
+
+const HIGH_SCORE_ENTRY_RENDER g_HighScoreEntryRender = {
+    .table = HighScoreEntryRender_Table,
+    .alphabet = HighScoreEntryRender_Alphabet,
+    .name = HighScoreEntryRender_Name,
+};

@@ -1,17 +1,8 @@
 #include "tests/th02/th02_pause_menu.h"
 
+#include "th02/pause_menu/private.h"
+
 static TEST_PAUSE_REQUESTS *m_Requests;
-
-static void M_ObserveDraw(
-    const PAUSE_MENU_ASSETS *assets, PAUSE_MENU_DRAW_KIND kind, uint16_t x,
-    uint16_t y, uint16_t attribute);
-static void M_ObserveTone(int16_t tone);
-
-#define PauseMenuRender_Draw M_ObserveDraw
-#define Palette_SetTone M_ObserveTone
-#include "th02/pause_menu/logic.c"
-#undef PauseMenuRender_Draw
-#undef Palette_SetTone
 
 static void M_ObserveDraw(
     const PAUSE_MENU_ASSETS *const assets, const PAUSE_MENU_DRAW_KIND kind,
@@ -32,7 +23,17 @@ static void M_ObserveTone(const int16_t tone)
     Palette_SetTone(tone);
 }
 
+static const PAUSE_MENU_RENDER m_TestRender = {
+    .draw = M_ObserveDraw,
+    .tone = M_ObserveTone,
+};
+
 void TestPause_Observe(TEST_PAUSE_REQUESTS *const requests)
 {
     m_Requests = requests;
+}
+
+void TestPause_Init(void)
+{
+    PauseMenu_Init(&m_TestRender);
 }

@@ -1,7 +1,6 @@
-#include "th02/pillars.h"
-
 #include "th02/background.h"
 #include "th02/draw.h"
+#include "th02/pillars_private.h"
 #include "th02/player.h"
 #include "th02/sound_effects.h"
 
@@ -12,6 +11,7 @@
 
 static PILLARS m_Pillars;
 const PILLARS *const g_Pillars = &m_Pillars;
+PILLARS *const p_Pillars = &m_Pillars;
 
 static void M_Put(
     const PATTERN_BANK *const patterns, const int16_t left, const int16_t top,

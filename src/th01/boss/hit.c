@@ -9,7 +9,7 @@ static void M_Flash(const uint8_t *const colors, const uint8_t count)
 {
     for (uint32_t i = 0; i < count; i++) {
         ASSERT(colors[i] < 16);
-        Palette_SetColor(&g_Palette, colors[i], 15, 15, 15);
+        Palette_SetGlobalColor(colors[i], 15, 15, 15);
     }
 }
 
@@ -26,7 +26,7 @@ void BossHit_UpdateAndRender(
     Shots_HitTestBoss(
         box.left, box.top, box.width_minus_shot, box.height_minus_shot);
     if ((orb_hit && !hit->invincible)
-        || Bomb_DealsDamage(g_Session.lives, g_Session.frame_rand)) {
+        || Bomb_DealsDamage(g_Session->lives, g_Session->frame_rand)) {
         hit->frame = 0;
         M_Flash(flash_colors, flash_count);
         *hp = Math16_Wrap(*hp - 1);
@@ -51,10 +51,10 @@ void BossHit_UpdateAndRender(
         if (hit->frame % 4 == 2) {
             M_Flash(flash_colors, flash_count);
         } else if (hit->frame % 4 == 0) {
-            Palette_Set(&g_Palette, boss_palette);
+            Palette_SetGlobal(boss_palette);
         }
     } else if (hit->frame > 40) {
-        Palette_Set(&g_Palette, boss_palette);
+        Palette_SetGlobal(boss_palette);
         hit->frame = 0;
         hit->invincible = false;
     }

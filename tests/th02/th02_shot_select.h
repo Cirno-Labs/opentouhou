@@ -23,3 +23,4 @@ typedef struct {
 } TEST_SHOT_TRACE;
 
 void TestShotSelect_Begin(TH02_SESSION *session, TEST_SHOT_TRACE *trace);
+extern const SHOT_SELECT_RENDER g_TestShotSelectRender;

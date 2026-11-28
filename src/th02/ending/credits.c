@@ -1,38 +1,12 @@
 #include "th02/ending/credits.h"
 
 #include "th02/ending/images.h"
+#include "th02/ending/private_credits.h"
 #include "th02/ending/render.h"
 #include "th02/ending/text.h"
 #include "th02/wait.h"
 
 #include <string.h>
-
-typedef enum {
-    CREDITS_BEGIN,
-    CREDITS_MEASURE,
-    CREDITS_TITLE,
-    CREDITS_MOVE,
-    CREDITS_HEADING,
-    CREDITS_TEXT,
-    CREDITS_PICTURE,
-    CREDITS_ROTATION,
-    CREDITS_PICTURE_HOLD,
-    CREDITS_BLACK_OUT,
-    CREDITS_FADE,
-    CREDITS_DONE,
-} CREDITS_PHASE;
-
-typedef struct {
-    const ENDING_ASSETS *assets;
-    WAIT wait;
-    ENDING_ROTATION rotation;
-    ENDING_TEXT text;
-    CREDITS_PHASE phase;
-    CREDITS_PHASE after_measure;
-    int16_t title_top;
-    uint8_t image;
-    uint8_t title_frame;
-} CREDITS;
 
 static const struct {
     uint16_t measure;
@@ -56,6 +30,7 @@ static const struct {
 };
 
 static CREDITS m_Credits;
+CREDITS *const p_Credits = &m_Credits;
 
 static void M_Delay(const uint16_t frames)
 {

@@ -63,3 +63,6 @@ typedef struct {
     HUD_WIPE reveal;
     TH02_INPUT dialogue_input;
 } GAMEPLAY;
+
+// A writable view of gameplay.c's private state, for tests.
+extern GAMEPLAY *const p_Gameplay;

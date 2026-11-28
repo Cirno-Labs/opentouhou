@@ -1,10 +1,7 @@
+#include "tests/test.h"
 #include "tests/th02/th02_clip_fixture.h"
 #include "tests/th02/th02_palette_fixture.h"
-#define M_Fade M_EndingFade
-#include "th02/ending/ending.c"
-#undef M_Fade
-#include "tests/test.h"
-#include "th02/ending/verdict.c"
+#include "th02/ending/private.h"
 
 #include "core/base/arena.h"
 
@@ -127,30 +124,31 @@ TEST(normal_routes_keep_one_cache_through_story_credits_and_verdict)
         M_Begin(&f);
         TH02_INPUT input = { .shot = true };
         CHECK(!Ending_Update(&input, false, 0));
-        CHECK_EQ_INT(m_Ending.phase, ENDING_PREPARE);
+        CHECK_EQ_INT(p_Ending->phase, ENDING_PREPARE);
         for (size_t frame = 0; frame < 99; frame++) {
             VSyncIrq_VSync();
             CHECK(!Ending_Update(&input, false, 0));
-            CHECK_EQ_INT(m_Ending.phase, ENDING_PREPARE);
+            CHECK_EQ_INT(p_Ending->phase, ENDING_PREPARE);
         }
         bool done = false;
         unsigned phases = 0;
         size_t frame;
         for (frame = 99; frame < 15000 && !done; frame++) {
             VSyncIrq_VSync();
-            input.shot = m_Ending.phase == ENDING_VERDICT
-                    && m_Verdict.phase == VERDICT_CONFIRM
+            input.shot = p_Ending->phase == ENDING_VERDICT
+                    && p_Verdict->phase == VERDICT_CONFIRM
                 ? (frame % 8 >= 4)
                 : true;
             done = Ending_Update(&input, route != 0, UINT16_MAX);
-            phases |= 1u << m_Ending.phase;
+            phases |= 1u << p_Ending->phase;
         }
         CHECK(done);
         CHECK((phases & (1u << ENDING_STORY_SCENE)) != 0);
         CHECK((phases & (1u << ENDING_CREDITS)) != 0);
         CHECK((phases & (1u << ENDING_VERDICT)) != 0);
         CHECK(
-            m_Verdict.assets == &f.assets && m_Verdict.route == m_Ending.route);
+            p_Verdict->assets == &f.assets
+            && p_Verdict->route == p_Ending->route);
         CHECK_EQ_INT(f.song_count, 2);
         CHECK_EQ_INT(f.songs[0], STORY_MUSIC_INTRO);
         CHECK_EQ_INT(f.songs[1], STORY_MUSIC_CREDITS);
@@ -160,9 +158,9 @@ TEST(normal_routes_keep_one_cache_through_story_credits_and_verdict)
         CHECK_EQ_INT(g_Video.drawing_page, 0);
         CHECK_EQ_INT(g_Video.visible_page, 0);
         CHECK(memcmp(&saved, &f.session, sizeof(saved)) == 0);
-        const ENDING finished = m_Ending;
+        const ENDING finished = *p_Ending;
         CHECK(Ending_Update(nullptr, false, 0));
-        CHECK(memcmp(&finished, &m_Ending, sizeof(finished)) == 0);
+        CHECK(memcmp(&finished, p_Ending, sizeof(finished)) == 0);
         Arena_Free(&f.arena);
     }
 }
@@ -181,26 +179,26 @@ TEST(extra_clear_fades_holds_all_clear_then_waits_on_the_partial_picture)
         VSyncIrq_VSync();
         CHECK(!Ending_Update(&input, false, 0));
     }
-    CHECK_EQ_INT(m_Ending.phase, ENDING_FINISH_IN);
+    CHECK_EQ_INT(p_Ending->phase, ENDING_FINISH_IN);
     CHECK_EQ_INT(p_Palette->tone, 0);
     CHECK_EQ_INT(g_Video.pages[0][0], ENDING_IMAGE_ALL_CLEAR + 1);
-    const ENDING waiting = m_Ending;
+    const ENDING waiting = *p_Ending;
     CHECK(!Ending_Update(&input, false, 0));
-    CHECK(memcmp(&waiting, &m_Ending, sizeof(waiting)) == 0);
+    CHECK(memcmp(&waiting, p_Ending, sizeof(waiting)) == 0);
     for (unsigned i = 0; i < 35; i++) {
         VSyncIrq_VSync();
         CHECK(!Ending_Update(&input, false, 0));
     }
-    CHECK_EQ_INT(m_Ending.phase, ENDING_FINISH_HOLD);
+    CHECK_EQ_INT(p_Ending->phase, ENDING_FINISH_HOLD);
     CHECK_EQ_INT(p_Palette->tone, 100);
     for (unsigned i = 0; i < 149; i++) {
         VSyncIrq_VSync();
         CHECK(!Ending_Update(&input, false, 0));
-        CHECK_EQ_INT(m_Ending.phase, ENDING_FINISH_HOLD);
+        CHECK_EQ_INT(p_Ending->phase, ENDING_FINISH_HOLD);
     }
     VSyncIrq_VSync();
     CHECK(!Ending_Update(&input, false, 0));
-    CHECK_EQ_INT(m_Ending.phase, ENDING_FINISH_KEY);
+    CHECK_EQ_INT(p_Ending->phase, ENDING_FINISH_KEY);
     CHECK_EQ_INT(g_Video.pages[0][0], ENDING_IMAGE_EXTRA_CLEAR + 1);
     CHECK_EQ_INT(g_Video.pages[0][320], ENDING_IMAGE_ALL_CLEAR + 1);
     CHECK_EQ_INT(g_Video.pages[0][160 * 640], ENDING_IMAGE_ALL_CLEAR + 1);
@@ -211,11 +209,11 @@ TEST(extra_clear_fades_holds_all_clear_then_waits_on_the_partial_picture)
         CHECK(!Ending_Update(&input, false, 0));
     }
     input.shot = true;
-    for (unsigned i = 0; i < 4 && m_Ending.phase == ENDING_FINISH_KEY; i++) {
+    for (unsigned i = 0; i < 4 && p_Ending->phase == ENDING_FINISH_KEY; i++) {
         VSyncIrq_VSync();
         CHECK(!Ending_Update(&input, false, 0));
     }
-    CHECK_EQ_INT(m_Ending.phase, ENDING_FINISH_OUT);
+    CHECK_EQ_INT(p_Ending->phase, ENDING_FINISH_OUT);
     for (unsigned i = 0; i < 86; i++) {
         VSyncIrq_VSync();
         CHECK_EQ_INT(Ending_Update(&input, false, 0), i == 85);
@@ -240,7 +238,7 @@ TEST(extra_without_normal_clear_markers_skips_the_finish_pictures)
         VSyncIrq_VSync();
         CHECK_EQ_INT(Ending_Update(&input, false, 0), i == 99);
     }
-    CHECK_EQ_INT(m_Ending.phase, ENDING_DONE);
+    CHECK_EQ_INT(p_Ending->phase, ENDING_DONE);
     CHECK_EQ_INT(g_Video.pages[0][0], 0);
     Palette_SetTone(50);
     for (size_t i = 0; i < 16; i++) {
@@ -259,12 +257,12 @@ TEST(normal_finish_only_enters_unlock_after_all_clears_without_continues)
         f.extra_unlocked = branch != 0;
         f.session.continues_used = branch == 2 ? 1 : 0;
         M_Begin(&f);
-        m_Ending.phase = ENDING_VERDICT;
-        m_Verdict.phase = VERDICT_DONE;
+        p_Ending->phase = ENDING_VERDICT;
+        p_Verdict->phase = VERDICT_DONE;
         const TH02_INPUT input = {};
         CHECK_EQ_INT(Ending_Update(&input, false, 0), branch != 1);
         CHECK_EQ_INT(
-            m_Ending.phase, branch == 1 ? ENDING_FINISH_IN : ENDING_DONE);
+            p_Ending->phase, branch == 1 ? ENDING_FINISH_IN : ENDING_DONE);
         CHECK_EQ_INT(
             g_Video.pages[0][0], branch == 1 ? ENDING_IMAGE_ALL_CLEAR + 1 : 0);
         Arena_Free(&f.arena);

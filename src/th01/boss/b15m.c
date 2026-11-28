@@ -1,4 +1,4 @@
-#include "th01/boss/private.h"
+#include "th01/boss/private_b15m.h"
 #include "th01/missiles.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"
@@ -20,104 +20,16 @@
 
 #include <string.h>
 
-typedef struct {
-    BOS girl;
-    BOS attack;
-    BOS bat;
-    GRC spheres;
-    PTN missiles;
-    PI_IMAGE background;
-    PALETTE palette;
-    SCENE_DATA next_scene;
-    const uint8_t *star;
-} B15M_ASSETS;
-
-typedef struct {
-    int16_t x[5];
-    int16_t y[5];
-} B15M_RIFTS;
-
-typedef struct {
-    uint8_t angle;
-    int16_t frame;
-} B15M_CIRCLE;
-
-typedef enum {
-    B15M_PHASE_ENTRANCE,
-    B15M_PHASE_PATTERNS_1,
-    B15M_PHASE_CENTER,
-    B15M_PHASE_PATTERNS_2,
-    B15M_PHASE_TRANSFORM,
-    B15M_PHASE_FORMS,
-} B15M_PHASE;
-
-typedef enum {
-    B15M_FORM_GIRL,
-    B15M_FORM_BAT,
-} B15M_FORM;
-
-typedef struct {
-    BOSS_ENTITY girl;
-    BOSS_ENTITY attack;
-    BOSS_ENTITY bat;
-    BOSS_HIT hit;
-    PALETTE boss_palette;
-    PALETTE post_defeat;
-    BOSS_DEFEAT defeat;
-    uint8_t background[128 * 96];
-    B15M_RIFTS stars;
-    B15M_RIFTS missile_rifts;
-    B15M_RIFTS random_rifts;
-    B15M_RIFTS girl_rifts;
-    B15M_RIFTS bat_rifts;
-    int16_t sphere_x[10];
-    int16_t sphere_y[10];
-    B15M_CIRCLE circle;
-    B15M_CIRCLE star_circle;
-    B15M_CIRCLE safety_circle;
-    B15M_CIRCLE aimed_circle;
-    BOSS_STATE status;
-    int16_t pattern;
-    int16_t pattern_state;
-    int16_t form;
-    int16_t circle_radius;
-    int16_t direction;
-    int16_t phase3_pattern;
-    int16_t bat_target_x;
-    int16_t bat_target_y;
-    int16_t bat_target_frames;
-    int16_t bat_velocity_x;
-    int16_t bat_velocity_y;
-    int16_t safety_left;
-    int16_t girl_pattern;
-    int16_t girl_subphase;
-    int16_t phase5_subphase;
-    int16_t bat_pattern;
-    int16_t trail_x[2][3];
-    int16_t trail_y[2][3];
-    int16_t entrance_tick;
-    int16_t entrance_delay;
-    WAIT wait;
-    uint8_t entrance_stage;
-    uint8_t entrance_angle;
-    uint8_t transform_stage;
-    int8_t call_phase;
-    bool teleport_done;
-    bool hp_bar_filled;
-    bool entrance_active;
-    bool entrance_waiting;
-    bool trails_offscreen;
-    bool transform_bat;
-    bool defeating;
-    bool finished;
-} B15M;
-
-typedef enum {
-    B15M_TRANSFORM_RIFTS = 1,
-    B15M_TRANSFORM_SWAPPED = 2,
-} B15M_TRANSFORM;
-
 static B15M m_B15M;
+B15M *const p_B15M = &m_B15M;
+
+static const BOSS_DEFEAT_PARAMS m_Defeat = {
+    .shift = 16,
+    .step = 2,
+    .whiteout_period = 7,
+    .whitein_period = 5,
+    .clears_stage = true,
+};
 
 static RESULT M_LoadGrc(
     VFS *const vfs, const ALLOCATOR *const a, GRC *const out)
@@ -150,7 +62,7 @@ static RESULT M_LoadStar(
     return OK;
 }
 
-static RESULT M_ValidateAssets(const B15M_ASSETS *const a)
+RESULT B15M_ValidateAssets(const B15M_ASSETS *const a)
 {
     FAIL_IF(
         a == nullptr || a->girl.pixels == nullptr || a->girl.coverage == nullptr
@@ -181,15 +93,15 @@ static RESULT M_LoadAssets(
     B15M_ASSETS *const out = data;
     *out = (B15M_ASSETS) {};
     B15M_ASSETS loaded = {};
-    MUST(Boss_LoadBos(vfs, "BOSS5.BOS", a, &loaded.girl));
-    MUST(Boss_LoadBos(vfs, "BOSS5_2.BOS", a, &loaded.attack));
-    MUST(Boss_LoadBos(vfs, "BOSS5_3.BOS", a, &loaded.bat));
+    MUST(BossAssets_LoadBos(vfs, "BOSS5.BOS", a, &loaded.girl));
+    MUST(BossAssets_LoadBos(vfs, "BOSS5_2.BOS", a, &loaded.attack));
+    MUST(BossAssets_LoadBos(vfs, "BOSS5_3.BOS", a, &loaded.bat));
     MUST(M_LoadGrc(vfs, a, &loaded.spheres));
     MUST(M_LoadMissiles(vfs, a, &loaded.missiles));
-    MUST(Boss_LoadBackground(vfs, "BOSS5.GRP", a, &loaded.background));
+    MUST(BossAssets_LoadBackground(vfs, "BOSS5.GRP", a, &loaded.background));
     MUST(Scene_Load(vfs, 5, a, &loaded.next_scene));
     MUST(M_LoadStar(vfs, a, &loaded.star));
-    MUST(M_ValidateAssets(&loaded));
+    MUST(B15M_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;
     return OK;
@@ -207,7 +119,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     ASSERT(
         !m_B15M.entrance_active && !m_B15M.defeating
         && Wait_Idle(&m_B15M.wait));
-    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(B15M_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15M.girl, 0, &assets->girl)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15M.attack, 1, &assets->attack)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15M.bat, 2, &assets->bat)));
@@ -217,16 +129,16 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     BossEntity_SetPosition(&m_B15M.bat, 256, 96, bounds);
     BossEntity_SetOrbHitbox(&m_B15M.girl, (BOSS_BOUNDS) { 16, 112, -4, 80 });
     BossEntity_SetOrbHitbox(&m_B15M.bat, (BOSS_BOUNDS) { -8, 56, -8, 40 });
-    m_B15M.boss_palette = g_Palette.saved;
+    m_B15M.boss_palette = g_Palette->saved;
     m_B15M.post_defeat = (PALETTE) {};
     m_B15M.status.phase = B15M_PHASE_ENTRANCE;
     m_B15M.status.frame = 0;
     m_B15M.status.hp = 14;
     m_B15M.finished = false;
     HudHp_Begin(6, 10);
-    Rng_Seed(g_Session.frame_rand);
+    Rng_Seed(g_Session->frame_rand);
     Pellets_Interlace();
-    Particles_Init();
+    Particles_ResetStage();
 }
 
 static uint16_t M_Random(const B15M_ASSETS *const assets, const PTN *const miko)
@@ -333,8 +245,8 @@ static void M_Grc(
                     for (int32_t bit = 0; bit < 8; bit++) {
                         if (address >= 0 && address < 32000
                             && pixels[y * 32 + byte * 8 + bit] != 0) {
-                            g_Video.pages[g_Video.drawing_page]
-                                         [address * 8 + bit] = color & 15;
+                            g_Video->pages[g_Video->drawing_page]
+                                          [address * 8 + bit] = color & 15;
                         }
                     }
                 }
@@ -358,7 +270,7 @@ static void M_Star8(
             const int32_t offset = (top + y) * 640 + left + x;
             if (offset < VIDEO_PAGE_SIZE
                 && (assets->star[y] & (0x80u >> x)) != 0) {
-                g_Video.pages[g_Video.drawing_page][offset] = 2;
+                g_Video->pages[g_Video->drawing_page][offset] = 2;
             }
         }
     }
@@ -447,7 +359,7 @@ static void M_Group(
     const B15M_ASSETS *const assets, const PTN *const miko, const int16_t x,
     const int16_t y, const PELLET_GROUP group, const int16_t speed)
 {
-    Pellets_AddGroup(g_Session.settings.difficulty, x, y, group, speed);
+    Pellets_AddGroup(g_Session->settings.difficulty, x, y, group, speed);
 }
 static void M_FormGroup(
     const B15M_ASSETS *const assets, const PTN *const miko, const int16_t form,
@@ -463,7 +375,7 @@ static void M_Single(
     const PELLET_MOTION motion, const int16_t ms)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, x, y, angle, speed, motion, ms, 0, 0);
+        g_Session->settings.difficulty, x, y, angle, speed, motion, ms, 0, 0);
 }
 static void M_Laser(
     const B15M_ASSETS *const assets, const PTN *const miko, const int16_t slot,
@@ -662,7 +574,7 @@ static bool M_Entrance(const B15M_ASSETS *const assets, const PTN *const miko)
         m_B15M.entrance_stage = 0;
         m_B15M.entrance_angle = 0;
         m_B15M.hit.frame = 0;
-        m_B15M.boss_palette = g_Palette.saved;
+        m_B15M.boss_palette = g_Palette->saved;
         M_Snap(assets, miko);
     }
     if (m_B15M.entrance_waiting) {
@@ -1279,8 +1191,8 @@ static void M_SafetyAfterHit(
         const int16_t x = M_Random(assets, miko) % 632;
         M_Group(
             assets, miko, x, 64,
-            g_Session.settings.difficulty == 3 ? PELLET_GROUP_RANDOM_WIDE
-                                               : PELLET_GROUP_SINGLE,
+            g_Session->settings.difficulty == 3 ? PELLET_GROUP_RANDOM_WIDE
+                                                : PELLET_GROUP_SINGLE,
             72);
     }
     if (m_B15M.safety_circle.frame > 180
@@ -1523,11 +1435,11 @@ static bool M_Tail(const B15M_ASSETS *const assets, const PTN *const miko)
         M_Hit(assets, miko, m_B15M.form);
         if (m_B15M.status.hp <= 0) {
             Sound_Fade();
-            Pellets_EraseAndResetMoving();
+            Pellets_RemoveAll();
             M_Background(assets, miko);
-            Missiles_Reset();
+            Missiles_ResetStage();
             ShootoutLasers_EraseAndReset(10);
-            BossDefeat_Begin(&m_B15M.defeat, BOSS_DEFEAT_REGULAR);
+            BossDefeat_Begin(&m_B15M.defeat, m_Defeat);
             m_B15M.defeating = true;
             return M_Death(assets, miko);
         }
@@ -1572,7 +1484,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         return M_Entrance(assets, miko);
     }
     m_B15M.call_phase = m_B15M.status.phase;
-    Missiles_UpdateAndRender((uint16_t)g_Session.frame_rand, &assets->missiles);
+    Missiles_Update((uint16_t)g_Session->frame_rand, &assets->missiles);
     if (m_B15M.status.phase == B15M_PHASE_ENTRANCE) {
         return M_Entrance(assets, miko);
     }
@@ -1662,4 +1574,5 @@ const BOSS_STRATEGY g_BossElis = {
     .update = M_Update,
     .background = M_StageBackground,
     .song = 10,
+    .defeat = m_Defeat,
 };

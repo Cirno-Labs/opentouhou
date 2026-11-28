@@ -1,8 +1,8 @@
 #include "tests/test.h"
-#include "th01/ending.c"
+#include "th01/ending/private.h"
 #include "th01/music.h"
-#include "th01/session.h"
-#include "th01/vsync_irq.c"
+#include "th01/session_private.h"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 
@@ -60,35 +60,35 @@ static void M_Init(FIXTURE *const f)
         }
     }
     Ending_Init(&f->assets);
-    f->ending = &m_Ending;
+    f->ending = p_Ending;
     f->arena.capacity = f->arena.used;
     Session_Init();
-    g_Session.score = 2345678;
-    g_Session.highest_score = 3000000;
-    g_Session.exit_rand = 123;
-    g_Session.settings.difficulty = 1;
-    g_Session.settings.lives_extra = 2;
+    p_Session->score = 2345678;
+    p_Session->highest_score = 3000000;
+    p_Session->exit_rand = 123;
+    p_Session->settings.difficulty = 1;
+    p_Session->settings.lives_extra = 2;
 }
 
 TEST(snapshot_copies_bits_recomputes_total_and_clears_history)
 {
     Session_Init();
-    g_Session.score = 0xffffffff;
-    g_Session.highest_score = 0x80000000;
-    g_Session.frame_rand = 999;
-    g_Session.exit_rand = 1234;
-    g_Session.ending = SESSION_END_JIGOKU;
-    g_Session.continues_total = -100;
-    g_Session.continues_per_scene[0] = 65535;
-    g_Session.continues_per_scene[1] = 32768;
-    g_Session.continues_per_scene[2] = 7;
-    g_Session.continues_per_scene[3] = 9;
-    g_Session.stage_id = 19;
-    g_Session.high_score = 888;
-    g_Session.table_high_score = 999;
-    g_Session.settings.difficulty = 3;
-    g_Session.settings.lives_extra = 4;
-    g_Session.lives = 7;
+    p_Session->score = 0xffffffff;
+    p_Session->highest_score = 0x80000000;
+    p_Session->frame_rand = 999;
+    p_Session->exit_rand = 1234;
+    p_Session->ending = SESSION_END_JIGOKU;
+    p_Session->continues_total = -100;
+    p_Session->continues_per_scene[0] = 65535;
+    p_Session->continues_per_scene[1] = 32768;
+    p_Session->continues_per_scene[2] = 7;
+    p_Session->continues_per_scene[3] = 9;
+    p_Session->stage_id = 19;
+    p_Session->high_score = 888;
+    p_Session->table_high_score = 999;
+    p_Session->settings.difficulty = 3;
+    p_Session->settings.lives_extra = 4;
+    p_Session->lives = 7;
     END_RESULT r;
     Ending_Snapshot(&r);
     CHECK_EQ_INT(r.score, 0xffffffff);
@@ -96,20 +96,20 @@ TEST(snapshot_copies_bits_recomputes_total_and_clears_history)
     CHECK_EQ_INT(r.random, 1234);
     CHECK_EQ_INT(r.total, 98319);
     CHECK_EQ_INT(r.continues[0], 65535);
-    CHECK_EQ_INT(g_Session.score, 0);
-    CHECK_EQ_INT(g_Session.highest_score, 0);
-    CHECK_EQ_INT(g_Session.continues_total, 0);
-    CHECK_EQ_INT(g_Session.continues_per_scene[1], 0);
-    CHECK_EQ_INT(g_Session.ending, SESSION_END_JIGOKU);
-    CHECK_EQ_INT(g_Session.stage_id, 19);
+    CHECK_EQ_INT(g_Session->score, 0);
+    CHECK_EQ_INT(g_Session->highest_score, 0);
+    CHECK_EQ_INT(g_Session->continues_total, 0);
+    CHECK_EQ_INT(g_Session->continues_per_scene[1], 0);
+    CHECK_EQ_INT(g_Session->ending, SESSION_END_JIGOKU);
+    CHECK_EQ_INT(g_Session->stage_id, 19);
     Ending_Clear();
-    CHECK_EQ_INT(g_Session.ending, SESSION_END_NONE);
-    CHECK_EQ_INT(g_Session.stage_id, 0);
-    CHECK_EQ_INT(g_Session.high_score, 888);
-    CHECK_EQ_INT(g_Session.table_high_score, 999);
-    CHECK_EQ_INT(g_Session.frame_rand, 999);
-    CHECK_EQ_INT(g_Session.exit_rand, 1234);
-    CHECK_EQ_INT(g_Session.lives, 7);
+    CHECK_EQ_INT(g_Session->ending, SESSION_END_NONE);
+    CHECK_EQ_INT(g_Session->stage_id, 0);
+    CHECK_EQ_INT(g_Session->high_score, 888);
+    CHECK_EQ_INT(g_Session->table_high_score, 999);
+    CHECK_EQ_INT(g_Session->frame_rand, 999);
+    CHECK_EQ_INT(g_Session->exit_rand, 1234);
+    CHECK_EQ_INT(g_Session->lives, 7);
 }
 
 TEST(results_use_signed_scores_and_all_source_levels)
@@ -150,9 +150,9 @@ TEST(all_four_stories_preserve_source_wait_totals_and_complete)
         for (int32_t bad = 0; bad < 2; bad++) {
             FIXTURE f;
             M_Init(&f);
-            g_Session.ending = (SESSION_END)route;
-            g_Session.continues_per_scene[2] = (uint16_t)bad;
-            g_Session.continues_total = 100;
+            p_Session->ending = (SESSION_END)route;
+            p_Session->continues_per_scene[2] = (uint16_t)bad;
+            p_Session->continues_total = 100;
             Ending_Begin();
             int32_t duration = 0;
             int32_t stage5_nuls = 0;
@@ -179,9 +179,9 @@ TEST(all_four_stories_preserve_source_wait_totals_and_complete)
                            : (bad != 0 ? 2910 : 5528));
             CHECK_EQ_INT(stage5_nuls, bad != 0 ? 0 : 2);
             CHECK(!Ending_Tick(&(TH01_INPUT) {}, false));
-            CHECK_EQ_INT(g_Video.pages[0][100 * 640 + 160], 1);
-            CHECK_EQ_INT(g_Video.pages[0][0], 0);
-            CHECK_EQ_INT(g_Video.drawing_page, 0);
+            CHECK_EQ_INT(g_Video->pages[0][100 * 640 + 160], 1);
+            CHECK_EQ_INT(g_Video->pages[0][0], 0);
+            CHECK_EQ_INT(g_Video->drawing_page, 0);
             CHECK_EQ_INT(f.audio[ENDING_AUDIO_IRIS], 1);
             const int32_t next = f.ending->next;
             for (int32_t i = 0; i < 100; i++) {
@@ -196,11 +196,11 @@ TEST(all_four_stories_preserve_source_wait_totals_and_complete)
             CHECK_EQ_INT(f.audio[ENDING_AUDIO_FADE], 1);
             CHECK_EQ_INT(f.audio[ENDING_AUDIO_STOP], 1);
             CHECK_EQ_INT(f.audio[ENDING_AUDIO_STAGE1], 1);
-            CHECK_EQ_INT(g_Video.palette[3].green, 255);
-            CHECK_EQ_INT(g_Video.palette[3].red, 119);
-            CHECK_EQ_INT(g_Video.palette[7].red, 255);
-            CHECK_EQ_INT(g_Video.scroll_top, 0);
-            CHECK_EQ_INT(g_Session.score, 0);
+            CHECK_EQ_INT(g_Video->palette[3].green, 255);
+            CHECK_EQ_INT(g_Video->palette[3].red, 119);
+            CHECK_EQ_INT(g_Video->palette[7].red, 255);
+            CHECK_EQ_INT(g_Video->scroll_top, 0);
+            CHECK_EQ_INT(g_Session->score, 0);
             Arena_Free(&f.arena);
         }
     }
@@ -210,10 +210,10 @@ TEST(entry_wait_resets_at_start_and_retains_elapsed_count)
 {
     FIXTURE f;
     M_Init(&f);
-    g_Session.ending = SESSION_END_MAKAI;
+    p_Session->ending = SESSION_END_MAKAI;
     Ending_Begin();
-    m_VSync.count1 = 300;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = 300;
+    p_VSync->count2 = g_VSync->count2;
     CHECK(!Ending_Tick(&(TH01_INPUT) {}, false));
     CHECK_EQ_INT(g_VSync->count1, 0);
     for (int32_t i = 0; i < 5; i++) {
@@ -227,8 +227,8 @@ TEST(entry_wait_resets_at_start_and_retains_elapsed_count)
     f.ending->count = 1;
     f.ending->next = 0;
     f.ending->waiting = false;
-    m_VSync.count1 = 999;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = 999;
+    p_VSync->count2 = g_VSync->count2;
     CHECK(Ending_Tick(&(TH01_INPUT) {}, false));
     CHECK_EQ_INT(g_VSync->count1, 0);
     Arena_Free(&f.arena);
@@ -238,7 +238,7 @@ TEST(results_confirmation_is_sensed_inside_its_first_wait)
 {
     FIXTURE f;
     M_Init(&f);
-    g_Session.ending = SESSION_END_MAKAI;
+    p_Session->ending = SESSION_END_MAKAI;
     Ending_Begin();
     f.ending->operations[0] = (ENDING_OPERATION) { .kind = END_INPUT };
     f.ending->count = 1;

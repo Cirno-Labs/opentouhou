@@ -1,5 +1,4 @@
-#include "th01/particles.h"
-
+#include "th01/particles_private.h"
 #include "th01/rng.h"
 #include "th01/sprite.h"
 
@@ -9,21 +8,9 @@
 
 #include <string.h>
 
-#define PARTICLES_COUNT 40
-
-typedef struct {
-    int16_t spawn_interval;
-    int16_t velocity_max;
-    int16_t x[PARTICLES_COUNT];
-    int16_t y[PARTICLES_COUNT];
-    int16_t velocity_x[PARTICLES_COUNT];
-    int16_t velocity_y[PARTICLES_COUNT];
-    uint8_t alive[PARTICLES_COUNT];
-    uint8_t velocity_base[PARTICLES_COUNT];
-    uint8_t cycle;
-} PARTICLES;
-
 static PARTICLES m_Particles;
+const PARTICLES *const g_Particles = &m_Particles;
+PARTICLES *const p_Particles = &m_Particles;
 
 static void M_SetX(const uint32_t i, const int16_t value)
 {
@@ -137,20 +124,19 @@ static void M_Spawn(const PARTICLES_ORIGIN origin, const uint32_t i)
     }
 }
 
-void Particles_Reset(void)
+void Particles_Init(void)
 {
     memset(&m_Particles, 0, sizeof(m_Particles));
 }
 
-void Particles_Init(void)
+void Particles_ResetStage(void)
 {
     memset(m_Particles.alive, 0, sizeof(m_Particles.alive));
     m_Particles.spawn_interval = 2;
     m_Particles.velocity_max = 10;
 }
 
-void Particles_UpdateAndRender(
-    const PARTICLES_ORIGIN origin, const uint8_t color)
+void Particles_Update(const PARTICLES_ORIGIN origin, const uint8_t color)
 {
     ASSERT(m_Particles.spawn_interval == 2 && m_Particles.velocity_max == 10);
     ASSERT(origin >= PARTICLES_TOP && origin <= PARTICLES_TOP_LEFT);

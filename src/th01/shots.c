@@ -1,5 +1,4 @@
-#include "th01/shots.h"
-
+#include "th01/shots_private.h"
 #include "th01/sound.h"
 #include "th01/sprite.h"
 
@@ -8,6 +7,7 @@
 #include <string.h>
 
 static SHOTS m_Shots;
+SHOTS *const p_Shots = &m_Shots;
 const SHOTS *const g_Shots = &m_Shots;
 
 void Shots_Init(void)
@@ -70,7 +70,7 @@ bool Shots_Add(const int16_t left, const int16_t top)
     return false;
 }
 
-void Shots_EraseAndReset(void)
+void Shots_RemoveAll(void)
 {
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
         SHOT *const shot = &m_Shots.slots[i];
@@ -106,7 +106,7 @@ bool Shots_HitTestOrb(const int32_t slot)
     return true;
 }
 
-void Shots_UpdateAndRender(const PTN *const sprites)
+void Shots_Update(const PTN *const sprites)
 {
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
         SHOT *const shot = &m_Shots.slots[i];

@@ -1,4 +1,4 @@
-#include "th01/boss/private.h"
+#include "th01/boss/private_b05.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"
 #include "th01/rng.h"
@@ -14,57 +14,16 @@
 
 #include <string.h>
 
-typedef struct {
-    BOS sphere;
-    BOS flash;
-    BOS person;
-    PI_IMAGE background;
-    PALETTE palette;
-} B05_ASSETS;
-
-typedef enum {
-    B05_IDLE,
-    B05_ENTRANCE,
-    B05_ENTRANCE_DELAY,
-    B05_DEFEAT,
-    B05_ROUTE,
-    B05_FINISHED,
-} B05_PENDING;
-
-typedef enum {
-    B05_PHASE_START = 0,
-    B05_PHASE_SPHERE = 1,
-    B05_PHASE_TRANSFORMS = 2,
-    B05_PHASE_DEFEATED = 8,
-} B05_PHASE;
-
-typedef struct {
-    BOSS_ENTITY sphere;
-    BOSS_ENTITY flash;
-    BOSS_ENTITY person;
-    BOSS_HIT hit;
-    PALETTE boss_palette;
-    PALETTE post_defeat;
-    BOSS_DEFEAT defeat;
-    BOSS_STATE status;
-    int16_t pattern;
-    int16_t pattern_state;
-    int16_t velocity_x;
-    int16_t velocity_y;
-    int16_t rotation_interval;
-    uint8_t angle;
-    int8_t direction;
-    bool hp_bar_filled;
-    B05_PENDING pending;
-} B05;
-
-typedef enum {
-    B05_FIRE_NONE,
-    B05_FIRE_DOWN,
-    B05_FIRE_SLING,
-} B05_FIRE;
-
 static B05 m_B05;
+B05 *const p_B05 = &m_B05;
+
+static const BOSS_DEFEAT_PARAMS m_Defeat = {
+    .shift = 48,
+    .step = 1,
+    .whiteout_period = 15,
+    .whitein_period = 15,
+    .clears_stage = false,
+};
 
 static void M_Put(const BOSS_ENTITY *const entity, const int16_t image)
 {
@@ -140,7 +99,7 @@ static void M_Add(
     const int16_t speed, const PELLET_MOTION motion, const int16_t motion_speed)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, left, top, angle, speed, motion,
+        g_Session->settings.difficulty, left, top, angle, speed, motion,
         motion_speed, 0, 0);
 }
 
@@ -312,9 +271,9 @@ static bool M_Entrance(void)
                 m_B05.hit.invincible = false;
                 m_B05.status.frame = 0;
                 m_B05.hp_bar_filled = false;
-                Palette_Set(&g_Palette, &m_B05.boss_palette);
-                Palette_SetStage(&g_Palette.saved);
-                m_B05.boss_palette = g_Palette.saved;
+                Palette_SetGlobal(&m_B05.boss_palette);
+                Palette_SetStage(&g_Palette->saved);
+                m_B05.boss_palette = g_Palette->saved;
                 m_B05.sphere.orb_inactive = false;
                 m_B05.hit.frame = 0;
                 m_B05.pattern_state = Boss_Rank(70, 50, 30, 10);
@@ -336,14 +295,15 @@ static bool M_Entrance(void)
             const int32_t colors[] = { 5, 9, 15 };
             for (int32_t component = 0; component < 3; component++) {
                 for (int32_t i = 0; i < 3; i++) {
-                    int8_t *const value =
-                        &g_Palette.saved.colors[colors[i]][component];
-                    if (*value < g_StagePalette.colors[colors[i]][component]) {
-                        (*value)++;
+                    const int8_t value =
+                        g_Palette->saved.colors[colors[i]][component];
+                    if (value < g_StagePalette->colors[colors[i]][component]) {
+                        Palette_SetGlobalSavedComponent(
+                            colors[i], component, value + 1);
                     }
                 }
             }
-            Palette_Set(&g_Palette, &g_Palette.saved);
+            Palette_SetGlobal(&g_Palette->saved);
         }
         m_B05.pending = B05_ENTRANCE_DELAY;
     }
@@ -369,7 +329,7 @@ static bool M_Death(
     return true;
 }
 
-static RESULT M_ValidateAssets(const B05_ASSETS *const assets)
+RESULT B05_ValidateAssets(const B05_ASSETS *const assets)
 {
     const BOS *const banks[] = { &assets->sphere, &assets->flash,
                                  &assets->person };
@@ -396,11 +356,12 @@ static RESULT M_LoadAssets(
     B05_ASSETS *const out = data;
     *out = (B05_ASSETS) {};
     B05_ASSETS loaded = {};
-    MUST(Boss_LoadBos(vfs, "BOSS1.BOS", allocator, &loaded.sphere));
-    MUST(Boss_LoadBos(vfs, "BOSS1_2.BOS", allocator, &loaded.flash));
-    MUST(Boss_LoadBos(vfs, "BOSS1_3.BOS", allocator, &loaded.person));
-    MUST(Boss_LoadBackground(vfs, "BOSS1.GRP", allocator, &loaded.background));
-    MUST(M_ValidateAssets(&loaded));
+    MUST(BossAssets_LoadBos(vfs, "BOSS1.BOS", allocator, &loaded.sphere));
+    MUST(BossAssets_LoadBos(vfs, "BOSS1_2.BOS", allocator, &loaded.flash));
+    MUST(BossAssets_LoadBos(vfs, "BOSS1_3.BOS", allocator, &loaded.person));
+    MUST(BossAssets_LoadBackground(
+        vfs, "BOSS1.GRP", allocator, &loaded.background));
+    MUST(B05_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;
     return OK;
@@ -417,15 +378,15 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     const B05_ASSETS *const assets = data;
     Boss_Select(&m_B05.status);
     ASSERT(m_B05.pending == B05_IDLE || m_B05.pending == B05_FINISHED);
-    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(B05_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B05.sphere, 0, &assets->sphere)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B05.flash, 1, &assets->flash)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B05.person, 2, &assets->person)));
     m_B05.post_defeat = assets->palette;
     Palette_SetStage(&m_B05.post_defeat);
-    Palette_Set(&g_Palette, &m_B05.post_defeat);
-    m_B05.boss_palette = g_Palette.saved;
-    Palette_Set(&g_Palette, &g_Palette.saved);
+    Palette_SetGlobal(&m_B05.post_defeat);
+    m_B05.boss_palette = g_Palette->saved;
+    Palette_SetGlobal(&g_Palette->saved);
     BossEntity_SetPosition(
         &m_B05.sphere, 640, 64, (BOSS_BOUNDS) { 0, 736, 64, 304 });
     BossEntity_SetOrbHitbox(&m_B05.sphere, (BOSS_BOUNDS) { 8, 88, 8, 88 });
@@ -435,7 +396,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     HudHp_Begin(2, 6);
     m_B05.status.phase = B05_PHASE_START;
     m_B05.pending = B05_IDLE;
-    Particles_Init();
+    Particles_ResetStage();
 }
 
 static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
@@ -455,9 +416,9 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
     if (m_B05.status.phase == B05_PHASE_START) {
         m_B05.sphere.left = 272;
         m_B05.sphere.top = 96;
-        Palette_SetColor(&g_Palette, 5, 0, 0, 0);
-        Palette_SetColor(&g_Palette, 9, 0, 0, 0);
-        Palette_SetColor(&g_Palette, 15, 0, 0, 0);
+        Palette_SetGlobalColor(5, 0, 0, 0);
+        Palette_SetGlobalColor(9, 0, 0, 0);
+        Palette_SetGlobalColor(15, 0, 0, 0);
         m_B05.rotation_interval = 18;
         m_B05.status.frame = 0;
         m_B05.pending = B05_ENTRANCE;
@@ -533,8 +494,8 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
             &m_B05.sphere, m_B05.sphere.left, m_B05.sphere.top,
             m_B05.sphere.image);
         Sound_Fade();
-        Pellets_EraseAndResetMoving();
-        BossDefeat_Begin(&m_B05.defeat, BOSS_DEFEAT_SINGYOKU);
+        Pellets_RemoveAll();
+        BossDefeat_Begin(&m_B05.defeat, m_Defeat);
         m_B05.pending = B05_DEFEAT;
         return M_Death(miko, route, raw);
     }
@@ -556,4 +517,5 @@ const BOSS_STRATEGY g_BossSingyoku = {
     .background = M_StageBackground,
     .update_on_life_begin = true,
     .song = 7,
+    .defeat = m_Defeat,
 };

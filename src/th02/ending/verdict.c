@@ -1,7 +1,4 @@
-#include "th02/ending/verdict.h"
-
-#include "th02/ending/render.h"
-#include "th02/wait.h"
+#include "th02/ending/private_verdict.h"
 
 #include "core/base/assert.h"
 
@@ -15,28 +12,6 @@ typedef struct {
     bool draw;
 } VERDICT_ROW_LAYOUT;
 
-typedef enum {
-    VERDICT_PREPARE,
-    VERDICT_FADE_IN,
-    VERDICT_ROW,
-    VERDICT_REVEAL,
-    VERDICT_NEXT_ROW,
-    VERDICT_CONFIRM,
-    VERDICT_FADE_OUT,
-    VERDICT_DONE,
-} VERDICT_PHASE;
-
-typedef struct {
-    const ENDING_ASSETS *assets;
-    const TH02_SESSION *session;
-    ENDING_STORY route;
-    uint16_t style;
-    WAIT wait;
-    ENDING_REVEAL reveal;
-    VERDICT_PHASE phase;
-    uint8_t row;
-} VERDICT;
-
 static const VERDICT_ROW_LAYOUT m_Rows[] = {
     { 0, 24, 21, 200, true }, { 1, 64, 16, 100, true },
     { 2, 64, 16, 100, true }, { 3, 64, 16, 100, true },
@@ -46,6 +21,7 @@ static const VERDICT_ROW_LAYOUT m_Rows[] = {
 };
 
 static VERDICT m_Verdict;
+VERDICT *const p_Verdict = &m_Verdict;
 
 static void M_Delay(const uint16_t frames)
 {

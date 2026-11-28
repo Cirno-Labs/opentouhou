@@ -1,22 +1,20 @@
 #include "tests/test.h"
+#include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_world.h"
-#include "th01/boss/b15m.c"
-#include "th01/boss/entity.c"
-#include "th01/hud_hp.c"
-#include "th01/missiles.c"
-#include "th01/orb.c"
-#include "th01/orb.h"
-#include "th01/pellets.c"
-#include "th01/pellets.h"
-#include "th01/player.c"
-#include "th01/player.h"
+#include "th01/boss/private_b15m.h"
+#include "th01/boss/private_entity.h"
+#include "th01/hud/hp_private.h"
+#include "th01/missiles_private.h"
+#include "th01/orb_private.h"
+#include "th01/pellets/private.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
-#include "th01/scene.c"
-#include "th01/session.h"
-#include "th01/shootout_lasers.c"
+#include "th01/scene_private.h"
+#include "th01/session_private.h"
+#include "th01/shootout_lasers_private.h"
 #include "th01/shots.h"
 #include "th01/sound.h"
-#include "th01/vsync_irq.c"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 #include "core/io/reader.h"
@@ -72,7 +70,7 @@ static void M_InitFixture(FIXTURE *const f, ARENA *const arena)
     CHECK(
         Result_Ignore(Scene_LoadReader(&reader, 5, a, &f->assets.next_scene)));
     Reader_Close(&reader);
-    g_Session.frame_rand = 0x12345678;
+    p_Session->frame_rand = 0x12345678;
 }
 
 TEST(setup_reseeds_without_resetting_actor_or_missile_history)
@@ -82,59 +80,59 @@ TEST(setup_reseeds_without_resetting_actor_or_missile_history)
     FIXTURE f;
     M_InitFixture(&f, &arena);
     g_BossElis.init();
-    memset(m_B15M.background, 0, 128 * 96);
-    m_B15M.hit = (BOSS_HIT) { 27, true };
-    m_B15M.pattern_state = 37;
-    m_B15M.girl.image = 4;
-    m_B15M.attack.orb_hitbox = (BOSS_BOUNDS) { 1, 2, 3, 4 };
-    m_B15M.bat.lock_frame = 7;
-    m_B15M.girl.previous_left = 199;
-    m_B15M.girl.orb_inactive = true;
-    m_B15M.missile_rifts.x[0] = 88;
-    m_Missiles.slots[0].flag = MISSILE_MOVING;
-    m_Missiles.slots[0].left = 300;
-    const MISSILES missiles = m_Missiles;
-    const PALETTE saved = g_Palette.saved;
+    memset(p_B15M->background, 0, 128 * 96);
+    p_B15M->hit = (BOSS_HIT) { 27, true };
+    p_B15M->pattern_state = 37;
+    p_B15M->girl.image = 4;
+    p_B15M->attack.orb_hitbox = (BOSS_BOUNDS) { 1, 2, 3, 4 };
+    p_B15M->bat.lock_frame = 7;
+    p_B15M->girl.previous_left = 199;
+    p_B15M->girl.orb_inactive = true;
+    p_B15M->missile_rifts.x[0] = 88;
+    p_Missiles->slots[0].flag = MISSILE_MOVING;
+    p_Missiles->slots[0].left = 300;
+    const MISSILES missiles = *p_Missiles;
+    const PALETTE saved = g_Palette->saved;
     const size_t used = arena.used;
     M_BossSetup(&f.assets, &f.miko);
-    CHECK((*g_Boss) == &m_B15M.status);
+    CHECK((*g_Boss) == &p_B15M->status);
     CHECK_EQ_INT(arena.used, used);
-    CHECK_EQ_INT(m_B15M.status.hp, 14);
-    CHECK_EQ_INT(m_B15M.status.phase, B15M_PHASE_ENTRANCE);
-    CHECK_EQ_INT(m_B15M.status.frame, 0);
-    CHECK_EQ_INT(m_Health.first_white, 10);
-    CHECK_EQ_INT(m_Health.first_redwhite, 6);
+    CHECK_EQ_INT(p_B15M->status.hp, 14);
+    CHECK_EQ_INT(p_B15M->status.phase, B15M_PHASE_ENTRANCE);
+    CHECK_EQ_INT(p_B15M->status.frame, 0);
+    CHECK_EQ_INT(p_Health->first_white, 10);
+    CHECK_EQ_INT(p_Health->first_redwhite, 6);
     CHECK_EQ_INT(g_Rng, 0x12345678);
-    CHECK(m_Pellets.interlace);
-    CHECK(memcmp(&m_Missiles, &missiles, sizeof(missiles)) == 0);
-    CHECK(memcmp(&g_Palette.saved, &saved, sizeof(saved)) == 0);
-    CHECK_EQ_INT(m_B15M.girl.left, 256);
-    CHECK_EQ_INT(m_B15M.girl.top, 96);
-    CHECK_EQ_INT(m_B15M.attack.left, 256);
-    CHECK_EQ_INT(m_B15M.bat.top, 96);
-    CHECK_EQ_INT(m_B15M.girl.image, 4);
-    CHECK_EQ_INT(m_B15M.girl.previous_left, 199);
-    CHECK(m_B15M.girl.orb_inactive);
-    CHECK_EQ_INT(m_B15M.bat.lock_frame, 7);
-    CHECK_EQ_INT(m_B15M.hit.frame, 27);
-    CHECK(m_B15M.hit.invincible);
-    CHECK_EQ_INT(m_B15M.pattern_state, 37);
-    CHECK_EQ_INT(m_B15M.missile_rifts.x[0], 88);
-    CHECK_EQ_INT(m_B15M.girl.orb_hitbox.left, 32);
-    CHECK_EQ_INT(m_B15M.girl.orb_hitbox.right, 96);
-    CHECK_EQ_INT(m_B15M.girl.orb_hitbox.top, 12);
-    CHECK_EQ_INT(m_B15M.girl.orb_hitbox.bottom, 64);
-    CHECK_EQ_INT(m_B15M.bat.orb_hitbox.left, 8);
-    CHECK_EQ_INT(m_B15M.bat.orb_hitbox.right, 40);
-    CHECK_EQ_INT(m_B15M.bat.orb_hitbox.top, 8);
-    CHECK_EQ_INT(m_B15M.bat.orb_hitbox.bottom, 24);
-    CHECK_EQ_INT(m_B15M.attack.orb_hitbox.left, 1);
-    CHECK_EQ_INT(m_B15M.attack.orb_hitbox.bottom, 4);
-    CHECK(m_Sprites.entities[0] == &f.assets.girl);
-    CHECK(m_Sprites.entities[1] == &f.assets.attack);
-    CHECK(m_Sprites.entities[2] == &f.assets.bat);
+    CHECK(p_Pellets->interlace);
+    CHECK(memcmp(p_Missiles, &missiles, sizeof(missiles)) == 0);
+    CHECK(memcmp(&g_Palette->saved, &saved, sizeof(saved)) == 0);
+    CHECK_EQ_INT(p_B15M->girl.left, 256);
+    CHECK_EQ_INT(p_B15M->girl.top, 96);
+    CHECK_EQ_INT(p_B15M->attack.left, 256);
+    CHECK_EQ_INT(p_B15M->bat.top, 96);
+    CHECK_EQ_INT(p_B15M->girl.image, 4);
+    CHECK_EQ_INT(p_B15M->girl.previous_left, 199);
+    CHECK(p_B15M->girl.orb_inactive);
+    CHECK_EQ_INT(p_B15M->bat.lock_frame, 7);
+    CHECK_EQ_INT(p_B15M->hit.frame, 27);
+    CHECK(p_B15M->hit.invincible);
+    CHECK_EQ_INT(p_B15M->pattern_state, 37);
+    CHECK_EQ_INT(p_B15M->missile_rifts.x[0], 88);
+    CHECK_EQ_INT(p_B15M->girl.orb_hitbox.left, 32);
+    CHECK_EQ_INT(p_B15M->girl.orb_hitbox.right, 96);
+    CHECK_EQ_INT(p_B15M->girl.orb_hitbox.top, 12);
+    CHECK_EQ_INT(p_B15M->girl.orb_hitbox.bottom, 64);
+    CHECK_EQ_INT(p_B15M->bat.orb_hitbox.left, 8);
+    CHECK_EQ_INT(p_B15M->bat.orb_hitbox.right, 40);
+    CHECK_EQ_INT(p_B15M->bat.orb_hitbox.top, 8);
+    CHECK_EQ_INT(p_B15M->bat.orb_hitbox.bottom, 24);
+    CHECK_EQ_INT(p_B15M->attack.orb_hitbox.left, 1);
+    CHECK_EQ_INT(p_B15M->attack.orb_hitbox.bottom, 4);
+    CHECK(p_Sprites->entities[0] == &f.assets.girl);
+    CHECK(p_Sprites->entities[1] == &f.assets.attack);
+    CHECK(p_Sprites->entities[2] == &f.assets.bat);
     const PALETTE black = {};
-    CHECK(memcmp(&m_B15M.post_defeat, &black, sizeof(black)) == 0);
+    CHECK(memcmp(&p_B15M->post_defeat, &black, sizeof(black)) == 0);
     Arena_Free(&arena);
 }
 
@@ -144,19 +142,19 @@ TEST(asset_validation_requires_all_live_banks_and_next_scene)
     Arena_Init(&arena, "b15m", 2 * 1024 * 1024);
     FIXTURE f;
     M_InitFixture(&f, &arena);
-    CHECK(Result_Ignore(M_ValidateAssets(&f.assets)));
+    CHECK(Result_Ignore(B15M_ValidateAssets(&f.assets)));
     B15M_ASSETS bad = f.assets;
     bad.girl.count = 5;
-    CHECK(!Result_Ignore(M_ValidateAssets(&bad)));
+    CHECK(!Result_Ignore(B15M_ValidateAssets(&bad)));
     bad = f.assets;
     bad.star = nullptr;
-    CHECK(!Result_Ignore(M_ValidateAssets(&bad)));
+    CHECK(!Result_Ignore(B15M_ValidateAssets(&bad)));
     bad = f.assets;
     bad.spheres.count = 5;
-    CHECK(!Result_Ignore(M_ValidateAssets(&bad)));
+    CHECK(!Result_Ignore(B15M_ValidateAssets(&bad)));
     bad = f.assets;
     bad.next_scene.id = 6;
-    CHECK(!Result_Ignore(M_ValidateAssets(&bad)));
+    CHECK(!Result_Ignore(B15M_ValidateAssets(&bad)));
     Arena_Free(&arena);
 }
 
@@ -179,14 +177,14 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     memset(f->stage.pixels, PTN_TRANSPARENT, 4096);
     f->miko = (PTN) { .count = 1, .pixels = Allocator_Alloc(a, 1024) };
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
-    g_Session.lives = 3;
+    p_Session->lives = 3;
     g_Rng = 0xb15a0000;
-    m_Player.invincible = true;
-    m_Player.left = 300;
-    m_Orb.top = 64;
-    m_Orb.previous_top = 64;
+    p_Player->invincible = true;
+    p_Player->left = 300;
+    p_Orb->top = 64;
+    p_Orb->previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 static void M_Run(FIXTURE *const f, uint64_t *const tick)
@@ -212,37 +210,37 @@ TEST(entrance_waits_preserve_prefix_once_and_source_counter_history)
         FIXTURE f;
         M_Battle(&f, &arena);
         g_BossElis.init();
-        memset(m_B15M.background, 0, 128 * 96);
+        memset(p_B15M->background, 0, 128 * 96);
         M_BossSetup(&f.assets, &f.miko);
-        m_Missiles.slots[0] = (MISSILE) { .left = 200 * 16,
-                                          .top = 200 * 16,
-                                          .previous_left = -1,
-                                          .velocity = { 16, 0 },
-                                          .flag = MISSILE_MOVING };
+        p_Missiles->slots[0] = (MISSILE) { .left = 200 * 16,
+                                           .top = 200 * 16,
+                                           .previous_left = -1,
+                                           .velocity = { 16, 0 },
+                                           .flag = MISSILE_MOVING };
         VSyncIrq_Reset();
-        m_VSync.count1 = initial[i];
-        m_VSync.count2 = 9;
+        p_VSync->count1 = initial[i];
+        p_VSync->count2 = 9;
         uint64_t tick = 0;
         CHECK(!M_BossUpdate(&f.assets, &f.miko, tick));
-        CHECK(m_B15M.entrance_active);
-        CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
-        const B15M frozen = m_B15M;
+        CHECK(p_B15M->entrance_active);
+        CHECK_EQ_INT(p_Missiles->slots[0].left, 201 * 16);
+        const B15M frozen = *p_B15M;
         const uint32_t rng = g_Rng;
         CHECK(!M_BossUpdate(&f.assets, &f.miko, tick));
-        CHECK(memcmp(&m_B15M, &frozen, sizeof(m_B15M)) == 0);
+        CHECK(memcmp(p_B15M, &frozen, sizeof(*p_B15M)) == 0);
         CHECK_EQ_INT(g_Rng, rng);
         const size_t used = arena.used;
         M_Run(&f, &tick);
         CHECK_EQ_INT(tick, expected[i]);
         CHECK_EQ_INT(g_VSync->count2, 9 + expected[i]);
         CHECK_EQ_INT(g_VSync->count1, 0);
-        CHECK_EQ_INT(m_B15M.status.phase, B15M_PHASE_PATTERNS_1);
-        CHECK_EQ_INT(m_B15M.status.frame, 0);
-        CHECK_EQ_INT(m_B15M.hit.frame, 0);
-        CHECK_EQ_INT(m_B15M.pattern, 1);
-        CHECK(!m_B15M.entrance_active);
-        CHECK(!m_B15M.girl.orb_inactive);
-        CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
+        CHECK_EQ_INT(p_B15M->status.phase, B15M_PHASE_PATTERNS_1);
+        CHECK_EQ_INT(p_B15M->status.frame, 0);
+        CHECK_EQ_INT(p_B15M->hit.frame, 0);
+        CHECK_EQ_INT(p_B15M->pattern, 1);
+        CHECK(!p_B15M->entrance_active);
+        CHECK(!p_B15M->girl.orb_inactive);
+        CHECK_EQ_INT(p_Missiles->slots[0].left, 201 * 16);
         CHECK_EQ_INT(arena.used, used);
         Arena_Free(&arena);
     }
@@ -255,32 +253,32 @@ TEST(raw_scroll_wait_freezes_then_runs_only_the_remaining_call)
     FIXTURE f;
     M_Battle(&f, &arena);
     g_BossElis.init();
-    memset(m_B15M.background, 0, 128 * 96);
+    memset(p_B15M->background, 0, 128 * 96);
     M_BossSetup(&f.assets, &f.miko);
-    m_B15M.status.phase = B15M_PHASE_TRANSFORM;
-    m_B15M.status.frame = 19;
-    m_B15M.teleport_done = true;
-    m_B15M.hit.frame = 17;
+    p_B15M->status.phase = B15M_PHASE_TRANSFORM;
+    p_B15M->status.frame = 19;
+    p_B15M->teleport_done = true;
+    p_B15M->hit.frame = 17;
     VSyncIrq_Reset();
-    m_VSync.count1 = 12;
-    m_VSync.count2 = 25;
+    p_VSync->count1 = 12;
+    p_VSync->count2 = 25;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 0));
-    CHECK_EQ_INT(m_B15M.wait.kind, WAIT_SCROLL);
-    CHECK_EQ_INT(m_B15M.status.frame, 20);
-    const B15M frozen = m_B15M;
+    CHECK_EQ_INT(p_B15M->wait.kind, WAIT_SCROLL);
+    CHECK_EQ_INT(p_B15M->status.frame, 20);
+    const B15M frozen = *p_B15M;
     const uint32_t rng = g_Rng;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 0));
-    CHECK(memcmp(&m_B15M, &frozen, sizeof(m_B15M)) == 0);
+    CHECK(memcmp(p_B15M, &frozen, sizeof(*p_B15M)) == 0);
     CHECK_EQ_INT(g_Rng, rng);
     VSyncIrq_Edge();
     CHECK(M_BossUpdate(&f.assets, &f.miko, 1));
-    CHECK_EQ_INT(m_B15M.status.phase, B15M_PHASE_TRANSFORM);
-    CHECK_EQ_INT(m_B15M.pattern, 0);
-    CHECK_EQ_INT(m_B15M.status.frame, 20);
-    CHECK_EQ_INT(m_B15M.hit.frame, 17);
+    CHECK_EQ_INT(p_B15M->status.phase, B15M_PHASE_TRANSFORM);
+    CHECK_EQ_INT(p_B15M->pattern, 0);
+    CHECK_EQ_INT(p_B15M->status.frame, 20);
+    CHECK_EQ_INT(p_B15M->hit.frame, 17);
     CHECK_EQ_INT(g_VSync->count1, 13);
     CHECK_EQ_INT(g_VSync->count2, 26);
-    CHECK_EQ_INT(g_Video.scroll_top, 0);
+    CHECK_EQ_INT(g_Video->scroll_top, 0);
     Arena_Free(&arena);
 }
 
@@ -291,36 +289,36 @@ TEST(safety_circle_delays_hit_and_preserves_later_source_effects)
     FIXTURE f;
     M_Battle(&f, &arena);
     g_BossElis.init();
-    memset(m_B15M.background, 0, 128 * 96);
+    memset(p_B15M->background, 0, 128 * 96);
     M_BossSetup(&f.assets, &f.miko);
-    m_B15M.status.phase = B15M_PHASE_FORMS;
-    m_B15M.form = B15M_FORM_GIRL;
-    m_B15M.status.frame = 140;
-    m_B15M.girl_pattern = 2;
-    m_B15M.girl_subphase = 1;
-    m_B15M.pattern_state = 2;
-    m_B15M.safety_circle = (B15M_CIRCLE) { 64, 1 };
-    m_B15M.safety_left = 200;
-    m_Player.left = 400;
-    m_Player.invincible = false;
+    p_B15M->status.phase = B15M_PHASE_FORMS;
+    p_B15M->form = B15M_FORM_GIRL;
+    p_B15M->status.frame = 140;
+    p_B15M->girl_pattern = 2;
+    p_B15M->girl_subphase = 1;
+    p_B15M->pattern_state = 2;
+    p_B15M->safety_circle = (B15M_CIRCLE) { 64, 1 };
+    p_B15M->safety_left = 200;
+    p_Player->left = 400;
+    p_Player->invincible = false;
     VSyncIrq_Reset();
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 100));
-    CHECK_EQ_INT(m_B15M.wait.kind, WAIT_TICKS);
-    CHECK_EQ_INT(m_B15M.safety_circle.frame, 2);
-    CHECK(!m_Player.is_hit);
-    const B15M frozen = m_B15M;
+    CHECK_EQ_INT(p_B15M->wait.kind, WAIT_TICKS);
+    CHECK_EQ_INT(p_B15M->safety_circle.frame, 2);
+    CHECK(!p_Player->is_hit);
+    const B15M frozen = *p_B15M;
     const uint32_t rng = g_Rng;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 105));
-    CHECK(memcmp(&m_B15M, &frozen, sizeof(m_B15M)) == 0);
+    CHECK(memcmp(p_B15M, &frozen, sizeof(*p_B15M)) == 0);
     CHECK_EQ_INT(g_Rng, rng);
-    CHECK(!m_Player.is_hit);
+    CHECK(!p_Player->is_hit);
     CHECK(M_BossUpdate(&f.assets, &f.miko, 106));
-    CHECK(m_Player.is_hit);
-    CHECK_EQ_INT(m_B15M.safety_circle.frame, 200);
-    CHECK_EQ_INT(m_B15M.status.frame, 141);
-    CHECK(m_Pellets.slots[0].moving);
-    CHECK_EQ_INT(m_B15M.girl_subphase, 1);
-    CHECK_EQ_INT(m_B15M.phase5_subphase, 0);
+    CHECK(p_Player->is_hit);
+    CHECK_EQ_INT(p_B15M->safety_circle.frame, 200);
+    CHECK_EQ_INT(p_B15M->status.frame, 141);
+    CHECK(p_Pellets->slots[0].moving);
+    CHECK_EQ_INT(p_B15M->girl_subphase, 1);
+    CHECK_EQ_INT(p_B15M->phase5_subphase, 0);
     Arena_Free(&arena);
 }
 
@@ -331,11 +329,11 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         Arena_Init(&arena, "b15m", 4 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        g_Session.settings.difficulty = rank;
-        g_Session.settings.difficulty = rank;
-        g_Session.frame_rand = 0xb15f0000u + (uint32_t)rank;
+        p_Session->settings.difficulty = rank;
+        p_Session->settings.difficulty = rank;
+        p_Session->frame_rand = 0xb15f0000u + (uint32_t)rank;
         g_BossElis.init();
-        memset(m_B15M.background, 0, 128 * 96);
+        memset(p_B15M->background, 0, 128 * 96);
         M_BossSetup(&f.assets, &f.miko);
         VSyncIrq_Reset();
         uint64_t tick = 0;
@@ -347,49 +345,49 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         uint32_t bat = 0;
         int32_t p1ticks = 0;
         int32_t p3ticks = 0;
-        for (int32_t step = 1; step < 40000 && !m_B15M.finished; step++) {
-            g_Session.frame_rand = (uint32_t)step;
-            if (m_B15M.status.phase == B15M_PHASE_PATTERNS_1) {
+        for (int32_t step = 1; step < 40000 && !p_B15M->finished; step++) {
+            p_Session->frame_rand = (uint32_t)step;
+            if (p_B15M->status.phase == B15M_PHASE_PATTERNS_1) {
                 p1ticks++;
-                if (m_B15M.pattern > 0 && m_B15M.pattern <= 3) {
-                    phase1 |= 1u << m_B15M.pattern;
+                if (p_B15M->pattern > 0 && p_B15M->pattern <= 3) {
+                    phase1 |= 1u << p_B15M->pattern;
                 }
             }
-            if (m_B15M.status.phase == B15M_PHASE_PATTERNS_2) {
+            if (p_B15M->status.phase == B15M_PHASE_PATTERNS_2) {
                 p3ticks++;
-                if (m_B15M.pattern > 0 && m_B15M.pattern <= 3
-                    && m_B15M.phase3_pattern != 0) {
-                    phase3 |= 1u << m_B15M.pattern;
+                if (p_B15M->pattern > 0 && p_B15M->pattern <= 3
+                    && p_B15M->phase3_pattern != 0) {
+                    phase3 |= 1u << p_B15M->pattern;
                 }
             }
-            if (m_B15M.status.phase == B15M_PHASE_FORMS) {
-                if (m_B15M.form == B15M_FORM_GIRL && m_B15M.girl_pattern > 0
-                    && m_B15M.girl_pattern <= 3) {
-                    girl |= 1u << m_B15M.girl_pattern;
+            if (p_B15M->status.phase == B15M_PHASE_FORMS) {
+                if (p_B15M->form == B15M_FORM_GIRL && p_B15M->girl_pattern > 0
+                    && p_B15M->girl_pattern <= 3) {
+                    girl |= 1u << p_B15M->girl_pattern;
                 }
-                if (m_B15M.form == B15M_FORM_BAT && m_B15M.bat_pattern > 0
-                    && m_B15M.bat_pattern <= 4) {
-                    bat |= 1u << m_B15M.bat_pattern;
+                if (p_B15M->form == B15M_FORM_BAT && p_B15M->bat_pattern > 0
+                    && p_B15M->bat_pattern <= 4) {
+                    bat |= 1u << p_B15M->bat_pattern;
                 }
             }
-            int16_t target = m_B15M.status.hp;
-            if (m_B15M.status.phase == B15M_PHASE_PATTERNS_1 && phase1 == 14
+            int16_t target = p_B15M->status.hp;
+            if (p_B15M->status.phase == B15M_PHASE_PATTERNS_1 && phase1 == 14
                 && p1ticks > 2500) {
                 target = 10;
             } else if (
-                m_B15M.status.phase == B15M_PHASE_PATTERNS_2 && phase3 == 14
+                p_B15M->status.phase == B15M_PHASE_PATTERNS_2 && phase3 == 14
                 && p3ticks > 2000) {
                 target = 6;
             } else if (
-                m_B15M.status.phase == B15M_PHASE_FORMS && girl == 14
+                p_B15M->status.phase == B15M_PHASE_FORMS && girl == 14
                 && bat == 30) {
                 target = 0;
             }
             const BOSS_ENTITY *const e =
-                m_B15M.form == B15M_FORM_GIRL ? &m_B15M.girl : &m_B15M.bat;
-            const bool hit = m_B15M.status.hp > target && step % 50 == 20;
-            m_Orb.previous_left = hit ? e->left + (m_B15M.form ? 16 : 48) : 0;
-            m_Orb.previous_top = hit ? e->top + 24 : 399;
+                p_B15M->form == B15M_FORM_GIRL ? &p_B15M->girl : &p_B15M->bat;
+            const bool hit = p_B15M->status.hp > target && step % 50 == 20;
+            p_Orb->previous_left = hit ? e->left + (p_B15M->form ? 16 : 48) : 0;
+            p_Orb->previous_top = hit ? e->top + 24 : 399;
             M_Run(&f, &tick);
             VSyncIrq_Edge();
             tick++;
@@ -398,17 +396,17 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         CHECK_EQ_INT(phase3, 14);
         CHECK_EQ_INT(girl, 14);
         CHECK_EQ_INT(bat, 30);
-        CHECK(m_B15M.finished);
-        CHECK_EQ_INT(m_B15M.status.hp, 0);
-        CHECK_EQ_INT(g_Stage.score, 98000);
-        CHECK(g_Stage.cleared);
-        CHECK(m_Player.is_hit);
-        CHECK(m_Scene.active == &f.assets.next_scene);
-        CHECK_EQ_INT(m_Scene.active->id, 5);
+        CHECK(p_B15M->finished);
+        CHECK_EQ_INT(p_B15M->status.hp, 0);
+        CHECK_EQ_INT(g_Stage->score, 98000);
+        CHECK(g_Stage->cleared);
+        CHECK(p_Player->is_hit);
+        CHECK(p_Scene->active == &f.assets.next_scene);
+        CHECK_EQ_INT(p_Scene->active->id, 5);
         CHECK_EQ_INT(arena.used, used);
-        const B15M done = m_B15M;
+        const B15M done = *p_B15M;
         CHECK(M_BossUpdate(&f.assets, &f.miko, tick));
-        CHECK(memcmp(&m_B15M, &done, sizeof(m_B15M)) == 0);
+        CHECK(memcmp(p_B15M, &done, sizeof(*p_B15M)) == 0);
         Arena_Free(&arena);
     }
 }
@@ -420,63 +418,63 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     FIXTURE f;
     M_Battle(&f, &arena);
     g_BossElis.init();
-    memset(m_B15M.background, 0, 128 * 96);
+    memset(p_B15M->background, 0, 128 * 96);
     M_BossSetup(&f.assets, &f.miko);
-    m_B15M.status.phase = B15M_PHASE_FORMS;
-    m_B15M.status.hp = 1;
-    m_B15M.status.frame = 140;
-    m_B15M.form = B15M_FORM_GIRL;
-    m_B15M.girl_pattern = 2;
-    m_B15M.girl_subphase = 1;
-    m_B15M.pattern_state = 2;
-    m_B15M.safety_circle = (B15M_CIRCLE) { 64, 1 };
-    m_B15M.safety_left = 200;
-    m_Player.left = 400;
-    m_Player.invincible = false;
-    m_Orb.previous_left = m_B15M.girl.left + 48;
-    m_Orb.previous_top = m_B15M.girl.top + 24;
-    m_Missiles.slots[0] = (MISSILE) { .left = 200 * 16,
-                                      .top = 200 * 16,
-                                      .previous_left = -1,
-                                      .velocity = { 16, 0 },
-                                      .flag = MISSILE_MOVING };
-    m_Pellets.slots[1].cloud_frame = 10;
+    p_B15M->status.phase = B15M_PHASE_FORMS;
+    p_B15M->status.hp = 1;
+    p_B15M->status.frame = 140;
+    p_B15M->form = B15M_FORM_GIRL;
+    p_B15M->girl_pattern = 2;
+    p_B15M->girl_subphase = 1;
+    p_B15M->pattern_state = 2;
+    p_B15M->safety_circle = (B15M_CIRCLE) { 64, 1 };
+    p_B15M->safety_left = 200;
+    p_Player->left = 400;
+    p_Player->invincible = false;
+    p_Orb->previous_left = p_B15M->girl.left + 48;
+    p_Orb->previous_top = p_B15M->girl.top + 24;
+    p_Missiles->slots[0] = (MISSILE) { .left = 200 * 16,
+                                       .top = 200 * 16,
+                                       .previous_left = -1,
+                                       .velocity = { 16, 0 },
+                                       .flag = MISSILE_MOVING };
+    p_Pellets->slots[1].cloud_frame = 10;
     for (int32_t i = 0; i < 10; i++) {
-        m_Lasers.slots[i].alive = true;
+        p_Lasers->slots[i].alive = true;
     }
     VSyncIrq_Reset();
     const uint32_t rng = g_Rng;
     const size_t used = arena.used;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 100));
-    CHECK_EQ_INT(m_B15M.wait.kind, WAIT_TICKS);
-    CHECK(!m_Player.is_hit);
-    CHECK(!g_Stage.cleared);
-    CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
+    CHECK_EQ_INT(p_B15M->wait.kind, WAIT_TICKS);
+    CHECK(!p_Player->is_hit);
+    CHECK(!g_Stage->cleared);
+    CHECK_EQ_INT(p_Missiles->slots[0].left, 201 * 16);
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 105));
-    CHECK(!m_Player.is_hit);
+    CHECK(!p_Player->is_hit);
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 106));
-    CHECK(m_B15M.defeating);
-    CHECK_EQ_INT(m_B15M.status.hp, 0);
-    CHECK(m_Player.is_hit);
-    CHECK(!g_Stage.cleared);
-    CHECK(m_Scene.active == nullptr);
-    CHECK_EQ_INT(g_Stage.score, 7000);
+    CHECK(p_B15M->defeating);
+    CHECK_EQ_INT(p_B15M->status.hp, 0);
+    CHECK(p_Player->is_hit);
+    CHECK(!g_Stage->cleared);
+    CHECK(p_Scene->active == nullptr);
+    CHECK_EQ_INT(g_Stage->score, 7000);
     CHECK_EQ_INT(g_Rng, rng);
-    CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
-    CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
-    CHECK_EQ_INT(m_Pellets.slots[1].cloud_frame, 10);
+    CHECK_EQ_INT(p_Missiles->slots[0].flag, MISSILE_FREE);
+    CHECK_EQ_INT(p_Missiles->slots[0].left, 201 * 16);
+    CHECK_EQ_INT(p_Pellets->slots[1].cloud_frame, 10);
     for (int32_t i = 0; i < 10; i++) {
-        CHECK(!m_Lasers.slots[i].alive);
+        CHECK(!p_Lasers->slots[i].alive);
     }
-    const B15M frozen = m_B15M;
+    const B15M frozen = *p_B15M;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 106));
-    CHECK(memcmp(&m_B15M, &frozen, sizeof(m_B15M)) == 0);
+    CHECK(memcmp(p_B15M, &frozen, sizeof(*p_B15M)) == 0);
     uint64_t tick = 106;
     M_Run(&f, &tick);
-    CHECK(m_B15M.finished);
-    CHECK(g_Stage.cleared);
-    CHECK(m_Scene.active == &f.assets.next_scene);
-    CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
+    CHECK(p_B15M->finished);
+    CHECK(g_Stage->cleared);
+    CHECK(p_Scene->active == &f.assets.next_scene);
+    CHECK_EQ_INT(p_Missiles->slots[0].left, 201 * 16);
     CHECK_EQ_INT(g_Rng, rng);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
@@ -489,28 +487,28 @@ TEST(phase_hp_gate_waits_for_teleport_and_preserves_unused_rng_draws)
     FIXTURE f;
     M_Battle(&f, &arena);
     g_BossElis.init();
-    memset(m_B15M.background, 0, 128 * 96);
+    memset(p_B15M->background, 0, 128 * 96);
     M_BossSetup(&f.assets, &f.miko);
-    m_B15M.status.phase = B15M_PHASE_PATTERNS_1;
-    m_B15M.status.hp = 10;
-    m_B15M.pattern = 0;
-    m_B15M.status.frame = 79;
-    m_B15M.hp_bar_filled = true;
+    p_B15M->status.phase = B15M_PHASE_PATTERNS_1;
+    p_B15M->status.hp = 10;
+    p_B15M->pattern = 0;
+    p_B15M->status.frame = 79;
+    p_B15M->hp_bar_filled = true;
     uint32_t expected = g_Rng;
     for (int32_t i = 0; i < 12; i++) {
         MasterRng_Next(&expected);
     }
     VSyncIrq_Reset();
     CHECK(M_BossUpdate(&f.assets, &f.miko, 0));
-    CHECK_EQ_INT(m_B15M.status.phase, B15M_PHASE_PATTERNS_1);
-    CHECK_EQ_INT(m_B15M.status.frame, 80);
-    CHECK(!m_B15M.teleport_done);
+    CHECK_EQ_INT(p_B15M->status.phase, B15M_PHASE_PATTERNS_1);
+    CHECK_EQ_INT(p_B15M->status.frame, 80);
+    CHECK(!p_B15M->teleport_done);
     CHECK_EQ_INT(g_Rng, expected);
     MasterRng_Next(&expected);
     MasterRng_Next(&expected);
     CHECK(M_BossUpdate(&f.assets, &f.miko, 1));
-    CHECK_EQ_INT(m_B15M.status.phase, B15M_PHASE_CENTER);
-    CHECK_EQ_INT(m_B15M.status.frame, 0);
+    CHECK_EQ_INT(p_B15M->status.phase, B15M_PHASE_CENTER);
+    CHECK_EQ_INT(p_B15M->status.frame, 0);
     CHECK_EQ_INT(g_Rng, expected);
     Arena_Free(&arena);
 }
@@ -523,27 +521,27 @@ TEST(circle_groups_keep_the_callers_cloud_policy)
         FIXTURE f;
         M_Battle(&f, &arena);
         g_BossElis.init();
-        memset(m_B15M.background, 0, 128 * 96);
+        memset(p_B15M->background, 0, 128 * 96);
         M_BossSetup(&f.assets, &f.miko);
-        m_B15M.status.phase = B15M_PHASE_PATTERNS_1;
-        m_B15M.pattern = 3;
-        m_B15M.status.frame = 200;
-        m_B15M.circle.frame = 40;
-        m_B15M.circle.angle = 64;
-        m_B15M.pattern_state = PELLET_GROUP_SINGLE_AIMED;
-        m_B15M.hp_bar_filled = true;
-        m_Pellets.spawn_with_cloud = cloud != 0;
+        p_B15M->status.phase = B15M_PHASE_PATTERNS_1;
+        p_B15M->pattern = 3;
+        p_B15M->status.frame = 200;
+        p_B15M->circle.frame = 40;
+        p_B15M->circle.angle = 64;
+        p_B15M->pattern_state = PELLET_GROUP_SINGLE_AIMED;
+        p_B15M->hp_bar_filled = true;
+        p_Pellets->spawn_with_cloud = cloud != 0;
         VSyncIrq_Reset();
         const size_t used = arena.used;
         CHECK(M_BossUpdate(&f.assets, &f.miko, 0));
         int32_t count = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-            count += cloud ? m_Pellets.slots[i].cloud_frame != 0
-                           : m_Pellets.slots[i].moving;
+            count += cloud ? p_Pellets->slots[i].cloud_frame != 0
+                           : p_Pellets->slots[i].moving;
         }
         CHECK_EQ_INT(count, 23);
-        CHECK_EQ_INT(m_Pellets.spawn_with_cloud, cloud != 0);
-        CHECK(m_Pellets.interlace);
+        CHECK_EQ_INT(p_Pellets->spawn_with_cloud, cloud != 0);
+        CHECK(p_Pellets->interlace);
         CHECK_EQ_INT(arena.used, used);
         Arena_Free(&arena);
     }
@@ -556,30 +554,30 @@ TEST(full_missile_pool_still_consumes_pattern_randomness)
     FIXTURE f;
     M_Battle(&f, &arena);
     g_BossElis.init();
-    memset(m_B15M.background, 0, 128 * 96);
+    memset(p_B15M->background, 0, 128 * 96);
     M_BossSetup(&f.assets, &f.miko);
-    m_B15M.status.phase = B15M_PHASE_PATTERNS_1;
-    m_B15M.pattern = 2;
-    m_B15M.status.frame = 59;
-    m_B15M.hp_bar_filled = true;
-    m_B15M.pattern_state = 15;
+    p_B15M->status.phase = B15M_PHASE_PATTERNS_1;
+    p_B15M->pattern = 2;
+    p_B15M->status.frame = 59;
+    p_B15M->hp_bar_filled = true;
+    p_B15M->pattern_state = 15;
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        m_Missiles.slots[i] = (MISSILE) { .left = 200 * 16,
-                                          .top = 200 * 16,
-                                          .previous_left = -1,
-                                          .flag = MISSILE_MOVING };
+        p_Missiles->slots[i] = (MISSILE) { .left = 200 * 16,
+                                           .top = 200 * 16,
+                                           .previous_left = -1,
+                                           .flag = MISSILE_MOVING };
     }
     VSyncIrq_Reset();
     CHECK(M_BossUpdate(&f.assets, &f.miko, 0));
-    m_B15M.status.frame = 62;
+    p_B15M->status.frame = 62;
     uint32_t expected = g_Rng;
     MasterRng_Next(&expected);
     MasterRng_Next(&expected);
     CHECK(M_BossUpdate(&f.assets, &f.miko, 1));
     CHECK_EQ_INT(g_Rng, expected);
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        CHECK_EQ_INT(m_Missiles.slots[i].flag, MISSILE_MOVING);
-        CHECK_EQ_INT(m_Missiles.slots[i].left, 200 * 16);
+        CHECK_EQ_INT(p_Missiles->slots[i].flag, MISSILE_MOVING);
+        CHECK_EQ_INT(p_Missiles->slots[i].left, 200 * 16);
     }
     Arena_Free(&arena);
 }

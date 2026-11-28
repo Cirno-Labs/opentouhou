@@ -1,11 +1,10 @@
-#include "th01/timer.h"
-
 #include "th01/hooks.h"
 #include "th01/hud.h"
 #include "th01/pellets.h"
 #include "th01/rng.h"
 #include "th01/session.h"
 #include "th01/sound.h"
+#include "th01/timer_private.h"
 #include "th01/tram.h"
 #include "th01/vsync_irq.h"
 
@@ -15,19 +14,8 @@
 
 #include <string.h>
 
-typedef enum {
-    TIMER_IDLE,
-    TIMER_WAIT_HURRY,
-    TIMER_WAIT_UP,
-} TIMER_PHASE;
-
-typedef struct {
-    uint16_t frames_since_hurry;
-    uint8_t hurry_cycle;
-    TIMER_PHASE phase;
-} STAGE_TIMER;
-
 static STAGE_TIMER m_Timer;
+STAGE_TIMER *const p_Timer = &m_Timer;
 
 static bool M_Continue(void)
 {
@@ -59,10 +47,10 @@ static void M_Rain(void)
     if (m_Timer.hurry_cycle % frequency != 0) {
         return;
     }
-    for (uint32_t i = 0; i <= (uint32_t)g_Session.settings.difficulty; i++) {
+    for (uint32_t i = 0; i <= (uint32_t)g_Session->settings.difficulty; i++) {
         const int16_t left = (int16_t)(MasterRng_Next(&g_Rng) % 640);
         Pellets_AddGroup(
-            g_Session.settings.difficulty, left, 64, PELLET_GROUP_RANDOM_WIDE,
+            g_Session->settings.difficulty, left, 64, PELLET_GROUP_RANDOM_WIDE,
             48);
     }
 }
@@ -76,15 +64,16 @@ static void M_InitFor(const int16_t stage_id, const int16_t route)
     };
     ASSERT(stage_id >= 0 && stage_id < 20 && route >= 0 && route <= 1);
     ASSERT(m_Timer.phase == TIMER_IDLE);
-    g_Stage.time = times[stage_id < 5 ? stage_id : route * 15 + stage_id];
-    Th01Hooks_CallOnStageTime(&g_Stage.time);
+    uint16_t time = times[stage_id < 5 ? stage_id : route * 15 + stage_id];
+    Th01Hooks_CallOnStageTime(&time);
+    Stage_SetTime(time);
     m_Timer.frames_since_hurry = 0;
 }
 
 void StageTimer_Init(void)
 {
     memset(&m_Timer, 0, sizeof(m_Timer));
-    g_Stage.time = 0;
+    Stage_SetTime(0);
 }
 
 void StageTimer_Redraw(
@@ -92,9 +81,9 @@ void StageTimer_Redraw(
 {
     Hud_PutMask();
     if (!timer_initialized) {
-        M_InitFor(g_Session.stage_id, route);
+        M_InitFor(g_Session->stage_id, route);
     }
-    Hud_Redraw(first_stage, g_Stage.time);
+    Hud_Redraw(first_stage, g_Stage->time);
 }
 
 bool StageTimer_TickAndPut(void)
@@ -102,13 +91,13 @@ bool StageTimer_TickAndPut(void)
     if (m_Timer.phase != TIMER_IDLE) {
         return M_Continue();
     }
-    if (g_Stage.time == 0) {
+    if (g_Stage->time == 0) {
         M_Rain();
         return true;
     }
-    g_Stage.time = (uint16_t)(g_Stage.time - 2);
-    Hud_PutTimer(g_Stage.time);
-    if (g_Stage.time == 0) {
+    Stage_SetTime((uint16_t)(g_Stage->time - 2));
+    Hud_PutTimer(g_Stage->time);
+    if (g_Stage->time == 0) {
         Pellets_SpeedRaise(2);
         Sound_Effect(SOUND_EFFECT_TIME_UP);
         Hud_PutMessage("HARRY");
@@ -121,7 +110,8 @@ bool StageTimer_TickAndPut(void)
 void StageTimer_ExtendAndPut(void)
 {
     ASSERT(m_Timer.phase == TIMER_IDLE);
-    g_Stage.time = (uint16_t)(g_Stage.time + (g_Stage.time != 0 ? 200 : 1000));
-    Hud_PutTimer(g_Stage.time);
+    Stage_SetTime(
+        (uint16_t)(g_Stage->time + (g_Stage->time != 0 ? 200 : 1000)));
+    Hud_PutTimer(g_Stage->time);
     m_Timer.frames_since_hurry = 0;
 }

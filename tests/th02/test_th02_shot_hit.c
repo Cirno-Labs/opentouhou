@@ -5,8 +5,8 @@
 #include "th02/player.h"
 #include "th02/random.h"
 #include "th02/shots.h"
-#include "th02/sparks.c"
 #include "th02/sparks.h"
+#include "th02/sparks_private.h"
 
 static SHOT M_Shot(const uint8_t sprite, const uint8_t option)
 {
@@ -33,30 +33,30 @@ TEST(body_hits_slow_velocity_shift_large_shots_and_keep_score_high_word)
 {
     Player_Init();
     Sparks_Init();
-    m_Sparks.next = 63;
+    p_Sparks->next = 63;
     Score_Init();
-    m_Score.value = 1234;
-    m_Score.delta = 0x1234fffe;
-    m_Shots.weapon.level = 2;
+    p_Score->value = 1234;
+    p_Score->delta = 0x1234fffe;
+    p_Shots->weapon.level = 2;
     const SHOT_HIT_INPUT input = {};
-    m_Shots.slots[0] = M_Shot(50, 0);
-    m_Shots.slots[1] = M_Shot(120, 0);
+    p_Shots->slots[0] = M_Shot(50, 0);
+    p_Shots->slots[1] = M_Shot(120, 0);
     CHECK_EQ_INT(M_Hit(input, 96, 96, 32, 32), 14);
-    CHECK_EQ_INT(m_Score.delta, 0x1234000c);
-    CHECK_EQ_INT(m_Score.value, 1234);
-    CHECK_EQ_INT(m_Shots.slots[0].age, 2);
-    CHECK_EQ_INT(m_Shots.slots[1].age, 1);
-    CHECK_EQ_INT(m_Shots.slots[0].velocity.x, -1);
-    CHECK_EQ_INT(m_Shots.slots[0].velocity.y, -2);
-    CHECK_EQ_INT(m_Shots.slots[1].position[0].x, 92 * 16 + 7);
-    CHECK_EQ_INT(m_Shots.slots[1].position[0].y, 92 * 16 + 9);
-    CHECK_EQ_INT(m_Shots.slots[1].position[1].x, 200);
-    CHECK_EQ_INT(m_Shots.slots[1].state, ENTITY_ACTIVE);
-    CHECK_EQ_INT(m_Sparks.next, 1);
-    CHECK_EQ_INT(m_Sparks.slots[63].position[0].x, 100 * 16);
-    CHECK_EQ_INT(m_Sparks.slots[0].position[0].x, 100 * 16);
-    CHECK_EQ_INT(m_Sparks.slots[0].position[0].y, 92 * 16);
-    CHECK_EQ_INT(m_Sparks.slots[0].velocity.x, 30);
+    CHECK_EQ_INT(p_Score->delta, 0x1234000c);
+    CHECK_EQ_INT(p_Score->value, 1234);
+    CHECK_EQ_INT(p_Shots->slots[0].age, 2);
+    CHECK_EQ_INT(p_Shots->slots[1].age, 1);
+    CHECK_EQ_INT(p_Shots->slots[0].velocity.x, -1);
+    CHECK_EQ_INT(p_Shots->slots[0].velocity.y, -2);
+    CHECK_EQ_INT(p_Shots->slots[1].position[0].x, 92 * 16 + 7);
+    CHECK_EQ_INT(p_Shots->slots[1].position[0].y, 92 * 16 + 9);
+    CHECK_EQ_INT(p_Shots->slots[1].position[1].x, 200);
+    CHECK_EQ_INT(p_Shots->slots[1].state, ENTITY_ACTIVE);
+    CHECK_EQ_INT(p_Sparks->next, 1);
+    CHECK_EQ_INT(p_Sparks->slots[63].position[0].x, 100 * 16);
+    CHECK_EQ_INT(p_Sparks->slots[0].position[0].x, 100 * 16);
+    CHECK_EQ_INT(p_Sparks->slots[0].position[0].y, 92 * 16);
+    CHECK_EQ_INT(p_Sparks->slots[0].velocity.x, 30);
     CHECK_EQ_INT(M_Hit(input, 96, 96, 32, 32), 0);
 }
 
@@ -65,25 +65,25 @@ TEST(options_use_the_narrower_right_edge_and_keep_damaging_after_hit_animation)
     Player_Init();
     Sparks_Init();
     Score_Init();
-    m_Shots.weapon.level = 0;
+    p_Shots->weapon.level = 0;
     const SHOT_HIT_INPUT input = {};
-    m_Shots.slots[0] = M_Shot(0, 1);
-    m_Shots.slots[0].age = 1;
-    m_Shots.slots[1] = M_Shot(0, 255);
-    m_Shots.slots[1].age = 255;
-    m_Shots.slots[2] = M_Shot(49, 0);
-    m_Shots.slots[2].position[0].x = 120 * 16;
-    m_Shots.slots[3] = M_Shot(49, 1);
-    m_Shots.slots[3].position[0].x = 120 * 16;
+    p_Shots->slots[0] = M_Shot(0, 1);
+    p_Shots->slots[0].age = 1;
+    p_Shots->slots[1] = M_Shot(0, 255);
+    p_Shots->slots[1].age = 255;
+    p_Shots->slots[2] = M_Shot(49, 0);
+    p_Shots->slots[2].position[0].x = 120 * 16;
+    p_Shots->slots[3] = M_Shot(49, 1);
+    p_Shots->slots[3].position[0].x = 120 * 16;
     CHECK_EQ_INT(M_Hit(input, 96, 96, 32, 32), 5);
-    CHECK_EQ_INT(m_Shots.slots[0].age, 2);
-    CHECK_EQ_INT(m_Shots.slots[1].age, 255);
-    CHECK_EQ_INT(m_Shots.slots[2].age, 0);
-    CHECK_EQ_INT(m_Shots.slots[3].age, 0);
-    CHECK_EQ_INT(m_Sparks.next, 2);
-    CHECK_EQ_INT(m_Sparks.slots[0].velocity.x, 40);
+    CHECK_EQ_INT(p_Shots->slots[0].age, 2);
+    CHECK_EQ_INT(p_Shots->slots[1].age, 255);
+    CHECK_EQ_INT(p_Shots->slots[2].age, 0);
+    CHECK_EQ_INT(p_Shots->slots[3].age, 0);
+    CHECK_EQ_INT(p_Sparks->next, 2);
+    CHECK_EQ_INT(p_Sparks->slots[0].velocity.x, 40);
     CHECK_EQ_INT(M_Hit(input, 96, 96, 32, 32), 5);
-    CHECK_EQ_INT(m_Sparks.next, 3);
+    CHECK_EQ_INT(p_Sparks->next, 3);
 }
 
 TEST(strict_edges_last_three_slots_and_bomb_mask_preserve_their_distinct_rules)
@@ -91,27 +91,28 @@ TEST(strict_edges_last_three_slots_and_bomb_mask_preserve_their_distinct_rules)
     Player_Init();
     Sparks_Init();
     Score_Init();
-    m_Score.delta = INT32_MAX;
-    m_Shots.weapon.level = 9;
-    m_Bomb.active = 7;
+    p_Score->delta = INT32_MAX;
+    p_Shots->weapon.level = 9;
+    p_Bomb->active = 7;
     SHOT_HIT_INPUT input = { .bomb_frame_mask = 1 };
-    m_Shots.slots[0] = M_Shot(49, 0);
-    m_Shots.slots[0].position[0].x = 88 * 16;
-    m_Shots.slots[1] = M_Shot(49, 0);
-    m_Shots.slots[1].position[0].y = 120 * 16;
-    m_Shots.slots[35] = m_Shots.slots[36] = m_Shots.slots[37] = M_Shot(120, 0);
+    p_Shots->slots[0] = M_Shot(49, 0);
+    p_Shots->slots[0].position[0].x = 88 * 16;
+    p_Shots->slots[1] = M_Shot(49, 0);
+    p_Shots->slots[1].position[0].y = 120 * 16;
+    p_Shots->slots[35] = p_Shots->slots[36] = p_Shots->slots[37] =
+        M_Shot(120, 0);
     CHECK_EQ_INT(M_Hit(input, 96, 96, 32, 32), 1);
-    CHECK_EQ_INT(m_Score.delta, 0x7fff0000);
-    CHECK_EQ_INT(m_Shots.slots[35].age, 0);
-    CHECK_EQ_INT(m_Sparks.next, 0);
+    CHECK_EQ_INT(p_Score->delta, 0x7fff0000);
+    CHECK_EQ_INT(p_Shots->slots[35].age, 0);
+    CHECK_EQ_INT(p_Sparks->next, 0);
     input.frame = 0xffffff01u;
     CHECK_EQ_INT(M_Hit(input, 96, 96, 32, 32), 0);
     input.bomb_frame_mask = 0;
     CHECK_EQ_INT(M_Hit(input, 96, 96, 32, 32), 1);
-    m_Bomb.active = 0;
-    m_Shots.slots[34] = M_Shot(49, 0);
+    p_Bomb->active = 0;
+    p_Shots->slots[34] = M_Shot(49, 0);
     CHECK_EQ_INT(M_Hit(input, 96, 96, 32, 32), 1);
-    CHECK_EQ_INT(m_Sparks.next, 1);
+    CHECK_EQ_INT(p_Sparks->next, 1);
 }
 
 static uint64_t M_HashValue(uint64_t hash, const uint32_t value)
@@ -125,28 +126,28 @@ static uint64_t M_HashValue(uint64_t hash, const uint32_t value)
 
 static uint64_t M_HashState(uint64_t hash)
 {
-    hash = M_HashValue(hash, (uint32_t)m_Score.value);
-    hash = M_HashValue(hash, (uint32_t)m_Score.delta);
-    hash = M_HashValue(hash, m_Sparks.next);
-    hash = M_HashValue(hash, m_Rng.seed);
-    hash = M_HashValue(hash, m_Rng.cursor);
+    hash = M_HashValue(hash, (uint32_t)p_Score->value);
+    hash = M_HashValue(hash, (uint32_t)p_Score->delta);
+    hash = M_HashValue(hash, p_Sparks->next);
+    hash = M_HashValue(hash, p_Rng->seed);
+    hash = M_HashValue(hash, p_Rng->cursor);
     for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-        hash = M_HashValue(hash, m_Rng.ring[i]);
+        hash = M_HashValue(hash, p_Rng->ring[i]);
     }
     for (size_t i = 0; i < SHOT_COUNT; i++) {
-        const SHOT *const shot = &m_Shots.slots[i];
+        const SHOT *const shot = &p_Shots->slots[i];
         const int32_t values[] = {
             shot->state,         shot->age,           shot->position[0].x,
             shot->position[0].y, shot->position[1].x, shot->position[1].y,
             shot->velocity.x,    shot->velocity.y,    shot->sprite,
-            shot->from_option,   m_Shots.frames[i],
+            shot->from_option,   p_Shots->frames[i],
         };
         for (size_t j = 0; j < ARRAY_SIZE(values); j++) {
             hash = M_HashValue(hash, (uint32_t)values[j]);
         }
     }
     for (size_t i = 0; i < SPARK_COUNT; i++) {
-        const SPARK *const spark = &m_Sparks.slots[i];
+        const SPARK *const spark = &p_Sparks->slots[i];
         const int32_t values[] = {
             spark->state,         spark->age,           spark->position[0].x,
             spark->position[0].y, spark->position[1].x, spark->position[1].y,
@@ -183,24 +184,24 @@ TEST(hit_levels_pages_masks_and_bounds_preserve_state_and_rng)
                             Score_Init();
                             Random_Reset();
                             Random_Seed(0x23456789);
-                            m_Rng.cursor = 255;
+                            p_Rng->cursor = 255;
                             for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-                                m_Rng.ring[i] = (uint8_t)(i ^ 0x5a);
+                                p_Rng->ring[i] = (uint8_t)(i ^ 0x5a);
                             }
-                            m_Shots.weapon.level = level;
-                            m_Bomb.active = bombing != 0 ? 7 : 0;
-                            m_Score.value = 1234;
-                            m_Score.delta = 0x1234ffff;
-                            m_Sparks.next = 63;
+                            p_Shots->weapon.level = level;
+                            p_Bomb->active = bombing != 0 ? 7 : 0;
+                            p_Score->value = 1234;
+                            p_Score->delta = 0x1234ffff;
+                            p_Sparks->next = 63;
                             for (size_t i = 0; i < SPARK_COUNT; i++) {
-                                m_Sparks.slots[i].angle = (uint8_t)(i * 9);
-                                m_Sparks.slots[i].base_speed =
+                                p_Sparks->slots[i].angle = (uint8_t)(i * 9);
+                                p_Sparks->slots[i].base_speed =
                                     (uint8_t)(13 + i);
-                                m_Sparks.slots[i].preferred =
+                                p_Sparks->slots[i].preferred =
                                     i % 2 != 0 ? 14 : 0;
                             }
                             for (size_t i = 0; i < SHOT_COUNT; i++) {
-                                SHOT *const shot = &m_Shots.slots[i];
+                                SHOT *const shot = &p_Shots->slots[i];
                                 *shot = M_Shot(
                                     sprites[i % ARRAY_SIZE(sprites)],
                                     (uint8_t)(i % 3 == 0));

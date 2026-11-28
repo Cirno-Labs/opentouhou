@@ -8,7 +8,6 @@
 #include "th02/player.h"
 #include "th02/random.h"
 #include "th02/shots.h"
-#include "th02/sparks.c"
 #include "th02/sparks.h"
 #include "th02/stage.h"
 #include "th02/stage/private.h"
@@ -68,8 +67,8 @@ TEST(hit_reads_live_shots_and_adds_scaled_damage_to_the_running_total)
     Score_Init();
     p_Stage->scroll.back = 1;
     p_Stage->world.frame = 2;
-    m_Shots.weapon.level = 0;
-    SHOT *const shot = &m_Shots.slots[0];
+    p_Shots->weapon.level = 0;
+    SHOT *const shot = &p_Shots->slots[0];
     shot->state = ENTITY_ACTIVE;
     shot->sprite = 50;
     shot->age = 0;
@@ -81,7 +80,7 @@ TEST(hit_reads_live_shots_and_adds_scaled_damage_to_the_running_total)
     CHECK(damage > 0);
     CHECK_EQ_INT(total, (int16_t)(32767 + damage * 2));
     CHECK_EQ_INT(shot->age, 2);
-    CHECK_EQ_INT(m_Score.delta, damage);
+    CHECK_EQ_INT(p_Score->delta, damage);
 }
 
 TEST(select_patterns_borrows_the_bank_and_imports_the_optional_palette)

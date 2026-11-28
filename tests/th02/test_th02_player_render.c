@@ -45,12 +45,12 @@ TEST(player_draws_and_cleans_rolling_body_and_options_on_the_selected_page)
     TestSound_Init(&sound);
     Player_Init();
     Player_ResetPosition();
-    m_Player.power = 8;
+    p_Player->power = 8;
     const PLAYFIELD_PAGES pages = { 1, 0, scroll };
     Player_Controls(pages, GAME_KEY_SHOT);
-    CHECK_EQ_INT(m_Shots.slots[0].state, ENTITY_ACTIVE);
-    CHECK_EQ_INT(m_Shots.slots[0].position[1].x, 216 * 16);
-    CHECK_EQ_INT(m_Shots.slots[0].position[0].x, 0);
+    CHECK_EQ_INT(p_Shots->slots[0].state, ENTITY_ACTIVE);
+    CHECK_EQ_INT(p_Shots->slots[0].position[1].x, 216 * 16);
+    CHECK_EQ_INT(p_Shots->slots[0].position[0].x, 0);
     TestSound_Check(&sound, -1);
     SoundEffects_Update();
     TestSound_Check(&sound, 1);

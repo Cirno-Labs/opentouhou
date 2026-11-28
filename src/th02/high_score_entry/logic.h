@@ -3,6 +3,7 @@
 // Name entry after a run qualifies for the score table, with the
 // not-qualified release/press wait around it.
 
+#include "th02/high_score_entry/render.h"
 #include "th02/high_scores.h"
 #include "th02/input.h"
 
@@ -34,7 +35,9 @@ int32_t HighScoreEntry_MainScore(int32_t internal_score, uint16_t continues);
 // Returns the gaiji at alphabet column 0..16, row 0..2.
 uint8_t HighScoreEntry_Alphabet(uint8_t col, uint8_t row);
 
-void HighScoreEntry_Init(void);
+// render draws the screen: the real functions in production, a fake
+// observer in tests.
+void HighScoreEntry_Init(const HIGH_SCORE_ENTRY_RENDER *render);
 
 // Starts the name entry for a run's score and date; a score that does not
 // qualify only waits for release and press.

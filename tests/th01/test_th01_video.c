@@ -16,7 +16,7 @@ static int32_t M_Count(const uint8_t color)
 {
     int32_t count = 0;
     for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
-        if (g_Video.pages[g_Video.drawing_page][i] == color) {
+        if (g_Video->pages[g_Video->drawing_page][i] == color) {
             count++;
         }
     }
@@ -28,8 +28,8 @@ TEST(pages_belong_to_the_allocator)
     ARENA arena;
     M_Init(&arena);
     CHECK_EQ_INT(arena.used, 2 * VIDEO_PAGE_SIZE);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
-    CHECK_EQ_INT(g_Video.visible_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
+    CHECK_EQ_INT(g_Video->visible_page, 0);
     CHECK_EQ_INT(Th01Test_Pixel(1, 639, 399), 0);
     Video_Clear(0x23);
     Video_SelectVisiblePage(1);
@@ -43,7 +43,7 @@ TEST(pages_belong_to_the_allocator)
     Video_Init(Arena_Allocator(&arena));
     CHECK_EQ_INT(arena.used, 2 * VIDEO_PAGE_SIZE);
     CHECK_EQ_INT(Th01Test_Pixel(0, 0, 0), 0);
-    CHECK_EQ_INT(g_Video.visible_page, 0);
+    CHECK_EQ_INT(g_Video->visible_page, 0);
     Arena_Free(&arena);
 }
 
@@ -279,11 +279,11 @@ TEST(rectangle_copies_preserve_clipping_and_page_selection)
     CHECK_EQ_INT(Th01Test_Pixel(0, 11, 11), 7);
     CHECK_EQ_INT(Th01Test_Pixel(0, 13, 13), 7);
     CHECK_EQ_INT(Th01Test_Pixel(0, 14, 13), 0);
-    CHECK_EQ_INT(g_Video.drawing_page, 1);
-    CHECK_EQ_INT(g_Video.visible_page, 1);
+    CHECK_EQ_INT(g_Video->drawing_page, 1);
+    CHECK_EQ_INT(g_Video->visible_page, 1);
     Video_Copy(1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0, 0);
     for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
-        CHECK_EQ_INT(g_Video.pages[0][i], 7);
+        CHECK_EQ_INT(g_Video->pages[0][i], 7);
     }
     Arena_Free(&arena);
 }
@@ -326,7 +326,7 @@ TEST(word_aligned_restore_rounds_the_original_right_edge)
     Video_SelectDrawingPage(1);
     Video_Clear(6);
     Video_Restore16((GFX_RECT) { 15, 10, 2, 1 });
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     CHECK_EQ_INT(M_Count(6), 32);
     CHECK_EQ_INT(Th01Test_Pixel(0, 0, 10), 6);
     CHECK_EQ_INT(Th01Test_Pixel(0, 31, 10), 6);
@@ -337,7 +337,7 @@ TEST(word_aligned_restore_rounds_the_original_right_edge)
     CHECK_EQ_INT(M_Count(6), 48);
     Video_SelectDrawingPage(1);
     Video_Restore16((GFX_RECT) { 0, 0, 0, 10 });
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     Video_Restore16((GFX_RECT) { INT32_MAX, INT32_MIN, INT32_MAX, INT32_MAX });
     CHECK_EQ_INT(M_Count(6), 48);
     Arena_Free(&arena);
@@ -360,8 +360,8 @@ TEST(readback_preserves_padding_and_out_of_screen_destinations)
     CHECK_EQ_INT(pixels[0], 0);
     CHECK_EQ_INT(pixels[1], 0xee);
     CHECK_EQ_INT(pixels[6], 0xee);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
-    CHECK_EQ_INT(g_Video.visible_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
+    CHECK_EQ_INT(g_Video->visible_page, 0);
     Arena_Free(&arena);
 }
 
@@ -370,22 +370,22 @@ TEST(dac_masks_nibbles_and_keeps_color_zero_opaque)
     ARENA arena;
     M_Init(&arena);
     for (int32_t i = 0; i < 16; i++) {
-        CHECK_EQ_INT(g_Video.palette[i].alpha, 255);
-        CHECK_EQ_INT(g_Video.palette[i].red, 0);
+        CHECK_EQ_INT(g_Video->palette[i].alpha, 255);
+        CHECK_EQ_INT(g_Video->palette[i].red, 0);
     }
     Video_SetDac(0, -1, 16, 33);
-    CHECK_EQ_INT(g_Video.palette[0].red, 255);
-    CHECK_EQ_INT(g_Video.palette[0].green, 0);
-    CHECK_EQ_INT(g_Video.palette[0].blue, 17);
+    CHECK_EQ_INT(g_Video->palette[0].red, 255);
+    CHECK_EQ_INT(g_Video->palette[0].green, 0);
+    CHECK_EQ_INT(g_Video->palette[0].blue, 17);
     GFX_COLOR palette[16] = {};
     palette[0] = (GFX_COLOR) { 255, 159, 97, 0 };
     Video_SetPalette(palette);
-    CHECK_EQ_INT(g_Video.palette[0].red, 255);
-    CHECK_EQ_INT(g_Video.palette[0].green, 153);
-    CHECK_EQ_INT(g_Video.palette[0].blue, 102);
-    CHECK_EQ_INT(g_Video.palette[0].alpha, 255);
-    Video_SetPalette(g_Video.palette);
-    CHECK_EQ_INT(g_Video.palette[0].green, 153);
-    CHECK_EQ_INT(g_Video.palette[0].alpha, 255);
+    CHECK_EQ_INT(g_Video->palette[0].red, 255);
+    CHECK_EQ_INT(g_Video->palette[0].green, 153);
+    CHECK_EQ_INT(g_Video->palette[0].blue, 102);
+    CHECK_EQ_INT(g_Video->palette[0].alpha, 255);
+    Video_SetPalette(g_Video->palette);
+    CHECK_EQ_INT(g_Video->palette[0].green, 153);
+    CHECK_EQ_INT(g_Video->palette[0].alpha, 255);
     Arena_Free(&arena);
 }

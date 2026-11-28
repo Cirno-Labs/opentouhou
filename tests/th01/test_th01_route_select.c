@@ -1,14 +1,15 @@
 #include "tests/test.h"
+#include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_world.h"
-#include "th01/input.c"
+#include "th01/input_private.h"
 #include "th01/orb.h"
 #include "th01/pellets.h"
 #include "th01/player.h"
 #include "th01/rng.h"
-#include "th01/route_select.c"
-#include "th01/scene.c"
+#include "th01/route_select_private.h"
+#include "th01/scene_private.h"
 #include "th01/shots.h"
-#include "th01/vsync_irq.c"
+#include "th01/vsync_irq_private.h"
 
 #include "core/base/arena.h"
 #include "core/io/reader.h"
@@ -28,9 +29,9 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     Th01Test_ResetWorld();
     GameInput_Init();
     Video_Init(Arena_Allocator(arena));
-    memset(g_Video.pages[0], 4, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
-    Palette_SetGray(&g_Palette, 3);
+    memset(g_Video->pages[0], 4, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
+    Palette_SetGray(p_Palette, 3);
     GAME_TEXT_GLYPH glyphs[96] = {};
     for (uint32_t i = 0; i < 90; i++) {
         glyphs[i].codepoint = 0xff01 + i;
@@ -67,7 +68,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
         Reader_Close(&reader);
     }
     Scene_Activate(&f->cache[0]);
-    g_Session.route = 1;
+    p_Session->route = 1;
     f->assets = (ROUTE_SELECT_ASSETS) { &f->font, &f->stage, &f->cache[1],
                                         &f->cache[2] };
     CHECK(Result_Ignore(RouteSelect_ValidateAssets(&f->assets)));
@@ -87,34 +88,34 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     Arena_Init(&arena, "route", 2 * 1024 * 1024);
     FIXTURE f;
     M_Init(&f, &arena);
-    m_GameInput.shot = m_GameInput.ok = m_GameInput.bomb = true;
-    m_GameInput.bomb_frame = 72;
+    p_GameInput->shot = p_GameInput->ok = p_GameInput->bomb = true;
+    p_GameInput->bomb_frame = 72;
     VSyncIrq_Reset();
     RouteSelect_Init();
     const TH01_INPUT raw = { .shot = true };
     CHECK(!RouteSelect_Begin(&f.assets, &raw));
     CHECK(!g_GameInput->shot && !g_GameInput->ok && !g_GameInput->bomb);
     CHECK_EQ_INT(g_GameInput->bomb_frame, 72);
-    CHECK_EQ_INT(g_Video.pages[0][250 * VIDEO_WIDTH + 128], 7);
-    CHECK_EQ_INT(g_Video.pages[1][250 * VIDEO_WIDTH + 128], 4);
-    CHECK_EQ_INT(g_Palette.saved.colors[1][0], 15);
-    CHECK_EQ_INT(g_Palette.saved.colors[3][0], 9);
-    CHECK_EQ_INT(g_Palette.saved.colors[4][0], 0);
-    CHECK_EQ_INT(g_Session.route, 1);
-    CHECK(m_Scene.active == &f.cache[0]);
-    const ROUTE_SELECT frozen = m_Selection;
+    CHECK_EQ_INT(g_Video->pages[0][250 * VIDEO_WIDTH + 128], 7);
+    CHECK_EQ_INT(g_Video->pages[1][250 * VIDEO_WIDTH + 128], 4);
+    CHECK_EQ_INT(g_Palette->saved.colors[1][0], 15);
+    CHECK_EQ_INT(g_Palette->saved.colors[3][0], 9);
+    CHECK_EQ_INT(g_Palette->saved.colors[4][0], 0);
+    CHECK_EQ_INT(g_Session->route, 1);
+    CHECK(p_Scene->active == &f.cache[0]);
+    const ROUTE_SELECT frozen = *p_Selection;
     CHECK(!RouteSelect_Resume(&f.assets, &raw));
-    CHECK(memcmp(&frozen, &m_Selection, sizeof(frozen)) == 0);
+    CHECK(memcmp(&frozen, p_Selection, sizeof(frozen)) == 0);
     for (int32_t i = 0; i < 49; i++) {
         VSyncIrq_Edge();
     }
     CHECK(!RouteSelect_Resume(&f.assets, &raw));
     VSyncIrq_Edge();
     CHECK(RouteSelect_Resume(&f.assets, &raw));
-    CHECK_EQ_INT(g_Session.route, 0);
-    CHECK(m_Scene.active == &f.cache[1]);
-    CHECK(m_Scene.active->layouts.stages[0].cells[0][1].card);
-    CHECK(g_Stage.cleared && g_Player->is_hit);
+    CHECK_EQ_INT(g_Session->route, 0);
+    CHECK(p_Scene->active == &f.cache[1]);
+    CHECK(p_Scene->active->layouts.stages[0].cells[0][1].card);
+    CHECK(g_Stage->cleared && g_Player->is_hit);
     CHECK(RouteSelect_Resume(&f.assets, &raw));
     Arena_Free(&arena);
 }
@@ -126,24 +127,24 @@ TEST(dual_direction_toggles_once_and_holds_do_not_repeat)
     FIXTURE f;
     M_Init(&f, &arena);
     VSyncIrq_Reset();
-    m_VSync.count1 = 50;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = 50;
+    p_VSync->count2 = g_VSync->count2;
     RouteSelect_Init();
     const TH01_INPUT both = { .up = true, .down = true };
     CHECK(!RouteSelect_Begin(&f.assets, &both));
-    CHECK_EQ_INT(m_Selection.selection, 1);
-    CHECK_EQ_INT(g_Video.pages[0][250 * VIDEO_WIDTH + 128], 4);
-    CHECK_EQ_INT(g_Video.pages[0][300 * VIDEO_WIDTH + 128], 7);
-    CHECK_EQ_INT(g_Palette.saved.colors[1][0], 9);
-    CHECK_EQ_INT(g_Palette.saved.colors[3][0], 15);
+    CHECK_EQ_INT(p_Selection->selection, 1);
+    CHECK_EQ_INT(g_Video->pages[0][250 * VIDEO_WIDTH + 128], 4);
+    CHECK_EQ_INT(g_Video->pages[0][300 * VIDEO_WIDTH + 128], 7);
+    CHECK_EQ_INT(g_Palette->saved.colors[1][0], 9);
+    CHECK_EQ_INT(g_Palette->saved.colors[3][0], 15);
     CHECK(!M_Poll(&f, both));
-    CHECK_EQ_INT(m_Selection.selection, 1);
+    CHECK_EQ_INT(p_Selection->selection, 1);
     CHECK(!M_Poll(&f, (TH01_INPUT) { .down = true }));
-    CHECK_EQ_INT(m_Selection.selection, 1);
+    CHECK_EQ_INT(p_Selection->selection, 1);
     CHECK(!M_Poll(&f, both));
-    CHECK_EQ_INT(m_Selection.selection, 0);
+    CHECK_EQ_INT(p_Selection->selection, 0);
     CHECK(M_Poll(&f, (TH01_INPUT) { .up = true, .down = true, .ok = true }));
-    CHECK_EQ_INT(g_Session.route, 0);
+    CHECK_EQ_INT(g_Session->route, 0);
     Arena_Free(&arena);
 }
 
@@ -161,13 +162,14 @@ TEST(transparent_scaled_spaces_preserve_backdrop)
     for (int32_t y = 0; y < 32; y++) {
         for (int32_t x = 0; x < 32; x++) {
             CHECK_EQ_INT(
-                g_Video.pages[0][(64 + y) * VIDEO_WIDTH + 64 + x],
+                g_Video->pages[0][(64 + y) * VIDEO_WIDTH + 64 + x],
                 (r->rows[y / 2] & (0x8000u >> (x / 2))) != 0 ? 7 : 4);
-            CHECK_EQ_INT(g_Video.pages[0][(64 + y) * VIDEO_WIDTH + 224 + x], 4);
+            CHECK_EQ_INT(
+                g_Video->pages[0][(64 + y) * VIDEO_WIDTH + 224 + x], 4);
         }
     }
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
-    CHECK(!g_Stage.cleared && !g_Player->is_hit);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
+    CHECK(!g_Stage->cleared && !g_Player->is_hit);
     Arena_Free(&arena);
 }
 
@@ -185,13 +187,13 @@ TEST(input_side_effects_and_asset_validation_remain_real)
     bad.font = &missing;
     CHECK(!Result_Ignore(RouteSelect_ValidateAssets(&bad)));
     VSyncIrq_Reset();
-    m_VSync.count1 = 50;
-    m_VSync.count2 = g_VSync->count2;
+    p_VSync->count1 = 50;
+    p_VSync->count2 = g_VSync->count2;
     RouteSelect_Init();
     const TH01_INPUT pause = { .cancel = true };
     CHECK(!RouteSelect_Begin(&f.assets, &pause));
     CHECK(g_GameInput->paused);
     CHECK(M_Poll(&f, (TH01_INPUT) { .shot = true, .ok = true }));
-    CHECK(g_Stage.cleared && g_Player->is_hit);
+    CHECK(g_Stage->cleared && g_Player->is_hit);
     Arena_Free(&arena);
 }

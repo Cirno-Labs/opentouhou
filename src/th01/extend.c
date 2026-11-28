@@ -52,14 +52,12 @@ bool Extend_Step(int16_t *const next, const uint32_t score)
 
 void Extend_UpdateAndRender(void)
 {
-    if (!Extend_Step(&m_Extend.next, g_Stage.score)) {
+    if (!Extend_Step(&m_Extend.next, g_Stage->score)) {
         return;
     }
-    int16_t *const lives = &g_Session.lives;
-    if (*lives < 6) {
-        (*lives)++;
-        m_Extend.resident_lives = (int8_t)*lives;
-        Hud_LivesPut((int16_t)(*lives - 1));
+    if (Session_GrantLife()) {
+        m_Extend.resident_lives = (int8_t)g_Session->lives;
+        Hud_LivesPut((int16_t)(g_Session->lives - 1));
         Sound_Effect(SOUND_EFFECT_ITEM);
         Pellets_SpeedRaise(1);
     }

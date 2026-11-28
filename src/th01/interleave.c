@@ -29,7 +29,7 @@ void Interleave_Put8(
         for (int32_t bit = 0; bit < 8; bit++) {
             if ((mask & (0x80u >> bit)) == 0) {
                 const int32_t offset = (top + y) * VIDEO_WIDTH + x + bit;
-                g_Video.pages[0][offset] = g_Video.pages[1][offset];
+                g_Video->pages[0][offset] = g_Video->pages[1][offset];
             }
         }
     }

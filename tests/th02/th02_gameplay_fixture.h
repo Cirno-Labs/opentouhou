@@ -1,18 +1,18 @@
 #pragma once
 
 #include "tests/test.h"
-#include "tests/th02/th02_boss_explosion.c"
 #include "tests/th02/th02_clip_fixture.h"
-#include "tests/th02/th02_gameplay.c"
+#include "tests/th02/th02_gameplay.h"
 #include "tests/th02/th02_palette_fixture.h"
 #include "tests/th02/th02_sound.h"
-#include "tests/th02/th02_stage_flow.c"
+#include "tests/th02/th02_stage_flow.h"
 #include "th02/boss/private.h"
 #include "th02/enemies.h"
 #include "th02/items.h"
 #include "th02/player.h"
 #include "th02/stage.h"
 #include "th02/stage/private.h"
+#include "th02/stage/private_flow.h"
 
 #include "core/base/arena.h"
 
@@ -52,8 +52,8 @@ static inline void TestGameplay_Start(FIXTURE *const fixture)
 
 static inline void TestGameplay_FixtureInit(FIXTURE *const fixture)
 {
+    TestStageFlow_Init();
     TestStageFlow_Boss(nullptr);
-    TestBossExplosion_Observe(nullptr);
     SoundEffects_Init(nullptr);
     memset(p_Palette, 0, sizeof(*p_Palette));
     Grcg_Init();

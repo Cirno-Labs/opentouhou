@@ -1,15 +1,16 @@
 #include "tests/test.h"
+#include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_video.h"
 #include "tests/th01/th01_world.h"
-#include "th01/hud.c"
 #include "th01/hud.h"
+#include "th01/hud/hud_private.h"
 #include "th01/orb.h"
 #include "th01/pellets.h"
-#include "th01/player.c"
-#include "th01/player.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shots.h"
+#include "th01/stage/private.h"
 
 #include "core/base/arena.h"
 
@@ -46,7 +47,7 @@ static void M_Init(FIXTURE *const f)
     }
     f->mask.coverage = Allocator_AllocZ(a, 640 * 66);
     Hud_Load(&f->mask, &f->sprites, &f->font);
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
     CHECK(Result_Ignore(Hud_ValidateAssets(&f->mask, &f->sprites, &f->font)));
 }
 
@@ -54,15 +55,15 @@ TEST(mask_covers_playfield_overlap_and_preserves_clear_dots)
 {
     FIXTURE f;
     M_Init(&f);
-    memset(g_Video.pages[0], 2, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 2, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 5, VIDEO_PAGE_SIZE);
     f.mask.coverage[65 * 640 + 639] = 1;
     Hud_PutMask();
     CHECK_EQ_INT(Th01Test_Pixel(0, 639, 65), 10);
     CHECK_EQ_INT(Th01Test_Pixel(1, 639, 65), 10);
     CHECK_EQ_INT(Th01Test_Pixel(0, 638, 65), 2);
     CHECK_EQ_INT(Th01Test_Pixel(1, 639, 66), 5);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     Arena_Free(&f.arena);
 }
 
@@ -70,23 +71,23 @@ TEST(resources_snap_before_selection_and_restore_opaque_color15)
 {
     FIXTURE f;
     M_Init(&f);
-    memset(g_Video.pages[0], 15, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
-    g_Session.lives = 2;
-    m_Player.remaining_bombs = 1;
+    memset(g_Video->pages[0], 15, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
+    p_Session->lives = 2;
+    p_Player->remaining_bombs = 1;
     Hud_SnapResources();
     CHECK_EQ_INT(Th01Test_Pixel(1, 128, 0), 3);
     CHECK_EQ_INT(Th01Test_Pixel(1, 129, 0), 15);
-    g_Session.lives = 1;
+    p_Session->lives = 1;
     Hud_LivesPut(2);
     CHECK_EQ_INT(Th01Test_Pixel(0, 144, 0), 15);
     CHECK_EQ_INT(Th01Test_Pixel(1, 144, 0), 15);
     Video_SelectDrawingPage(1);
-    g_Session.lives = 2;
+    p_Session->lives = 2;
     Hud_LivesPut(1);
-    CHECK_EQ_INT(m_Hud.lives[256], 15);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
-    m_Player.remaining_bombs = 0;
+    CHECK_EQ_INT(p_Hud->lives[256], 15);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
+    p_Player->remaining_bombs = 0;
     Hud_BombsPut(1);
     CHECK_EQ_INT(Th01Test_Pixel(0, 128, 16), 15);
     Arena_Free(&f.arena);
@@ -98,7 +99,7 @@ TEST(timer_preserves_duplicate_snapshot_zero_spaces_and_red_threshold)
     M_Init(&f);
     for (int32_t y = 0; y < 16; y++) {
         for (int32_t x = 512; x < 544; x++) {
-            g_Video.pages[0][y * 640 + x] = x < 528 ? 2 : 3;
+            g_Video->pages[0][y * 640 + x] = x < 528 ? 2 : 3;
         }
     }
     Hud_SnapTimer(1000);
@@ -118,25 +119,25 @@ TEST(force_draws_leading_zeroes_and_preserves_resident_high_score)
 {
     FIXTURE f;
     M_Init(&f);
-    g_Session.high_score = 100;
+    p_Session->high_score = 100;
     Hud_SnapNumbers(true);
-    g_Stage.score = 1;
-    m_Hud.force_numbers = true;
+    p_Stage->score = 1;
+    p_Hud->force_numbers = true;
     Hud_ScoreAndCombo();
-    CHECK_EQ_INT(g_Session.high_score, 100);
+    CHECK_EQ_INT(g_Session->high_score, 100);
     CHECK_EQ_INT(Th01Test_Pixel(0, 256, 16), 7);
     CHECK_EQ_INT(Th01Test_Pixel(1, 256, 16), 7);
-    m_Hud.force_numbers = false;
-    g_Stage.score = 101;
-    g_Stage.combo = 257;
+    p_Hud->force_numbers = false;
+    p_Stage->score = 101;
+    p_Stage->combo = 257;
     Hud_ScoreAndCombo();
-    CHECK_EQ_INT(g_Session.high_score, 101);
-    CHECK_EQ_INT(m_Hud.maximum_combo, 1);
-    CHECK_EQ_INT(m_Hud.max_previous, 257);
+    CHECK_EQ_INT(g_Session->high_score, 101);
+    CHECK_EQ_INT(p_Hud->maximum_combo, 1);
+    CHECK_EQ_INT(p_Hud->max_previous, 257);
     Hud_SnapNumbers(false);
-    CHECK_EQ_INT(m_Hud.score_previous, 101);
-    CHECK_EQ_INT(m_Hud.combo_previous, 257);
-    CHECK_EQ_INT(m_Hud.maximum_combo, 0);
+    CHECK_EQ_INT(p_Hud->score_previous, 101);
+    CHECK_EQ_INT(p_Hud->combo_previous, 257);
+    CHECK_EQ_INT(p_Hud->maximum_combo, 0);
     Arena_Free(&f.arena);
 }
 
@@ -146,10 +147,10 @@ TEST(negative_unchanged_combo_keeps_glyphs_and_background)
     M_Init(&f);
     Hud_SnapNumbers(true);
     for (int32_t page = 0; page < 2; page++) {
-        memset(g_Video.pages[page] + 17 * 640 + 400, 7, 32);
+        memset(g_Video->pages[page] + 17 * 640 + 400, 7, 32);
     }
-    g_Stage.combo = -1;
-    m_Hud.combo_previous = -1;
+    p_Stage->combo = -1;
+    p_Hud->combo_previous = -1;
     Hud_ScoreAndCombo();
     CHECK_EQ_INT(Th01Test_Pixel(0, 400, 17), 7);
     CHECK_EQ_INT(Th01Test_Pixel(1, 400, 17), 7);

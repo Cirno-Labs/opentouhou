@@ -6,8 +6,8 @@
 #include "th02/background.h"
 #include "th02/background/private.h"
 #include "th02/draw.h"
-#include "th02/pillars.c"
 #include "th02/pillars.h"
+#include "th02/pillars_private.h"
 #include "th02/player.h"
 #include "th02/random.h"
 
@@ -23,7 +23,7 @@ static void M_Init(FIXTURE *const f)
     memset(f, 0, sizeof(*f));
     TestPlayerGraphics_Init(&f->graphics);
     Random_Reset();
-    memset(&m_Player, 0, sizeof(m_Player));
+    memset(p_Player, 0, sizeof(*p_Player));
     Background_Init();
     Pillars_Init();
     Pillars_ResetStage(3);
@@ -44,16 +44,16 @@ TEST(stage_reset_clears_flags_without_erasing_pillar_payloads)
     FIXTURE f;
     M_Init(&f);
     for (uint8_t stage = 0; stage < 6; stage++) {
-        memset(&m_Pillars, 0x57, sizeof(m_Pillars));
+        memset(p_Pillars, 0x57, sizeof(*p_Pillars));
         Pillars_ResetStage(stage);
-        CHECK_EQ_INT(m_Pillars.frames_new, 16);
-        CHECK_EQ_INT(m_Pillars.enabled, stage == 3 || stage == 5);
-        for (unsigned i = 0; i < ARRAY_SIZE(m_Pillars.slots); i++) {
-            CHECK_EQ_INT(m_Pillars.slots[i].state, ENTITY_FREE);
-            CHECK_EQ_INT(m_Pillars.slots[i].frames, 0x5757);
-            CHECK_EQ_INT(m_Pillars.slots[i].phase, 0x57);
+        CHECK_EQ_INT(p_Pillars->frames_new, 16);
+        CHECK_EQ_INT(p_Pillars->enabled, stage == 3 || stage == 5);
+        for (unsigned i = 0; i < ARRAY_SIZE(p_Pillars->slots); i++) {
+            CHECK_EQ_INT(p_Pillars->slots[i].state, ENTITY_FREE);
+            CHECK_EQ_INT(p_Pillars->slots[i].frames, 0x5757);
+            CHECK_EQ_INT(p_Pillars->slots[i].phase, 0x57);
         }
-        CHECK_EQ_INT(m_Pillars.current.x, 0x5757);
+        CHECK_EQ_INT(p_Pillars->current.x, 0x5757);
     }
     M_Free(&f);
 }
@@ -75,14 +75,14 @@ TEST(spawn_uses_first_free_slot_and_rejects_only_full_pool_or_invalid_x)
         TestSound_Check(&sound, i < 12 ? 6 : -1);
     }
     for (unsigned i = 0; i < 12; i++) {
-        CHECK_EQ_INT(m_Pillars.slots[i].state, ENTITY_ACTIVE);
-        CHECK_EQ_INT(m_Pillars.slots[i].frames, 48);
-        CHECK_EQ_INT(m_Pillars.slots[i].duration, -1);
-        CHECK_EQ_INT(m_Pillars.slots[i].pattern, 0x6f);
+        CHECK_EQ_INT(p_Pillars->slots[i].state, ENTITY_ACTIVE);
+        CHECK_EQ_INT(p_Pillars->slots[i].frames, 48);
+        CHECK_EQ_INT(p_Pillars->slots[i].duration, -1);
+        CHECK_EQ_INT(p_Pillars->slots[i].pattern, 0x6f);
     }
-    m_Pillars.slots[2].state = ENTITY_FREE;
+    p_Pillars->slots[2].state = ENTITY_FREE;
     Pillars_Add(224, 112, 160, 0x67);
-    CHECK_EQ_INT(m_Pillars.slots[2].position.x, 224);
+    CHECK_EQ_INT(p_Pillars->slots[2].position.x, 224);
     SoundEffects_Update();
     TestSound_Check(&sound, 6);
     TestSound_Free(&sound);
@@ -95,19 +95,19 @@ TEST(startup_cleanup_advances_cel_before_update_and_frees_after_invalidation)
     M_Init(&f);
     Pillars_Add(224, 96, 3, 0x6f);
     Pillars_Invalidate(M_Pages(0, f.scroll), 0);
-    CHECK_EQ_INT(m_Pillars.slots[0].cel, 1);
+    CHECK_EQ_INT(p_Pillars->slots[0].cel, 1);
     CHECK_EQ_INT(p_Background->cache.dirty[11][5], 1);
     CHECK_EQ_INT(p_Background->cache.dirty[13][7], 1);
     Pillars_Update(M_Pages(0, 399), 0, &f.graphics.patterns);
     CHECK_EQ_INT(g_Video.pages[0][87 * 640 + 216], 2);
     CHECK_EQ_INT(g_Video.pages[0][87 * 640 + 247], 2);
     CHECK_EQ_INT(g_Video.pages[0][86 * 640 + 216], 0);
-    CHECK_EQ_INT(m_Pillars.slots[0].frames, 15);
-    m_Pillars.slots[0].state = ENTITY_REMOVE;
-    m_Pillars.slots[0].cel = 5;
+    CHECK_EQ_INT(p_Pillars->slots[0].frames, 15);
+    p_Pillars->slots[0].state = ENTITY_REMOVE;
+    p_Pillars->slots[0].cel = 5;
     Pillars_Invalidate(M_Pages(0, f.scroll), 1);
     CHECK_EQ_INT(p_Background->cache.dirty[12][24], 1);
-    CHECK_EQ_INT(m_Pillars.slots[0].state, ENTITY_FREE);
+    CHECK_EQ_INT(p_Pillars->slots[0].state, ENTITY_FREE);
     M_Free(&f);
 }
 
@@ -117,10 +117,10 @@ TEST(disabled_pillars_are_inert_and_enabling_keeps_existing_slots)
     M_Init(&f);
     Pillars_ResetStage(0);
     Pillars_Add(224, 96, 3, 0x6f);
-    const PILLARS before = m_Pillars;
+    const PILLARS before = *p_Pillars;
     Pillars_Invalidate(M_Pages(0, f.scroll), 0);
     Pillars_Update(M_Pages(0, 0), 0, &f.graphics.patterns);
-    CHECK(memcmp(&before, &m_Pillars, sizeof(before)) == 0);
+    CHECK(memcmp(&before, p_Pillars, sizeof(before)) == 0);
     CHECK_EQ_INT(g_Video.pages[0][88 * 640 + 216], 0);
     Pillars_Enable();
     Pillars_Update(M_Pages(0, 0), 0, &f.graphics.patterns);
@@ -144,13 +144,13 @@ TEST(active_collision_has_strict_x_edges_and_uses_new_phase_after_duration)
         FIXTURE f;
         M_Init(&f);
         Pillars_Add(224, 96, cases[i].duration, 0x6f);
-        m_Pillars.slots[0].cel = 5;
-        m_Pillars.slots[0].phase = 4;
-        m_Player.current = (ENTITY_POINT) { cases[i].x, cases[i].y };
-        m_Player.invincibility = 255;
+        p_Pillars->slots[0].cel = 5;
+        p_Pillars->slots[0].phase = 4;
+        p_Player->current = (ENTITY_POINT) { cases[i].x, cases[i].y };
+        p_Player->invincibility = 255;
         Pillars_Update(M_Pages(0, 399), 0, &f.graphics.patterns);
-        CHECK_EQ_INT(m_Player.hit, cases[i].hit);
-        CHECK_EQ_INT(m_Pillars.slots[0].duration, cases[i].duration - 1);
+        CHECK_EQ_INT(p_Player->hit, cases[i].hit);
+        CHECK_EQ_INT(p_Pillars->slots[0].duration, cases[i].duration - 1);
         M_Free(&f);
     }
 }
@@ -170,11 +170,11 @@ TEST(pillar_grows_becomes_active_and_retracts_before_cleanup_releases_it)
         Pillars_Update(M_Pages(0, 399), frame, &f.graphics.patterns);
         SoundEffects_Update();
         TestSound_Check(&sound, frame == 24 ? 7 : -1);
-        if (m_Pillars.slots[0].state == ENTITY_REMOVE) {
-            CHECK_EQ_INT(m_Pillars.slots[0].phase, 9);
+        if (p_Pillars->slots[0].state == ENTITY_REMOVE) {
+            CHECK_EQ_INT(p_Pillars->slots[0].phase, 9);
             removed = true;
             Pillars_Invalidate(M_Pages(0, f.scroll), frame + 1);
-            CHECK_EQ_INT(m_Pillars.slots[0].state, ENTITY_FREE);
+            CHECK_EQ_INT(p_Pillars->slots[0].state, ENTITY_FREE);
             break;
         }
     }
@@ -206,8 +206,8 @@ TEST(pillar_cycles_keep_pool_order_scroll_pixels_collision_and_sound)
                 TEST_SOUND sound;
                 TestSound_Init(&sound);
                 Video_AccessPage(page);
-                m_Player.current = (ENTITY_POINT) { 224, 96 };
-                m_Player.invincibility = 255;
+                p_Player->current = (ENTITY_POINT) { 224, 96 };
+                p_Player->invincibility = 255;
                 Pillars_Add(224, 96, durations[duration], 111);
                 Pillars_Add(32, 112, 3, 103);
                 Pillars_Add(415, 128, 3, 111);
@@ -218,16 +218,16 @@ TEST(pillar_cycles_keep_pool_order_scroll_pixels_collision_and_sound)
                     Pillars_Update(
                         M_Pages(0, f.scroll), frame, &f.graphics.patterns);
                     const int32_t values[] = {
-                        m_Pillars.current.x,  m_Pillars.current.y,
-                        m_Pillars.frames_new, m_Pillars.enabled,
-                        m_Player.hit,         m_Rng.cursor,
-                        g_Grcg->mode,         g_Video.drawing_page,
+                        p_Pillars->current.x,  p_Pillars->current.y,
+                        p_Pillars->frames_new, p_Pillars->enabled,
+                        p_Player->hit,         p_Rng->cursor,
+                        g_Grcg->mode,          g_Video.drawing_page,
                     };
                     for (size_t i = 0; i < ARRAY_SIZE(values); i++) {
                         hash = M_HashValue(hash, (uint32_t)values[i]);
                     }
-                    for (size_t i = 0; i < ARRAY_SIZE(m_Pillars.slots); i++) {
-                        const PILLAR *const pillar = &m_Pillars.slots[i];
+                    for (size_t i = 0; i < ARRAY_SIZE(p_Pillars->slots); i++) {
+                        const PILLAR *const pillar = &p_Pillars->slots[i];
                         const int32_t fields[] = {
                             pillar->state,      pillar->phase,
                             pillar->position.x, pillar->position.y,

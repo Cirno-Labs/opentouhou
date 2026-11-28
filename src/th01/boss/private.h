@@ -5,7 +5,7 @@
 #include "th01/boss/entity.h"
 #include "th01/boss/strategy.h"
 #include "th01/hud.h"
-#include "th01/hud_hp.h"
+#include "th01/hud/hp.h"
 #include "th01/palette.h"
 #include "th01/player.h"
 #include "th01/shots.h"
@@ -26,11 +26,6 @@ typedef struct {
 } BOSS_SHOT_HITBOX;
 
 typedef enum {
-    BOSS_DEFEAT_REGULAR,
-    BOSS_DEFEAT_SINGYOKU,
-} BOSS_DEFEAT_KIND;
-
-typedef enum {
     BOSS_DEFEAT_DONE,
     BOSS_DEFEAT_SCROLL_WAIT,
     BOSS_DEFEAT_WHITEOUT,
@@ -41,7 +36,7 @@ typedef enum {
 
 typedef struct {
     BOSS_DEFEAT_PHASE phase;
-    BOSS_DEFEAT_KIND kind;
+    BOSS_DEFEAT_PARAMS params;
     VSYNC_WAIT wait;
     int16_t top;
     int16_t bottom;
@@ -60,11 +55,9 @@ RESULT BossDefeat_ValidateSprites(const PTN *miko);
 
 // Starts the defeat sequence; begin only when the previous one is done.
 // Keep the bound storage alive and the bindings unchanged until completion.
-void BossDefeat_Begin(BOSS_DEFEAT *defeat, BOSS_DEFEAT_KIND kind);
+void BossDefeat_Begin(BOSS_DEFEAT *defeat, BOSS_DEFEAT_PARAMS params);
 
-// Resumes the defeat sequence; returns true when done. Regular completion
-// sets stage_cleared and player.is_hit; SinGyoku leaves them to the caller,
-// which sets them after the route chooser's scene starts.
+// Resumes the defeat sequence; returns true when done.
 bool BossDefeat_Resume(
     BOSS_DEFEAT *defeat, const PALETTE *post_defeat, const PTN *miko,
     const int16_t *origin_top);

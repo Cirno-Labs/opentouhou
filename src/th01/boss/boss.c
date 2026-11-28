@@ -1,5 +1,5 @@
-#include "th01/boss/boss.h"
-
+#include "th01/boss/private_boss.h"
+#include "th01/ptn.h"
 #include "th01/session.h"
 
 #include "core/vfs/open.h"
@@ -7,6 +7,7 @@
 static BOSS_STATE *m_Boss;
 BOSS_STATE *const *const g_Boss = &m_Boss;
 static bool m_TestDamage;
+bool *const p_TestDamage = &m_TestDamage;
 const bool *const g_TestDamage = &m_TestDamage;
 
 void Boss_Init(void)
@@ -19,7 +20,7 @@ int16_t Boss_Rank(
     const int16_t easy, const int16_t normal, const int16_t hard,
     const int16_t lunatic)
 {
-    switch (g_Session.settings.difficulty) {
+    switch (g_Session->settings.difficulty) {
     case SETTINGS_DIFFICULTY_EASY:
         return easy;
     case SETTINGS_DIFFICULTY_HARD:
@@ -31,7 +32,7 @@ int16_t Boss_Rank(
     }
 }
 
-RESULT Boss_LoadBos(
+RESULT BossAssets_LoadBos(
     VFS *const vfs, const char *const name, const ALLOCATOR *const allocator,
     BOS *const out)
 {
@@ -42,13 +43,23 @@ RESULT Boss_LoadBos(
     return result;
 }
 
-RESULT Boss_LoadBackground(
+RESULT BossAssets_LoadBackground(
     VFS *const vfs, const char *const name, const ALLOCATOR *const allocator,
     PI_IMAGE *const out)
 {
     READER reader;
     MUST(Vfs_Open(vfs, name, VFS_IN_MEMORY, &reader));
     const RESULT result = Pi_Load(&reader, allocator, out);
+    Reader_Close(&reader);
+    return result;
+}
+
+RESULT BossAssets_LoadMissiles(
+    VFS *const vfs, const ALLOCATOR *const allocator, PTN *const out)
+{
+    READER reader;
+    MUST(Vfs_Open(vfs, "BOSS3_M.PTN", VFS_IN_MEMORY, &reader));
+    const RESULT result = Ptn_Load(&reader, allocator, out);
     Reader_Close(&reader);
     return result;
 }

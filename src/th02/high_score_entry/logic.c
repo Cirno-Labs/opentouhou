@@ -1,36 +1,11 @@
 #include "th02/high_score_entry/logic.h"
 
-#include "th02/high_score_entry/render.h"
+#include "th02/high_score_entry/private.h"
 #include "th02/hud.h"
-#include "th02/wait.h"
 
 #include "core/base/assert.h"
 
 #include <string.h>
-
-typedef enum {
-    HIGH_SCORE_ENTRY_READ,
-    HIGH_SCORE_ENTRY_TAIL,
-    HIGH_SCORE_ENTRY_UNQUALIFIED,
-    HIGH_SCORE_ENTRY_DONE,
-} HIGH_SCORE_ENTRY_PHASE;
-
-typedef struct {
-    HIGH_SCORE_SECTION *section;
-    uint16_t keys;
-    uint16_t input_locked;
-    uint8_t input_delay;
-    uint8_t col;
-    uint8_t row;
-    uint8_t name_pos;
-    int8_t place;
-    HIGH_SCORE_ENTRY_PHASE phase;
-} HIGH_SCORE_ENTRY_MENU;
-
-typedef struct {
-    HIGH_SCORE_ENTRY_EVENTS event;
-    WAIT wait;
-} HIGH_SCORE_ENTRY;
 
 static const uint8_t m_Alphabet[3][17] = {
     { 0xaa, 0xab, 0xac, 0xad, 0xae, 0xaf, 0xb0, 0xb1, 0xb2, 0xb3, 0xb4, 0xb5,
@@ -42,16 +17,19 @@ static const uint8_t m_Alphabet[3][17] = {
 };
 
 static HIGH_SCORE_ENTRY_MENU m_Menu;
+HIGH_SCORE_ENTRY_MENU *const p_Menu = &m_Menu;
 static HIGH_SCORE_ENTRY m_Entry;
+HIGH_SCORE_ENTRY *const p_Entry = &m_Entry;
+static const HIGH_SCORE_ENTRY_RENDER *m_Render;
 
 static void M_Alphabet(const uint16_t attribute)
 {
-    HighScoreEntryRender_Alphabet(m_Menu.col, m_Menu.row, attribute);
+    m_Render->alphabet(m_Menu.col, m_Menu.row, attribute);
 }
 
 static void M_Name(void)
 {
-    HighScoreEntryRender_Name(m_Menu.section, m_Menu.place, m_Menu.name_pos);
+    m_Render->name(m_Menu.section, m_Menu.place, m_Menu.name_pos);
 }
 
 static void M_Move(const bool vertical, const int direction)
@@ -87,7 +65,7 @@ static void M_MenuInit(void)
     memset(&m_Menu, 0, sizeof(m_Menu));
 }
 
-static HIGH_SCORE_ENTRY_EVENTS M_MenuBegin(
+HIGH_SCORE_ENTRY_EVENTS HighScoreEntryMenu_Begin(
     HIGH_SCORE_SECTION *const section, const SCORE_RUN *const run,
     const bool ending)
 {
@@ -122,7 +100,7 @@ static HIGH_SCORE_ENTRY_EVENTS M_MenuBegin(
         memset(record->name_glyphs, 0xda, HIGH_SCORES_NAME_GLYPHS - 1);
         m_Menu.place = place;
     }
-    HighScoreEntryRender_Table(section, ending, m_Menu.place);
+    m_Render->table(section, ending, m_Menu.place);
     m_Menu.input_locked = 1;
     m_Menu.phase =
         m_Menu.place < 0 ? HIGH_SCORE_ENTRY_UNQUALIFIED : HIGH_SCORE_ENTRY_READ;
@@ -132,7 +110,7 @@ static HIGH_SCORE_ENTRY_EVENTS M_MenuBegin(
                                        false };
 }
 
-static HIGH_SCORE_ENTRY_EVENTS M_MenuStep(const uint16_t keys)
+HIGH_SCORE_ENTRY_EVENTS HighScoreEntryMenu_Step(const uint16_t keys)
 {
     if (m_Menu.phase == HIGH_SCORE_ENTRY_DONE) {
         return (HIGH_SCORE_ENTRY_EVENTS) { HIGH_SCORE_ENTRY_COMPLETE, false };
@@ -224,19 +202,20 @@ static HIGH_SCORE_ENTRY_EVENTS M_Complete(void)
     return event;
 }
 
-void HighScoreEntry_Init(void)
+void HighScoreEntry_Init(const HIGH_SCORE_ENTRY_RENDER *const render)
 {
     memset(&m_Entry, 0, sizeof(m_Entry));
     M_MenuInit();
+    m_Render = render;
 }
 
 void HighScoreEntry_Begin(
     HIGH_SCORE_SECTION *const section, const SCORE_RUN *const run,
     const bool ending, const TH02_INPUT *const input)
 {
-    HighScoreEntry_Init();
+    HighScoreEntry_Init(m_Render);
     Hud_WipePlayfield();
-    m_Entry.event = M_MenuBegin(section, run, ending);
+    m_Entry.event = HighScoreEntryMenu_Begin(section, run, ending);
     if (m_Entry.event.result == HIGH_SCORE_ENTRY_WAIT_KEY) {
         Wait_Key(&m_Entry.wait, input);
     }
@@ -247,7 +226,7 @@ HIGH_SCORE_ENTRY_EVENTS HighScoreEntry_Update(const TH02_INPUT *const input)
     for (;;) {
         switch (m_Entry.event.result) {
         case HIGH_SCORE_ENTRY_INPUT:
-            m_Entry.event = M_MenuStep(GameInput_Sense(input));
+            m_Entry.event = HighScoreEntryMenu_Step(GameInput_Sense(input));
             if (m_Entry.event.result == HIGH_SCORE_ENTRY_COMPLETE) {
                 return M_Complete();
             }
@@ -257,11 +236,11 @@ HIGH_SCORE_ENTRY_EVENTS HighScoreEntry_Update(const TH02_INPUT *const input)
             if (!Wait_Ready(&m_Entry.wait, nullptr, 0)) {
                 return m_Entry.event;
             }
-            m_Entry.event = M_MenuStep(0);
+            m_Entry.event = HighScoreEntryMenu_Step(0);
             break;
         case HIGH_SCORE_ENTRY_WAIT_KEY:
             if (Wait_Ready(&m_Entry.wait, input, 0)) {
-                m_Entry.event = M_MenuStep(0);
+                m_Entry.event = HighScoreEntryMenu_Step(0);
                 return M_Complete();
             }
             return m_Entry.event;

@@ -1,56 +1,12 @@
-#include "th02/opening/logic.h"
-
 #include "th02/high_score_view.h"
+#include "th02/music_room/render.h"
+#include "th02/opening/private.h"
 #include "th02/shot_select.h"
-#include "th02/wait.h"
-
-#include "pc98/zun/bfnt.h"
-#include "pc98/zun/logo1.h"
 
 #include <string.h>
 
-typedef enum {
-    OPENING_LOGO,
-    OPENING_TITLE,
-    OPENING_MENU,
-    OPENING_SUSPENDED,
-    OPENING_DONE,
-    OPENING_SCORES,
-    OPENING_MUSIC,
-    OPENING_START,
-    OPENING_SHOT_FADE_IN,
-    OPENING_SHOTS,
-    OPENING_SHOT_FADE_OUT,
-    OPENING_RETURN_SCORES,
-} OPENING_PHASE;
-
-typedef struct {
-    ZUN_LOGO1 logo;
-    WAIT wait;
-    OPENING_PHASE phase;
-    uint8_t logo_wait;
-    bool quit_pending;
-} OPENING_PROGRAM;
-
-typedef struct {
-    const OPENING_ASSETS *assets;
-    TH02_SESSION *session;
-    TH02_SETTINGS *settings;
-    OPTIONS_MENU_SOUND *sound;
-    TRAM_CONSOLE *console;
-    OPENING_AUDIO audio;
-    const BFNT *logo;
-    const TITLE_ASSETS *title;
-    const SHOT_SELECT_ASSETS *shots;
-    const HIGH_SCORES *scores;
-    uint8_t next_demo;
-    uint8_t last_demo;
-    uint8_t clear_attribute;
-    HIGH_SCORE_CLEARS clears;
-    OPENING_PROGRAM program;
-} OPENING;
-
 static OPENING m_Opening;
+OPENING *const p_Opening = &m_Opening;
 
 static bool M_WaitReady(void)
 {
@@ -349,15 +305,23 @@ void Opening_Begin(
     const OPENING_ASSETS *const assets, TH02_SESSION *const session,
     TH02_SETTINGS *const settings, const HIGH_SCORES *const scores,
     OPTIONS_MENU_SOUND *const sound, TRAM_CONSOLE *const console,
-    const OPENING_AUDIO *const audio, const uint8_t next_demo)
+    const OPENING_AUDIO *const audio, const uint8_t next_demo,
+    const MUSIC_ROOM_RENDER *const music_room_render,
+    const HIGH_SCORE_VIEW_RENDER *const high_score_view_render,
+    const SHOT_SELECT_RENDER *const shot_select_render,
+    const MAIN_MENU_RENDER *const main_menu_render)
 {
     memset(&m_Opening, 0, sizeof(m_Opening));
+    m_Opening.music_room_render = music_room_render;
+    m_Opening.high_score_view_render = high_score_view_render;
+    m_Opening.shot_select_render = shot_select_render;
+    m_Opening.main_menu_render = main_menu_render;
     Title_Init();
     Session_CancelStart();
-    MainMenu_Init();
-    ShotSelect_Init();
-    HighScoreView_Init();
-    MusicRoom_Init();
+    MainMenu_Init(main_menu_render);
+    ShotSelect_Init(shot_select_render);
+    HighScoreView_Init(high_score_view_render);
+    MusicRoom_Init(music_room_render);
     m_Opening.assets = assets;
     m_Opening.session = session;
     m_Opening.settings = settings;
@@ -384,9 +348,9 @@ void Opening_BeginProgram(void)
 {
     memset(&m_Opening.program, 0, sizeof(m_Opening.program));
     Session_CancelStart();
-    MainMenu_Init();
-    ShotSelect_Init();
-    HighScoreView_Init();
+    MainMenu_Init(m_Opening.main_menu_render);
+    ShotSelect_Init(m_Opening.shot_select_render);
+    HighScoreView_Init(m_Opening.high_score_view_render);
     MusicRoom_Reset();
     M_BeginProgram();
 }
@@ -434,8 +398,8 @@ void Opening_Shutdown(void)
     memset(&m_Opening, 0, sizeof(m_Opening));
     Title_Init();
     Session_CancelStart();
-    MainMenu_Init();
-    ShotSelect_Init();
-    HighScoreView_Init();
-    MusicRoom_Init();
+    MainMenu_Init(&g_MainMenuRender);
+    ShotSelect_Init(&g_ShotSelectRender);
+    HighScoreView_Init(&g_HighScoreViewRender);
+    MusicRoom_Init(&g_MusicRoomRender);
 }

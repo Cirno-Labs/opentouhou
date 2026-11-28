@@ -1,9 +1,19 @@
 #include "th01/palette.h"
 
+#include "th01/palette_private.h"
+#include "th01/transition.h"
+
 #include "core/base/assert.h"
 
-PALETTE_STATE g_Palette;
-PALETTE g_StagePalette;
+#include <string.h>
+
+static PALETTE_STATE m_Palette;
+const PALETTE_STATE *const g_Palette = &m_Palette;
+PALETTE_STATE *const p_Palette = &m_Palette;
+
+static PALETTE m_StagePalette;
+const PALETTE *const g_StagePalette = &m_StagePalette;
+PALETTE *const p_StagePalette = &m_StagePalette;
 
 static const PALETTE m_Stock = { .colors = {
                                      { 0, 0, 0 },
@@ -176,5 +186,97 @@ bool Palette_FadeStep(PALETTE_FADE *const fade, PALETTE_STATE *const state)
 
 void Palette_SetStage(const PALETTE *const colors)
 {
-    g_StagePalette = *colors;
+    *p_StagePalette = *colors;
+}
+
+void Palette_ResetStage(void)
+{
+    memset(p_StagePalette, 0, sizeof(*p_StagePalette));
+}
+
+void Palette_SetResource(const PALETTE *const colors)
+{
+    p_Palette->resource = *colors;
+}
+
+void Palette_SetGlobalColor(
+    const int32_t index, const int32_t red, const int32_t green,
+    const int32_t blue)
+{
+    Palette_SetColor(p_Palette, index, red, green, blue);
+}
+
+void Palette_SetGlobal(const PALETTE *const colors)
+{
+    Palette_Set(p_Palette, colors);
+}
+
+void Palette_SetGlobalGray(const int32_t value)
+{
+    Palette_SetGray(p_Palette, value);
+}
+
+void Palette_ResetGlobal(void)
+{
+    Palette_Init(p_Palette);
+}
+
+void Palette_StepGlobalTo(const PALETTE *const target, const bool only_brighten)
+{
+    Palette_StepTo(p_Palette, target, only_brighten);
+}
+
+void Palette_BeginGlobalFade(
+    PALETTE_FADE *const fade, const PALETTE_FADE_KIND kind)
+{
+    Palette_BeginFade(fade, p_Palette, kind);
+}
+
+bool Palette_GlobalFadeStep(PALETTE_FADE *const fade)
+{
+    return Palette_FadeStep(fade, p_Palette);
+}
+
+void Palette_SetGlobalSavedComponent(
+    const int32_t index, const int32_t component, const int8_t value)
+{
+    p_Palette->saved.colors[index][component] = value;
+}
+
+void Palette_SetStageComponent(
+    const int32_t index, const int32_t component, const int8_t value)
+{
+    p_StagePalette->colors[index][component] = value;
+}
+
+void Palette_SetGlobalResourceComponent(
+    const int32_t index, const int32_t component, const int8_t value)
+{
+    p_Palette->resource.colors[index][component] = value;
+}
+
+void Palette_ImportResource(const GFX_COLOR colors[16])
+{
+    Palette_Import(&p_Palette->resource, colors);
+}
+
+void Palette_ImportStage(const GFX_COLOR colors[16])
+{
+    Palette_Import(p_StagePalette, colors);
+}
+
+bool Palette_BeginGlobalDiagonalTransition(
+    const PALETTE *const target, const INTERLEAVE_ASSETS *const assets,
+    const uint16_t step_ms, const uint64_t host_tick)
+{
+    return Transition_BeginDiagonal(
+        p_Palette, &p_Palette->saved, target, assets, step_ms, host_tick);
+}
+
+bool Palette_AdvanceGlobalDiagonalTransition(
+    const PALETTE *const target, const INTERLEAVE_ASSETS *const assets,
+    const uint64_t host_tick)
+{
+    return Transition_Advance(
+        p_Palette, &p_Palette->saved, target, assets, host_tick);
 }

@@ -3,8 +3,8 @@
 #include "tests/th02/th02_sprites.h"
 #include "th02/background.h"
 #include "th02/background/private.h"
-#include "th02/sparks.c"
 #include "th02/sparks.h"
+#include "th02/sparks_private.h"
 
 #include "core/base/arena.h"
 #include "core/base/memory.h"
@@ -42,44 +42,44 @@ TEST(update_wraps_age_and_words_before_removal_and_preserves_other_page)
     Grcg_Init();
 
     SPARK_IMAGES images = {};
-    memset(&m_Sparks, 0xa5, sizeof(m_Sparks));
+    memset(p_Sparks, 0xa5, sizeof(*p_Sparks));
     Sparks_Init();
-    CHECK_EQ_INT(m_Sparks.next, 0);
-    CHECK_EQ_INT(m_Sparks.acceleration_x, 0);
-    CHECK_EQ_INT(m_Sparks.sprite_interval, 0);
-    CHECK_EQ_INT(m_Sparks.age_limit, 0);
-    CHECK_EQ_INT(m_Sparks.slots[SPARK_COUNT - 1].state, 0);
-    m_Sparks.next = 0xa53f;
-    m_Sparks.acceleration_x = 2;
-    m_Sparks.age_limit = 48;
-    m_Sparks.slots[0] = (SPARK) {
+    CHECK_EQ_INT(p_Sparks->next, 0);
+    CHECK_EQ_INT(p_Sparks->acceleration_x, 0);
+    CHECK_EQ_INT(p_Sparks->sprite_interval, 0);
+    CHECK_EQ_INT(p_Sparks->age_limit, 0);
+    CHECK_EQ_INT(p_Sparks->slots[SPARK_COUNT - 1].state, 0);
+    p_Sparks->next = 0xa53f;
+    p_Sparks->acceleration_x = 2;
+    p_Sparks->age_limit = 48;
+    p_Sparks->slots[0] = (SPARK) {
         .state = ENTITY_ACTIVE,
         .age = 255,
         .position = { { 1600, 1600 }, { 3200, 3200 } },
     };
-    m_Sparks.slots[1] = m_Sparks.slots[0];
-    m_Sparks.slots[1].age = 48;
-    m_Sparks.slots[2] = (SPARK) {
+    p_Sparks->slots[1] = p_Sparks->slots[0];
+    p_Sparks->slots[1].age = 48;
+    p_Sparks->slots[2] = (SPARK) {
         .state = ENTITY_ACTIVE,
         .age = 255,
         .position = { { INT16_MAX, 1600 }, { 3200, 3200 } },
         .velocity = { 1, INT16_MAX },
     };
     Sparks_Update((PLAYFIELD_PAGES) { 0, 0, 0 }, &images);
-    CHECK_EQ_INT(m_Sparks.slots[0].age, 0);
-    CHECK_EQ_INT(m_Sparks.slots[0].state, ENTITY_ACTIVE);
-    CHECK_EQ_INT(m_Sparks.slots[0].velocity.x, 2);
-    CHECK_EQ_INT(m_Sparks.slots[0].velocity.y, 1);
+    CHECK_EQ_INT(p_Sparks->slots[0].age, 0);
+    CHECK_EQ_INT(p_Sparks->slots[0].state, ENTITY_ACTIVE);
+    CHECK_EQ_INT(p_Sparks->slots[0].velocity.x, 2);
+    CHECK_EQ_INT(p_Sparks->slots[0].velocity.y, 1);
     CHECK_EQ_INT(g_Video.pages[0][100 * 640 + 100], 14);
-    CHECK_EQ_INT(m_Sparks.slots[1].age, 49);
-    CHECK_EQ_INT(m_Sparks.slots[1].state, ENTITY_REMOVE);
-    CHECK_EQ_INT(m_Sparks.slots[1].velocity.y, 1);
-    CHECK_EQ_INT(m_Sparks.slots[2].age, 0);
-    CHECK_EQ_INT(m_Sparks.slots[2].position[0].x, INT16_MIN);
-    CHECK_EQ_INT(m_Sparks.slots[2].velocity.y, INT16_MIN);
-    CHECK_EQ_INT(m_Sparks.slots[2].state, ENTITY_REMOVE);
-    CHECK_EQ_INT(m_Sparks.slots[2].position[1].y, 3200);
-    CHECK_EQ_INT(m_Sparks.next, 0xa53f);
+    CHECK_EQ_INT(p_Sparks->slots[1].age, 49);
+    CHECK_EQ_INT(p_Sparks->slots[1].state, ENTITY_REMOVE);
+    CHECK_EQ_INT(p_Sparks->slots[1].velocity.y, 1);
+    CHECK_EQ_INT(p_Sparks->slots[2].age, 0);
+    CHECK_EQ_INT(p_Sparks->slots[2].position[0].x, INT16_MIN);
+    CHECK_EQ_INT(p_Sparks->slots[2].velocity.y, INT16_MIN);
+    CHECK_EQ_INT(p_Sparks->slots[2].state, ENTITY_REMOVE);
+    CHECK_EQ_INT(p_Sparks->slots[2].position[1].y, 3200);
+    CHECK_EQ_INT(p_Sparks->next, 0xa53f);
     CHECK_EQ_INT(g_Grcg->mode, 0);
     CHECK_EQ_INT(g_Grcg->tiles[0], 0);
     for (size_t i = 1; i < 4; i++) {
@@ -102,13 +102,13 @@ TEST(sprite_masks_ignore_clip_and_roll_while_dots_obey_clip)
     images.rows[3][1][0] = 0x0240;
     images.rows[3][1][7] = 0x0080;
     Sparks_Init();
-    m_Sparks.age_limit = 48;
-    m_Sparks.slots[0] = (SPARK) {
+    p_Sparks->age_limit = 48;
+    p_Sparks->slots[0] = (SPARK) {
         .state = ENTITY_ACTIVE,
         .position = { { 99 * 16, 100 * 16 } },
         .drawing = 255,
     };
-    m_Sparks.slots[1] = (SPARK) {
+    p_Sparks->slots[1] = (SPARK) {
         .state = ENTITY_ACTIVE,
         .position = { { 100 * 16, 100 * 16 } },
     };
@@ -131,18 +131,18 @@ TEST(cleanup_marks_different_footprints_and_copies_opposite_front)
     memset(&p_Background->cache, 0, sizeof(p_Background->cache));
     p_Background->cache.mode = TILE_BLACK;
     Sparks_Init();
-    m_Sparks.slots[0] = (SPARK) {
+    p_Sparks->slots[0] = (SPARK) {
         .state = ENTITY_ACTIVE,
         .position = { { 47 * 16, 31 * 16 }, { 100 * 16, 100 * 16 } },
     };
-    m_Sparks.slots[1] = m_Sparks.slots[0];
-    m_Sparks.slots[1].state = ENTITY_REMOVE;
-    m_Sparks.slots[1].drawing = 14;
+    p_Sparks->slots[1] = p_Sparks->slots[0];
+    p_Sparks->slots[1].state = ENTITY_REMOVE;
+    p_Sparks->slots[1].drawing = 14;
     Sparks_Invalidate((PLAYFIELD_PAGES) { 0, 0, 0 });
-    CHECK_EQ_INT(m_Sparks.slots[0].position[1].x, 47 * 16);
-    CHECK_EQ_INT(m_Sparks.slots[0].position[0].y, 31 * 16);
-    CHECK_EQ_INT(m_Sparks.slots[1].state, ENTITY_FREE);
-    CHECK_EQ_INT(m_Sparks.slots[1].position[1].x, 100 * 16);
+    CHECK_EQ_INT(p_Sparks->slots[0].position[1].x, 47 * 16);
+    CHECK_EQ_INT(p_Sparks->slots[0].position[0].y, 31 * 16);
+    CHECK_EQ_INT(p_Sparks->slots[1].state, ENTITY_FREE);
+    CHECK_EQ_INT(p_Sparks->slots[1].position[1].x, 100 * 16);
     CHECK(p_Background->cache.dirty[0][1] != 0);
     CHECK(p_Background->cache.dirty[1][2] != 0);
 }
@@ -150,11 +150,11 @@ TEST(cleanup_marks_different_footprints_and_copies_opposite_front)
 TEST(spawn_overwrites_live_ring_slots_and_keeps_other_page_and_defaults)
 {
     Sparks_Init();
-    m_Sparks.next = 63;
-    m_Sparks.acceleration_x = -9;
-    m_Sparks.age_limit = 48;
+    p_Sparks->next = 63;
+    p_Sparks->acceleration_x = -9;
+    p_Sparks->age_limit = 48;
     for (size_t i = 0; i < SPARK_COUNT; i++) {
-        m_Sparks.slots[i] = (SPARK) {
+        p_Sparks->slots[i] = (SPARK) {
             .state = ENTITY_ACTIVE,
             .age = 42,
             .position = { { 11, 22 }, { 33, 44 } },
@@ -167,11 +167,11 @@ TEST(spawn_overwrites_live_ring_slots_and_keeps_other_page_and_defaults)
         };
     }
     Sparks_Add(1, -2049, 801, INT16_MAX, 2, false);
-    CHECK_EQ_INT(m_Sparks.next, 1);
-    CHECK_EQ_INT(m_Sparks.acceleration_x, -9);
-    CHECK_EQ_INT(m_Sparks.age_limit, 48);
+    CHECK_EQ_INT(p_Sparks->next, 1);
+    CHECK_EQ_INT(p_Sparks->acceleration_x, -9);
+    CHECK_EQ_INT(p_Sparks->age_limit, 48);
     for (size_t i = 0; i < SPARK_COUNT; i++) {
-        const SPARK *const spark = &m_Sparks.slots[i];
+        const SPARK *const spark = &p_Sparks->slots[i];
         CHECK_EQ_INT(spark->position[0].x, 11);
         CHECK_EQ_INT(spark->position[0].y, 22);
         CHECK_EQ_INT(spark->reserved_1, 17);
@@ -198,18 +198,18 @@ TEST(spawn_overwrites_live_ring_slots_and_keeps_other_page_and_defaults)
 TEST(sprite_burst_wraps_angle_numerator_and_nonpositive_counts_only_move_cursor)
 {
     Sparks_Init();
-    m_Sparks.next = 63;
+    p_Sparks->next = 63;
     Sparks_Add(0, 100, 400, 256, 130, true);
-    CHECK_EQ_INT(m_Sparks.next, 1);
-    CHECK_EQ_INT(m_Sparks.slots[63].position[0].x, 1600);
-    CHECK_EQ_INT(m_Sparks.slots[63].position[0].y, 0);
-    CHECK_EQ_INT(m_Sparks.slots[63].drawing, 14);
-    CHECK_EQ_INT(m_Sparks.slots[63].velocity.x, 255);
-    CHECK_EQ_INT(m_Sparks.slots[63].velocity.y, 25);
-    const SPARKS before = m_Sparks;
+    CHECK_EQ_INT(p_Sparks->next, 1);
+    CHECK_EQ_INT(p_Sparks->slots[63].position[0].x, 1600);
+    CHECK_EQ_INT(p_Sparks->slots[63].position[0].y, 0);
+    CHECK_EQ_INT(p_Sparks->slots[63].drawing, 14);
+    CHECK_EQ_INT(p_Sparks->slots[63].velocity.x, 255);
+    CHECK_EQ_INT(p_Sparks->slots[63].velocity.y, 25);
+    const SPARKS before = *p_Sparks;
     Sparks_Add(1, 0, 0, 0, 0, true);
-    CHECK(memcmp(&m_Sparks, &before, sizeof(m_Sparks)) == 0);
+    CHECK(memcmp(p_Sparks, &before, sizeof(*p_Sparks)) == 0);
     Sparks_Add(1, 0, 0, 0, -2, true);
-    CHECK_EQ_INT(m_Sparks.next, 63);
-    CHECK(memcmp(m_Sparks.slots, before.slots, sizeof(m_Sparks.slots)) == 0);
+    CHECK_EQ_INT(p_Sparks->next, 63);
+    CHECK(memcmp(p_Sparks->slots, before.slots, sizeof(p_Sparks->slots)) == 0);
 }

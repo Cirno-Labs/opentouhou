@@ -1,18 +1,18 @@
 #include "tests/test.h"
+#include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_world.h"
-#include "th01/boss/b20m.c"
+#include "th01/boss/private_b20m.h"
 #include "th01/gameplay.h"
-#include "th01/hud_hp.c"
-#include "th01/input.c"
-#include "th01/orb.c"
-#include "th01/orb.h"
+#include "th01/hud/hp_private.h"
+#include "th01/input_private.h"
+#include "th01/orb_private.h"
 #include "th01/pellets.h"
-#include "th01/player.c"
-#include "th01/player.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shots.h"
 #include "th01/sound.h"
+#include "th01/tram.h"
 
 #include "core/base/arena.h"
 
@@ -75,43 +75,43 @@ TEST(setup_preserves_patterns)
     Arena_Init(&arena, "Sariel", 1024 * 1024);
     B20M_ASSETS a;
     M_Assets(&a, &arena);
-    memset(&m_B20M, 0xa5, sizeof(m_B20M));
+    memset(p_B20M, 0xa5, sizeof(*p_B20M));
     g_BossSariel.init();
-    CHECK_EQ_INT(m_B20M.ray_previous_x, 999);
-    CHECK_EQ_INT(m_B20M.ray_previous_y, 999);
-    CHECK_EQ_INT(m_B20M.flake.state, -1);
-    m_B20M.pattern_state = 12;
-    m_B20M.leaves.left[4] = 123;
-    m_B20M.birds.left[3] = 25.5;
-    m_B20M.shield.lock_frame = 7;
-    m_B20M.hit.frame = 17;
-    m_B20M.hit.invincible = true;
-    memset(&g_Palette, 0, sizeof(g_Palette));
-    memset(&m_Health, 0, sizeof(m_Health));
-    g_Palette.saved.colors[6][0] = 9;
+    CHECK_EQ_INT(p_B20M->ray_previous_x, 999);
+    CHECK_EQ_INT(p_B20M->ray_previous_y, 999);
+    CHECK_EQ_INT(p_B20M->flake.state, -1);
+    p_B20M->pattern_state = 12;
+    p_B20M->leaves.left[4] = 123;
+    p_B20M->birds.left[3] = 25.5;
+    p_B20M->shield.lock_frame = 7;
+    p_B20M->hit.frame = 17;
+    p_B20M->hit.invincible = true;
+    memset(p_Palette, 0, sizeof(*p_Palette));
+    memset(p_Health, 0, sizeof(*p_Health));
+    p_Palette->saved.colors[6][0] = 9;
 
     const size_t used = arena.used;
     M_BossSetup(&a);
-    CHECK((*g_Boss) == &m_B20M.status);
+    CHECK((*g_Boss) == &p_B20M->status);
     CHECK_EQ_INT(arena.used, used);
-    CHECK_EQ_INT(m_B20M.status.hp, 18);
-    CHECK_EQ_INT(m_B20M.shield.left, 304);
-    CHECK_EQ_INT(m_B20M.shield.top, 144);
-    CHECK_EQ_INT(m_B20M.shield.orb_hitbox.left, 0);
-    CHECK_EQ_INT(m_B20M.shield.orb_hitbox.right, 48);
-    CHECK_EQ_INT(m_B20M.shield.lock_frame, 7);
-    CHECK_EQ_INT(m_B20M.hit.frame, 17);
-    CHECK(m_B20M.hit.invincible);
-    CHECK_EQ_INT(m_B20M.pattern_state, 12);
-    CHECK_EQ_INT(m_B20M.leaves.left[4], 123);
-    CHECK(m_B20M.birds.left[3] == 25.5);
-    CHECK_EQ_INT(m_B20M.wand.sprites.slot, 0);
-    CHECK_EQ_INT(m_B20M.dress.sprites.slot, 1);
-    CHECK_EQ_INT(m_B20M.wand.left, 296);
-    CHECK_EQ_INT(m_B20M.dress.top, 192);
-    CHECK_EQ_INT(m_Health.first_white, 8);
-    CHECK_EQ_INT(m_Health.first_redwhite, 2);
-    CHECK_EQ_INT(m_B20M.boss_palette.colors[6][0], 9);
+    CHECK_EQ_INT(p_B20M->status.hp, 18);
+    CHECK_EQ_INT(p_B20M->shield.left, 304);
+    CHECK_EQ_INT(p_B20M->shield.top, 144);
+    CHECK_EQ_INT(p_B20M->shield.orb_hitbox.left, 0);
+    CHECK_EQ_INT(p_B20M->shield.orb_hitbox.right, 48);
+    CHECK_EQ_INT(p_B20M->shield.lock_frame, 7);
+    CHECK_EQ_INT(p_B20M->hit.frame, 17);
+    CHECK(p_B20M->hit.invincible);
+    CHECK_EQ_INT(p_B20M->pattern_state, 12);
+    CHECK_EQ_INT(p_B20M->leaves.left[4], 123);
+    CHECK(p_B20M->birds.left[3] == 25.5);
+    CHECK_EQ_INT(p_B20M->wand.sprites.slot, 0);
+    CHECK_EQ_INT(p_B20M->dress.sprites.slot, 1);
+    CHECK_EQ_INT(p_B20M->wand.left, 296);
+    CHECK_EQ_INT(p_B20M->dress.top, 192);
+    CHECK_EQ_INT(p_Health->first_white, 8);
+    CHECK_EQ_INT(p_Health->first_redwhite, 2);
+    CHECK_EQ_INT(p_B20M->boss_palette.colors[6][0], 9);
     Arena_Free(&arena);
 }
 TEST(validation_requires_both_forms_and_all_cached_resources)
@@ -120,15 +120,15 @@ TEST(validation_requires_both_forms_and_all_cached_resources)
     Arena_Init(&arena, "Sariel validation", 1024 * 1024);
     B20M_ASSETS a;
     M_Assets(&a, &arena);
-    CHECK(Result_Ignore(M_ValidateAssets(&a)));
+    CHECK(Result_Ignore(B20M_ValidateAssets(&a)));
     a.backgrounds[5].pixels = nullptr;
-    CHECK(!Result_Ignore(M_ValidateAssets(&a)));
+    CHECK(!Result_Ignore(B20M_ValidateAssets(&a)));
     a.backgrounds[5].pixels = a.lower.pixels;
     a.spark = nullptr;
-    CHECK(!Result_Ignore(M_ValidateAssets(&a)));
+    CHECK(!Result_Ignore(B20M_ValidateAssets(&a)));
     a.spark = a.star;
     a.bird.count = 7;
-    CHECK(!Result_Ignore(M_ValidateAssets(&a)));
+    CHECK(!Result_Ignore(B20M_ValidateAssets(&a)));
     Arena_Free(&arena);
 }
 
@@ -172,17 +172,17 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     f->stage = (PTN) { .count = 4, .pixels = Allocator_Alloc(a, 4096) };
     memset(f->stage.pixels, PTN_TRANSPARENT, 4096);
     f->mask.coverage = Allocator_AllocZ(a, 640 * 66);
-    m_Player.left = 300;
-    m_Player.invincible = true;
-    g_Session.lives = 3;
-    m_Orb.top = 64;
-    m_Orb.previous_top = 64;
+    p_Player->left = 300;
+    p_Player->invincible = true;
+    p_Session->lives = 3;
+    p_Orb->top = 64;
+    p_Orb->previous_top = 64;
     Hud_Load(&f->mask, &f->stage, &f->font);
-    g_Session.stage_id = 19;
-    g_Session.frame_rand = 0x12345678;
+    p_Session->stage_id = 19;
+    p_Session->frame_rand = 0x12345678;
     g_BossSariel.init();
     M_BossSetup(&f->assets);
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 static bool M_Tick(FIXTURE *const f, uint64_t *const tick)
@@ -202,28 +202,28 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     g_Rng = 5;
     VSyncIrq_Reset();
     uint64_t tick = 0;
-    memset(&g_StagePalette, 0x07, sizeof(g_StagePalette));
-    const PALETTE before = g_StagePalette;
+    memset(p_StagePalette, 0x07, sizeof(*p_StagePalette));
+    const PALETTE before = *g_StagePalette;
     const size_t used = arena.used;
     M_BossBeginEntrance(&f.assets);
     CHECK(g_Pellets->interlace);
     CHECK(!M_BossResumeEntrance(&f.assets, tick));
-    const B20M pending = m_B20M;
+    const B20M pending = *p_B20M;
     CHECK(!M_BossResumeEntrance(&f.assets, tick));
-    CHECK(memcmp(&m_B20M, &pending, sizeof(m_B20M)) == 0);
+    CHECK(memcmp(p_B20M, &pending, sizeof(*p_B20M)) == 0);
     int32_t polls = 0;
-    while (m_B20M.entrance_active && polls++ < 1500) {
-        CHECK(memcmp(&g_StagePalette, &before, sizeof(before)) == 0);
+    while (p_B20M->entrance_active && polls++ < 1500) {
+        CHECK(memcmp(p_StagePalette, &before, sizeof(before)) == 0);
         tick++;
         VSyncIrq_Edge();
         M_BossResumeEntrance(&f.assets, tick);
     }
-    CHECK(!m_B20M.entrance_active);
-    CHECK_EQ_INT(g_Rng, g_Session.frame_rand);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
-    CHECK_EQ_INT(g_Video.scroll_top, 0);
+    CHECK(!p_B20M->entrance_active);
+    CHECK_EQ_INT(g_Rng, g_Session->frame_rand);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
+    CHECK_EQ_INT(g_Video->scroll_top, 0);
     CHECK_EQ_INT(arena.used, used);
-    CHECK(memcmp(&g_StagePalette, &m_B20M.stage_palette, sizeof(PALETTE)) == 0);
+    CHECK(memcmp(p_StagePalette, &p_B20M->stage_palette, sizeof(PALETTE)) == 0);
     Arena_Free(&arena);
 }
 TEST(ring_entrance_preserves_pending_polls_and_reserves_wand_background)
@@ -236,21 +236,22 @@ TEST(ring_entrance_preserves_pending_polls_and_reserves_wand_background)
     uint64_t tick = 0;
     const size_t used = arena.used;
     CHECK(!M_BossUpdate(&f.assets, tick));
-    const B20M pending = m_B20M;
+    const B20M pending = *p_B20M;
     const uint32_t rng = g_Rng;
     CHECK(!M_BossUpdate(&f.assets, tick));
-    CHECK(memcmp(&m_B20M, &pending, sizeof(m_B20M)) == 0);
+    CHECK(memcmp(p_B20M, &pending, sizeof(*p_B20M)) == 0);
     CHECK_EQ_INT(g_Rng, rng);
-    for (int32_t i = 0; m_B20M.sequence != B20M_SEQUENCE_NONE && i < 200; i++) {
+    for (int32_t i = 0; p_B20M->sequence != B20M_SEQUENCE_NONE && i < 200;
+         i++) {
         tick++;
         VSyncIrq_Edge();
         M_BossUpdate(&f.assets, tick);
     }
-    CHECK_EQ_INT(m_B20M.status.phase, B20M_PHASE_BIRDS);
-    CHECK_EQ_INT(m_B20M.status.frame, 0);
-    CHECK_EQ_INT(m_B20M.entrance_radius, 352);
-    CHECK_EQ_INT(m_B20M.shield.left, 304);
-    CHECK(m_B20M.patterns_until_next >= 1 && m_B20M.patterns_until_next <= 6);
+    CHECK_EQ_INT(p_B20M->status.phase, B20M_PHASE_BIRDS);
+    CHECK_EQ_INT(p_B20M->status.frame, 0);
+    CHECK_EQ_INT(p_B20M->entrance_radius, 352);
+    CHECK_EQ_INT(p_B20M->shield.left, 304);
+    CHECK(p_B20M->patterns_until_next >= 1 && p_B20M->patterns_until_next <= 6);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
@@ -270,22 +271,22 @@ TEST(all_first_form_patterns_finish_with_real_projectile_pools)
                 Arena_Init(&arena, "Sariel first form", 4 * 1024 * 1024);
                 FIXTURE f;
                 M_Fixture(&f, &arena);
-                g_Session.settings.difficulty = rank;
-                g_Session.settings.difficulty = rank;
+                p_Session->settings.difficulty = rank;
+                p_Session->settings.difficulty = rank;
                 g_Rng = 0x12345678u + (uint32_t)rank;
-                m_B20M.status.phase = phases[phase];
-                m_B20M.pattern = pattern;
-                m_B20M.patterns_until_next = 30000;
+                p_B20M->status.phase = phases[phase];
+                p_B20M->pattern = pattern;
+                p_B20M->patterns_until_next = 30000;
                 VSyncIrq_Reset();
                 uint64_t tick = 0;
                 const size_t used = arena.used;
                 int32_t calls = 0;
-                while (m_B20M.pattern == pattern && calls++ < 2000) {
+                while (p_B20M->pattern == pattern && calls++ < 2000) {
                     M_Tick(&f, &tick);
                 }
                 CHECK(calls < 2000);
-                CHECK_EQ_INT(m_B20M.status.hp, 18);
-                CHECK_EQ_INT(m_B20M.status.phase, phases[phase]);
+                CHECK_EQ_INT(p_B20M->status.hp, 18);
+                CHECK_EQ_INT(p_B20M->status.phase, phases[phase]);
                 CHECK_EQ_INT(arena.used, used);
                 Arena_Free(&arena);
             }
@@ -300,23 +301,23 @@ TEST(all_second_form_patterns_finish_with_persistent_leaf_state)
             Arena_Init(&arena, "Sariel second form", 4 * 1024 * 1024);
             FIXTURE f;
             M_Fixture(&f, &arena);
-            g_Session.settings.difficulty = rank;
-            g_Session.settings.difficulty = rank;
+            p_Session->settings.difficulty = rank;
+            p_Session->settings.difficulty = rank;
             g_Rng = 0xabcdef01u + (uint32_t)rank;
-            m_B20M.status.phase = B20M_PHASE_SECOND_FORM;
-            m_B20M.status.hp = 6;
-            m_B20M.pattern = pattern;
-            m_B20M.pattern_state = 24;
+            p_B20M->status.phase = B20M_PHASE_SECOND_FORM;
+            p_B20M->status.hp = 6;
+            p_B20M->pattern = pattern;
+            p_B20M->pattern_state = 24;
             VSyncIrq_Reset();
             uint64_t tick = 0;
             const size_t used = arena.used;
             int32_t calls = 0;
-            while (m_B20M.pattern == pattern && calls++ < 1000) {
+            while (p_B20M->pattern == pattern && calls++ < 1000) {
                 M_Tick(&f, &tick);
             }
             CHECK(calls < 1000);
-            CHECK_EQ_INT(m_B20M.status.hp, 6);
-            CHECK_EQ_INT(m_B20M.status.phase, B20M_PHASE_SECOND_FORM);
+            CHECK_EQ_INT(p_B20M->status.hp, 6);
+            CHECK_EQ_INT(p_B20M->status.phase, B20M_PHASE_SECOND_FORM);
             CHECK_EQ_INT(arena.used, used);
             Arena_Free(&arena);
         }
@@ -328,43 +329,43 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     Arena_Init(&arena, "Sariel transform", 4 * 1024 * 1024);
     FIXTURE f;
     M_Fixture(&f, &arena);
-    m_B20M.status.phase = B20M_PHASE_TRANSFORM;
-    m_B20M.status.hp = 0;
-    m_Orb.previous_left = 123;
-    m_Orb.previous_top = 234;
-    m_Player.invincible = true;
-    m_Player.invincibility_time = 91;
-    m_Player.deflecting = true;
-    m_Player.bomb_damaging = true;
-    m_B20M.leaves.flag[7] = 6;
-    m_GameInput.bomb = true;
+    p_B20M->status.phase = B20M_PHASE_TRANSFORM;
+    p_B20M->status.hp = 0;
+    p_Orb->previous_left = 123;
+    p_Orb->previous_top = 234;
+    p_Player->invincible = true;
+    p_Player->invincibility_time = 91;
+    p_Player->deflecting = true;
+    p_Player->bomb_damaging = true;
+    p_B20M->leaves.flag[7] = 6;
+    p_GameInput->bomb = true;
     VSyncIrq_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
     CHECK(!M_BossUpdate(&f.assets, tick));
-    CHECK_EQ_INT(m_Player.left, 304);
-    CHECK_EQ_INT(m_Orb.left, 600);
-    CHECK_EQ_INT(m_Orb.top, 280);
-    CHECK_EQ_INT(m_Orb.previous_left, 123);
-    CHECK_EQ_INT(m_Orb.previous_top, 234);
-    CHECK(!m_Player.deflecting);
-    CHECK(!m_Player.bomb_damaging);
+    CHECK_EQ_INT(p_Player->left, 304);
+    CHECK_EQ_INT(p_Orb->left, 600);
+    CHECK_EQ_INT(p_Orb->top, 280);
+    CHECK_EQ_INT(p_Orb->previous_left, 123);
+    CHECK_EQ_INT(p_Orb->previous_top, 234);
+    CHECK(!p_Player->deflecting);
+    CHECK(!p_Player->bomb_damaging);
     CHECK(!g_GameInput->bomb);
-    for (int32_t i = 0; m_B20M.sequence != B20M_SEQUENCE_NONE && i < 1000;
+    for (int32_t i = 0; p_B20M->sequence != B20M_SEQUENCE_NONE && i < 1000;
          i++) {
         tick++;
         VSyncIrq_Edge();
         M_BossUpdate(&f.assets, tick);
     }
-    CHECK_EQ_INT(m_B20M.status.phase, B20M_PHASE_SECOND_FORM);
-    CHECK_EQ_INT(m_B20M.status.hp, 6);
-    CHECK_EQ_INT(m_B20M.status.frame, 0);
-    CHECK_EQ_INT(m_Player.invincibility_time, 0);
-    CHECK(!m_Player.invincible);
-    CHECK_EQ_INT(m_B20M.leaves.flag[7], 0);
-    CHECK_EQ_INT(m_Health.first_white, 10);
-    CHECK_EQ_INT(m_Health.first_redwhite, 3);
-    CHECK(g_Stage.first_stage);
+    CHECK_EQ_INT(p_B20M->status.phase, B20M_PHASE_SECOND_FORM);
+    CHECK_EQ_INT(p_B20M->status.hp, 6);
+    CHECK_EQ_INT(p_B20M->status.frame, 0);
+    CHECK_EQ_INT(p_Player->invincibility_time, 0);
+    CHECK(!p_Player->invincible);
+    CHECK_EQ_INT(p_B20M->leaves.flag[7], 0);
+    CHECK_EQ_INT(p_Health->first_white, 10);
+    CHECK_EQ_INT(p_Health->first_redwhite, 3);
+    CHECK(g_Stage->first_stage);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
@@ -374,30 +375,30 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     Arena_Init(&arena, "Sariel victory", 4 * 1024 * 1024);
     FIXTURE f;
     M_Fixture(&f, &arena);
-    m_B20M.status.phase = B20M_PHASE_SECOND_FORM;
-    m_B20M.status.hp = 1;
-    m_Orb.left = 320;
-    m_Orb.top = 120;
+    p_B20M->status.phase = B20M_PHASE_SECOND_FORM;
+    p_B20M->status.hp = 1;
+    p_Orb->left = 320;
+    p_Orb->top = 120;
     VSyncIrq_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
     CHECK(M_BossUpdate(&f.assets, tick));
-    CHECK_EQ_INT(m_B20M.status.phase, B20M_PHASE_DEFEAT);
-    CHECK_EQ_INT(m_B20M.status.hp, 0);
-    CHECK_EQ_INT(g_Stage.score, 10000);
-    for (int32_t i = 0; !g_Stage.game_cleared && i < 1500; i++) {
+    CHECK_EQ_INT(p_B20M->status.phase, B20M_PHASE_DEFEAT);
+    CHECK_EQ_INT(p_B20M->status.hp, 0);
+    CHECK_EQ_INT(g_Stage->score, 10000);
+    for (int32_t i = 0; !g_Stage->game_cleared && i < 1500; i++) {
         M_Tick(&f, &tick);
     }
-    CHECK(g_Stage.game_cleared);
-    CHECK(m_B20M.finished);
-    CHECK_EQ_INT(g_Stage.score, 60000);
-    CHECK_EQ_INT(m_B20M.status.frame, 231);
-    CHECK_EQ_INT(g_Video.scroll_top, 0);
+    CHECK(g_Stage->game_cleared);
+    CHECK(p_B20M->finished);
+    CHECK_EQ_INT(g_Stage->score, 60000);
+    CHECK_EQ_INT(p_B20M->status.frame, 231);
+    CHECK_EQ_INT(g_Video->scroll_top, 0);
     CHECK_EQ_INT(arena.used, used);
-    const B20M done = m_B20M;
+    const B20M done = *p_B20M;
     CHECK(M_BossUpdate(&f.assets, tick));
-    CHECK(memcmp(&m_B20M, &done, sizeof(m_B20M)) == 0);
-    CHECK_EQ_INT(g_Stage.score, 60000);
+    CHECK(memcmp(p_B20M, &done, sizeof(*p_B20M)) == 0);
+    CHECK_EQ_INT(g_Stage->score, 60000);
     Arena_Free(&arena);
 }
 TEST(bird_collision_waits_before_pattern_rng_and_hit_tail)
@@ -406,28 +407,28 @@ TEST(bird_collision_waits_before_pattern_rng_and_hit_tail)
     Arena_Init(&arena, "Sariel bird safety", 4 * 1024 * 1024);
     FIXTURE f;
     M_Fixture(&f, &arena);
-    m_B20M.status.phase = B20M_PHASE_BIRDS;
-    m_B20M.status.frame = 49;
-    m_B20M.pattern = 0;
-    m_B20M.patterns_until_next = 10;
-    m_Player.invincible = false;
-    m_B20M.birds.alive[0] = true;
-    m_B20M.birds.left[0] = 300;
-    m_B20M.birds.top[0] = 368;
+    p_B20M->status.phase = B20M_PHASE_BIRDS;
+    p_B20M->status.frame = 49;
+    p_B20M->pattern = 0;
+    p_B20M->patterns_until_next = 10;
+    p_Player->invincible = false;
+    p_B20M->birds.alive[0] = true;
+    p_B20M->birds.left[0] = 300;
+    p_B20M->birds.top[0] = 368;
     VSyncIrq_Reset();
     uint64_t tick = 100;
     const uint32_t rng = g_Rng;
     const size_t used = arena.used;
     CHECK(!M_BossUpdate(&f.assets, tick));
-    CHECK(m_Player.is_hit);
+    CHECK(p_Player->is_hit);
     CHECK_EQ_INT(g_Rng, rng);
-    const B20M pending = m_B20M;
+    const B20M pending = *p_B20M;
     CHECK(!M_BossUpdate(&f.assets, tick + 5));
-    CHECK(memcmp(&m_B20M, &pending, sizeof(m_B20M)) == 0);
+    CHECK(memcmp(p_B20M, &pending, sizeof(*p_B20M)) == 0);
     CHECK(M_BossUpdate(&f.assets, tick + 6));
     CHECK(g_Rng != rng);
-    CHECK_EQ_INT(m_B20M.status.frame, 50);
-    CHECK_EQ_INT(m_B20M.resume_stage, B20M_RESUME_NONE);
+    CHECK_EQ_INT(p_B20M->status.frame, 50);
+    CHECK_EQ_INT(p_B20M->resume_stage, B20M_RESUME_NONE);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }

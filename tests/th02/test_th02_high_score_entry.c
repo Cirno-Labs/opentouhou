@@ -1,6 +1,6 @@
 #include "tests/test.h"
 #include "tests/th02/th02_tram_fixture.h"
-#include "th02/high_score_entry/logic.c"
+#include "th02/high_score_entry/private.h"
 #include "th02/vsync_irq.h"
 
 #include <string.h>
@@ -24,6 +24,7 @@ static void M_Begin(
                             .year = 2026,
                             .day = 22,
                             .month = 11 };
+    HighScoreEntry_Init(&g_HighScoreEntryRender);
     HighScoreEntry_Begin(&f->scores.sections[1], &run, ending, input);
 }
 
@@ -39,8 +40,8 @@ TEST(qualified_entry_binds_text_and_date_and_requests_save_only_once)
         FIXTURE f;
         TH02_INPUT input = { .shot = true };
         M_Begin(&f, 123456, ending != 0, &input);
-        CHECK_EQ_INT(m_Menu.place, 0);
-        CHECK(m_Menu.section == &f.scores.sections[1]);
+        CHECK_EQ_INT(p_Menu->place, 0);
+        CHECK(p_Menu->section == &f.scores.sections[1]);
         HIGH_SCORE_RECORD *const record = &f.scores.sections[1].records[0];
         CHECK_EQ_INT(record->score, 123456);
         CHECK_EQ_INT(record->stage, ending != 0 ? 127 : 2);
@@ -50,13 +51,13 @@ TEST(qualified_entry_binds_text_and_date_and_requests_save_only_once)
         CHECK_EQ_INT(record->shot_type, 2);
         HIGH_SCORE_ENTRY_EVENTS event = HighScoreEntry_Update(&input);
         CHECK_EQ_INT(event.result, HIGH_SCORE_ENTRY_FRAME);
-        CHECK_EQ_INT(m_Menu.name_pos, 0);
-        const HIGH_SCORE_ENTRY held = m_Entry;
-        const HIGH_SCORE_ENTRY_MENU controls = m_Menu;
+        CHECK_EQ_INT(p_Menu->name_pos, 0);
+        const HIGH_SCORE_ENTRY held = *p_Entry;
+        const HIGH_SCORE_ENTRY_MENU controls = *p_Menu;
         CHECK_EQ_INT(
             HighScoreEntry_Update(&input).result, HIGH_SCORE_ENTRY_FRAME);
-        CHECK(memcmp(&held, &m_Entry, sizeof(held)) == 0);
-        CHECK(memcmp(&controls, &m_Menu, sizeof(controls)) == 0);
+        CHECK(memcmp(&held, p_Entry, sizeof(held)) == 0);
+        CHECK(memcmp(&controls, p_Menu, sizeof(controls)) == 0);
         input.shot = false;
         CHECK_EQ_INT(M_Frame(&input).result, HIGH_SCORE_ENTRY_FRAME);
         CHECK_EQ_INT(M_Frame(&input).result, HIGH_SCORE_ENTRY_FRAME);
@@ -64,7 +65,7 @@ TEST(qualified_entry_binds_text_and_date_and_requests_save_only_once)
         event = M_Frame(&input);
         CHECK_EQ_INT(event.result, HIGH_SCORE_ENTRY_FRAME);
         CHECK_EQ_INT(record->name_glyphs[0], HighScoreEntry_Alphabet(0, 0));
-        CHECK_EQ_INT(m_Menu.name_pos, 1);
+        CHECK_EQ_INT(p_Menu->name_pos, 1);
         input.shot = false;
         M_Frame(&input);
         M_Frame(&input);
@@ -127,18 +128,18 @@ TEST(table_keeps_blank_digits_and_alphabet_for_unqualified_score)
     section->records[3].stage = 127;
     const HIGH_SCORE_SECTION before = *section;
 
-    memset(&m_Tram, 0x5a, sizeof(m_Tram));
+    memset(p_Tram, 0x5a, sizeof(*p_Tram));
     HighScoreEntryRender_Table(section, false, -1);
     for (size_t x = 26; x < 42; x++) {
-        CHECK_EQ_INT(m_Tram.codes[6 * 80 + x], 0x5a5a);
-        CHECK_EQ_INT(m_Tram.attributes[7 * 80 + x], 0x5a5a);
+        CHECK_EQ_INT(p_Tram->codes[6 * 80 + x], 0x5a5a);
+        CHECK_EQ_INT(p_Tram->attributes[7 * 80 + x], 0x5a5a);
     }
-    CHECK_EQ_INT(m_Tram.codes[8 * 80 + 40], 0x1f57);
-    CHECK_EQ_INT(m_Tram.codes[9 * 80 + 44], 0x7057);
-    CHECK_EQ_INT(m_Tram.attributes[6 * 80 + 10], 0xe1);
+    CHECK_EQ_INT(p_Tram->codes[8 * 80 + 40], 0x1f57);
+    CHECK_EQ_INT(p_Tram->codes[9 * 80 + 44], 0x7057);
+    CHECK_EQ_INT(p_Tram->attributes[6 * 80 + 10], 0xe1);
     for (size_t cell = 18 * 80; cell < TRAM_PLANE_CELLS; cell++) {
-        CHECK_EQ_INT(m_Tram.codes[cell], 0x5a5a);
-        CHECK_EQ_INT(m_Tram.attributes[cell], 0x5a5a);
+        CHECK_EQ_INT(p_Tram->codes[cell], 0x5a5a);
+        CHECK_EQ_INT(p_Tram->attributes[cell], 0x5a5a);
     }
     CHECK(memcmp(section, &before, sizeof(before)) == 0);
 }
@@ -150,16 +151,16 @@ TEST(main_and_ending_keep_distinct_header_and_tenth_place_positions)
     for (int ending = 0; ending < 2; ending++) {
         Tram_Init();
         HighScoreEntryRender_Table(&scores.sections[0], ending != 0, 9);
-        CHECK_EQ_INT(m_Tram.codes[4 * 80 + 27 + ending], 0x3957);
-        CHECK_EQ_INT(m_Tram.codes[4 * 80 + 41 + ending], 0x3c57);
-        CHECK_EQ_INT(m_Tram.codes[15 * 80 + 5 - ending], 0x2157);
-        CHECK_EQ_INT(m_Tram.codes[15 * 80 + 7 - ending], 0x2057);
-        CHECK_EQ_INT(m_Tram.attributes[15 * 80 + 10], 0x81);
-        CHECK_EQ_INT(m_Tram.attributes[14 * 80 + 10], 0xe1);
-        CHECK_EQ_INT(m_Tram.attributes[18 * 80 + 10], 0x85);
-        CHECK_EQ_INT(m_Tram.attributes[18 * 80 + 11], 0x85);
-        CHECK_EQ_INT(m_Tram.codes[18 * 80 + 34], 0x3757);
-        CHECK_EQ_INT(m_Tram.codes[18 * 80 + 36], 0x3657);
+        CHECK_EQ_INT(p_Tram->codes[4 * 80 + 27 + ending], 0x3957);
+        CHECK_EQ_INT(p_Tram->codes[4 * 80 + 41 + ending], 0x3c57);
+        CHECK_EQ_INT(p_Tram->codes[15 * 80 + 5 - ending], 0x2157);
+        CHECK_EQ_INT(p_Tram->codes[15 * 80 + 7 - ending], 0x2057);
+        CHECK_EQ_INT(p_Tram->attributes[15 * 80 + 10], 0x81);
+        CHECK_EQ_INT(p_Tram->attributes[14 * 80 + 10], 0xe1);
+        CHECK_EQ_INT(p_Tram->attributes[18 * 80 + 10], 0x85);
+        CHECK_EQ_INT(p_Tram->attributes[18 * 80 + 11], 0x85);
+        CHECK_EQ_INT(p_Tram->codes[18 * 80 + 34], 0x3757);
+        CHECK_EQ_INT(p_Tram->codes[18 * 80 + 36], 0x3657);
     }
 }
 
@@ -169,13 +170,13 @@ TEST(name_cursor_can_write_terminator_glyph_without_clearing_following_cells)
     HighScores_Defaults(&scores);
     scores.sections[0].records[2].name_glyphs[1] = 0;
 
-    memset(&m_Tram, 0x5a, sizeof(m_Tram));
+    memset(p_Tram, 0x5a, sizeof(*p_Tram));
     HighScoreEntryRender_Name(&scores.sections[0], 2, 1);
-    CHECK_EQ_INT(m_Tram.codes[8 * 80 + 12], 0x56);
-    CHECK_EQ_INT(m_Tram.codes[8 * 80 + 13], 0x8056);
-    CHECK_EQ_INT(m_Tram.attributes[8 * 80 + 10], 0x81);
-    CHECK_EQ_INT(m_Tram.attributes[8 * 80 + 12], 0x85);
-    CHECK_EQ_INT(m_Tram.codes[8 * 80 + 14], 0x5a5a);
+    CHECK_EQ_INT(p_Tram->codes[8 * 80 + 12], 0x56);
+    CHECK_EQ_INT(p_Tram->codes[8 * 80 + 13], 0x8056);
+    CHECK_EQ_INT(p_Tram->attributes[8 * 80 + 10], 0x81);
+    CHECK_EQ_INT(p_Tram->attributes[8 * 80 + 12], 0x85);
+    CHECK_EQ_INT(p_Tram->codes[8 * 80 + 14], 0x5a5a);
 }
 
 TEST(controller_updates_the_rendered_name_and_alphabet_without_redrawing_table)
@@ -185,14 +186,14 @@ TEST(controller_updates_the_rendered_name_and_alphabet_without_redrawing_table)
 
     Tram_Init();
     const SCORE_RUN run = { .score = 12345, .stage = 127 };
-    M_MenuBegin(&scores.sections[0], &run, true);
-    M_MenuStep(0);
-    M_MenuStep(0);
-    M_MenuStep(GAME_KEY_RIGHT | GAME_KEY_SHOT);
+    HighScoreEntryMenu_Begin(&scores.sections[0], &run, true);
+    HighScoreEntryMenu_Step(0);
+    HighScoreEntryMenu_Step(0);
+    HighScoreEntryMenu_Step(GAME_KEY_RIGHT | GAME_KEY_SHOT);
     CHECK_EQ_INT(scores.sections[0].records[0].name_glyphs[0], 0xab);
-    CHECK_EQ_INT(m_Tram.codes[6 * 80 + 10], 0x2b57);
-    CHECK_EQ_INT(m_Tram.attributes[6 * 80 + 12], 0x85);
-    CHECK_EQ_INT(m_Tram.attributes[18 * 80 + 10], 0xe1);
-    CHECK_EQ_INT(m_Tram.attributes[18 * 80 + 12], 0x85);
-    CHECK_EQ_INT(m_Tram.codes[6 * 80 + 44], 0x7057);
+    CHECK_EQ_INT(p_Tram->codes[6 * 80 + 10], 0x2b57);
+    CHECK_EQ_INT(p_Tram->attributes[6 * 80 + 12], 0x85);
+    CHECK_EQ_INT(p_Tram->attributes[18 * 80 + 10], 0xe1);
+    CHECK_EQ_INT(p_Tram->attributes[18 * 80 + 12], 0x85);
+    CHECK_EQ_INT(p_Tram->codes[6 * 80 + 44], 0x7057);
 }

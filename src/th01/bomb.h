@@ -22,7 +22,7 @@ void Bomb_Init(void);
 
 // Loads KUZI1.GRC and KUZI2.GRC from the caller's grouped allocator.
 // A failed load leaves out empty.
-RESULT Bomb_LoadAssets(VFS *vfs, const ALLOCATOR *allocator, BOMB_ASSETS *out);
+RESULT BombAssets_Load(VFS *vfs, const ALLOCATOR *allocator, BOMB_ASSETS *out);
 RESULT Bomb_ValidateAssets(const BOMB_ASSETS *assets);
 
 // Begin sets invincibility and runs the bomb until done or a wait.

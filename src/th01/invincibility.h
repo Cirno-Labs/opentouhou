@@ -16,7 +16,7 @@ typedef struct {
 
 // Loads the four masks from the last cels of shape8x8.bmp before simulation;
 // leaves out empty on failure.
-RESULT Invincibility_LoadAssets(VFS *vfs, INVINCIBILITY_ASSETS *out);
+RESULT InvincibilityAssets_Load(VFS *vfs, INVINCIBILITY_ASSETS *out);
 
 // Draws red mask image 0..3 on page 0; a negative left draws nothing.
 void Invincibility_Put(

@@ -1,9 +1,10 @@
-#include "th02/grcg.h"
+#include "th02/grcg_private.h"
 
 #include <string.h>
 
 static GRCG m_Grcg;
 const GRCG *const g_Grcg = &m_Grcg;
+GRCG *const p_Grcg = &m_Grcg;
 
 void Grcg_WriteByte(const uint16_t offset, const uint8_t mask)
 {

@@ -1,5 +1,7 @@
 #include "th02/pause_menu/render.h"
 
+#include "th02/palette.h"
+
 #include "core/base/assert.h"
 
 static const uint8_t m_Heading[] = {
@@ -21,3 +23,8 @@ void PauseMenuRender_Draw(
             x, y, kind == PAUSE_MENU_HEADING ? m_Heading : m_Blank, attribute);
     }
 }
+
+const PAUSE_MENU_RENDER g_PauseMenuRender = {
+    .draw = PauseMenuRender_Draw,
+    .tone = Palette_SetTone,
+};

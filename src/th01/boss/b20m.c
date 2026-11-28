@@ -1,4 +1,4 @@
-#include "th01/boss/private.h"
+#include "th01/boss/private_b20m.h"
 #include "th01/finite.h"
 #include "th01/gameplay.h"
 #include "th01/grc.h"
@@ -9,7 +9,7 @@
 #include "th01/shootout_lasers.h"
 #include "th01/sound.h"
 #include "th01/sprite.h"
-#include "th01/stage_objects.h"
+#include "th01/stage/objects.h"
 #include "th01/timer.h"
 #include "th01/tram.h"
 #include "th01/transition.h"
@@ -23,219 +23,8 @@
 
 #include <string.h>
 
-typedef struct {
-    BOS shield;
-    BOS wand;
-    BOS dress;
-    GRC vortex;
-    GRC bird;
-    GRC cross;
-    GRC splash;
-    PI_IMAGE lower;
-    PI_IMAGE upper;
-    PI_IMAGE backgrounds[6];
-    const INTERLEAVE_ASSETS *interleave;
-    const uint8_t *star;
-    const uint8_t *flake;
-    const uint8_t *spark;
-    const uint8_t *leaf_left;
-    const uint8_t *leaf_right;
-} B20M_ASSETS;
-
-typedef struct {
-    double left[30];
-    double top[30];
-    double velocity_x[30];
-    double velocity_y[30];
-    int8_t reserved[30];
-    int8_t hatch_time[30];
-    int8_t hatch_frames[30];
-    bool alive[30];
-} B20M_BIRDS;
-typedef struct {
-    double left[30];
-    double top[30];
-    double velocity[30];
-    int8_t color[30];
-} B20M_PARTICLES;
-typedef struct {
-    int16_t left[30];
-    int16_t top[30];
-    int16_t velocity[30];
-    int16_t age[30];
-    int8_t color[30];
-} B20M_WAVES;
-typedef struct {
-    int16_t left[30];
-    int16_t top[30];
-    int16_t velocity_x[30];
-    int16_t velocity_y[30];
-    int16_t flag[30];
-} B20M_LEAVES;
-typedef struct {
-    int16_t x;
-    int16_t y;
-    int16_t velocity_x;
-    int16_t velocity_y;
-    int16_t image;
-    int16_t previous_image;
-} B20M_RAYS;
-typedef struct {
-    int16_t x;
-    int16_t y;
-    int16_t speed;
-    int16_t subpattern;
-    uint8_t angle;
-} B20M_SPRAY;
-typedef struct {
-    int16_t left[2];
-    int16_t top[2];
-    int16_t previous_left[2];
-    int16_t previous_top[2];
-} B20M_VORTICES;
-typedef struct {
-    int16_t x[10];
-    int16_t y[10];
-    int16_t origin_x;
-    int16_t origin_y;
-    int16_t velocity_x;
-    int16_t velocity_y;
-    int16_t target;
-} B20M_LASER;
-typedef struct {
-    int16_t left[30];
-    int16_t top[30];
-    int16_t alive;
-} B20M_EGGS;
-typedef struct {
-    int16_t left;
-    int16_t top;
-    int16_t velocity_x;
-    int16_t velocity_y;
-} B20M_SPAWNER;
-typedef struct {
-    int16_t state;
-    int16_t left;
-    int16_t top;
-    int16_t velocity_x;
-    int16_t velocity_y;
-} B20M_FLAKE;
-typedef struct {
-    int16_t left;
-    int16_t top;
-    int16_t radius_outer_1;
-    int16_t radius_outer_2;
-    int16_t radius_inner;
-} B20M_STAR;
-typedef struct {
-    int16_t x;
-    int16_t y;
-    int16_t offset;
-    int16_t color;
-    int16_t id;
-} B20M_GUST;
-typedef enum {
-    B20M_PHASE_START = 0,
-    B20M_PHASE_BIRDS = 1,
-    B20M_PHASE_GUST_1 = 2,
-    B20M_PHASE_VERTICAL = 3,
-    B20M_PHASE_GUST_2 = 4,
-    B20M_PHASE_WAVY = 5,
-    B20M_PHASE_GUST_3 = 6,
-    B20M_PHASE_VERTICAL_BIRDS = 7,
-    B20M_PHASE_GUST_4 = 8,
-    B20M_PHASE_TRANSFORM = 99,
-    B20M_PHASE_SECOND_FORM = 100,
-    B20M_PHASE_DEFEAT = 101,
-} B20M_PHASE;
-
-typedef enum {
-    B20M_SEQUENCE_NONE,
-    B20M_SEQUENCE_RINGS,
-    B20M_SEQUENCE_TRANSFORM,
-    B20M_SEQUENCE_DEFEAT,
-} B20M_SEQUENCE;
-
-typedef enum {
-    B20M_RESUME_NONE,
-    B20M_RESUME_SHAKE,
-    B20M_RESUME_SHAKE_END,
-    B20M_RESUME_BIRD_HIT,
-    B20M_RESUME_GUST_END,
-} B20M_RESUME;
-
-typedef struct {
-    BOSS_ENTITY shield;
-    BOSS_ANIMATION dress;
-    BOSS_ANIMATION wand;
-    BOSS_HIT hit;
-    PALETTE boss_palette;
-    PALETTE stage_palette;
-    uint8_t wand_background[128 * 96];
-    B20M_BIRDS birds;
-    B20M_PARTICLES vertical;
-    B20M_PARTICLES horizontal;
-    B20M_WAVES waves;
-    B20M_LEAVES leaves;
-    B20M_RAYS bird_rays;
-    B20M_RAYS stack_rays;
-    B20M_RAYS seal_rays;
-    B20M_SPRAY sprays[2];
-    B20M_VORTICES vortices;
-    B20M_LASER laser;
-    B20M_EGGS eggs;
-    B20M_SPAWNER spawner;
-    B20M_FLAKE flake;
-    B20M_STAR star;
-    B20M_GUST gust;
-    BOSS_STATE status;
-    int16_t pattern;
-    int16_t pattern_state;
-    int16_t patterns_done;
-    int16_t patterns_until_next;
-    int16_t entrance_radius;
-    int16_t wand_frame;
-    int16_t bird_pellet_group;
-    int16_t ray_previous_x;
-    int16_t ray_previous_y;
-    int16_t dotted_radius;
-    int16_t rings_interval;
-    int16_t scroll_line;
-    WAIT wait;
-    uint8_t rings_angle, radial_angle, radial_velocity, sequence,
-        sequence_stage, resume_stage;
-    int8_t call_phase;
-    bool vortex_wand_done;
-    bool bird_wand_done;
-    bool direction_first;
-    bool direction_second;
-    bool hp_bar_filled;
-    bool dotted_active;
-    bool entrance_active;
-    bool finished;
-} B20M;
-
-typedef enum {
-    B20M_ENTRANCE_DONE,
-    B20M_ENTRANCE_SCROLL,
-    B20M_ENTRANCE_SCROLL_STEP,
-    B20M_ENTRANCE_DIAGONAL = 4,
-    B20M_ENTRANCE_DIAGONAL_STEP,
-} B20M_ENTRANCE;
-
-typedef enum {
-    B20M_TRANSFORM_SHAKE = 1,
-    B20M_TRANSFORM_SHAKE_STEP,
-    B20M_TRANSFORM_SECOND_FORM,
-} B20M_TRANSFORM;
-
-typedef enum {
-    B20M_DEFEAT_SHAKE = 1,
-    B20M_DEFEAT_SHAKE_STEP,
-    B20M_DEFEAT_BONUS,
-} B20M_DEFEAT;
-
 static B20M m_B20M;
+B20M *const p_B20M = &m_B20M;
 
 static RESULT M_LoadGrc(
     VFS *const vfs, const char *const name, const ALLOCATOR *const a,
@@ -275,7 +64,7 @@ static RESULT M_LoadMasks(
     out->interleave = interleave;
     return OK;
 }
-static RESULT M_ValidateAssets(const B20M_ASSETS *const a)
+RESULT B20M_ValidateAssets(const B20M_ASSETS *const a)
 {
     FAIL_IF(a == nullptr, "Missing Sariel assets");
     const BOS *const banks[] = { &a->shield, &a->wand, &a->dress };
@@ -319,23 +108,24 @@ static RESULT M_LoadAssets(
     B20M_ASSETS *const out = data;
     *out = (B20M_ASSETS) {};
     B20M_ASSETS loaded = {};
-    MUST(Boss_LoadBos(vfs, "BOSS6_1.BOS", a, &loaded.shield));
-    MUST(Boss_LoadBos(vfs, "BOSS6_2.BOS", a, &loaded.wand));
-    MUST(Boss_LoadBos(vfs, "BOSS6_3.BOS", a, &loaded.dress));
+    MUST(BossAssets_LoadBos(vfs, "BOSS6_1.BOS", a, &loaded.shield));
+    MUST(BossAssets_LoadBos(vfs, "BOSS6_2.BOS", a, &loaded.wand));
+    MUST(BossAssets_LoadBos(vfs, "BOSS6_3.BOS", a, &loaded.dress));
     MUST(M_LoadGrc(vfs, "BOSS6GR1.GRC", a, &loaded.vortex));
     MUST(M_LoadGrc(vfs, "BOSS6GR2.GRC", a, &loaded.bird));
     MUST(M_LoadGrc(vfs, "BOSS6GR3.GRC", a, &loaded.cross));
     MUST(M_LoadGrc(vfs, "BOSS6GR4.GRC", a, &loaded.splash));
-    MUST(Boss_LoadBackground(vfs, "BOSS6_L.GRP", a, &loaded.lower));
-    MUST(Boss_LoadBackground(vfs, "BOSS6_H.GRP", a, &loaded.upper));
+    MUST(BossAssets_LoadBackground(vfs, "BOSS6_L.GRP", a, &loaded.lower));
+    MUST(BossAssets_LoadBackground(vfs, "BOSS6_H.GRP", a, &loaded.upper));
     const char *const names[] = { "BOSS6_A1.GRP", "BOSS6_A2.GRP",
                                   "BOSS6_A3.GRP", "BOSS6_A4.GRP",
                                   "BOSS6_A5.GRP", "BOSS6_A6.GRP" };
     for (int32_t i = 0; i < 6; i++) {
-        MUST(Boss_LoadBackground(vfs, names[i], a, &loaded.backgrounds[i]));
+        MUST(BossAssets_LoadBackground(
+            vfs, names[i], a, &loaded.backgrounds[i]));
     }
     MUST(M_LoadMasks(vfs, a, &loaded));
-    MUST(M_ValidateAssets(&loaded));
+    MUST(B20M_ValidateAssets(&loaded));
     *out = loaded;
     return OK;
 }
@@ -354,7 +144,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     ASSERT(
         m_B20M.sequence == B20M_SEQUENCE_NONE && Wait_Idle(&m_B20M.wait)
         && !m_B20M.entrance_active);
-    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(B20M_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B20M.shield, 0, &assets->shield)));
     ASSERT(Result_Ignore(BossAnimation_Bind(&m_B20M.wand, 0, &assets->wand)));
     ASSERT(Result_Ignore(BossAnimation_Bind(&m_B20M.dress, 1, &assets->dress)));
@@ -370,7 +160,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     m_B20M.status.phase = B20M_PHASE_START;
     m_B20M.status.frame = 0;
     m_B20M.finished = false;
-    m_B20M.boss_palette = g_Palette.saved;
+    m_B20M.boss_palette = g_Palette->saved;
     HudHp_Begin(2, 8);
 }
 
@@ -406,24 +196,24 @@ static void M_Pi(
                                .stride = image->width,
                                .key = -1 };
     Video_Blit(&view, (GFX_RECT) { 0, 0, image->width, image->height }, 0, 0);
-    Palette_Import(&g_Palette.resource, image->palette);
+    Palette_ImportResource(image->palette);
     if (show) {
-        Palette_Set(&g_Palette, &g_Palette.resource);
+        Palette_SetGlobal(&g_Palette->resource);
     }
 }
 static void M_Palette(const B20M_ASSETS *const assets, const PALETTE *const p)
 {
-    Palette_Set(&g_Palette, p);
+    Palette_SetGlobal(p);
 }
 static void M_Color(
     const B20M_ASSETS *const assets, const uint8_t i, const int16_t r,
     const int16_t g, const int16_t blue)
 {
-    Palette_SetColor(&g_Palette, i, r, g, blue);
+    Palette_SetGlobalColor(i, r, g, blue);
 }
 static void M_CopyOther(const B20M_ASSETS *const assets)
 {
-    const int32_t page = g_Video.drawing_page;
+    const int32_t page = g_Video->drawing_page;
     Video_Copy(page, (GFX_RECT) { 0, 0, 640, 400 }, 1 - page, 0, 0);
 }
 static void M_CopyRows(
@@ -433,7 +223,7 @@ static void M_CopyRows(
         const uint16_t offset = (uint16_t)(top * 80 + i) & 0x7fff;
         if (offset < 32000) {
             memcpy(
-                g_Video.pages[0] + offset * 8, g_Video.pages[1] + offset * 8,
+                g_Video->pages[0] + offset * 8, g_Video->pages[1] + offset * 8,
                 8);
         }
     }
@@ -445,7 +235,7 @@ static void M_Snap(const B20M_ASSETS *const assets)
     for (int32_t y = 0; y < 96; y++) {
         memcpy(
             m_B20M.wand_background + y * 128,
-            g_Video.pages[1] + (m_B20M.wand.top + y) * 640 + left, 128);
+            g_Video->pages[1] + (m_B20M.wand.top + y) * 640 + left, 128);
     }
     Video_SelectDrawingPage(0);
 }
@@ -516,23 +306,23 @@ static void M_Group(
     const B20M_ASSETS *const assets, const int16_t x, const int16_t y,
     const int16_t group, const int16_t speed)
 {
-    Pellets_AddGroup(g_Session.settings.difficulty, x, y, group, speed);
+    Pellets_AddGroup(g_Session->settings.difficulty, x, y, group, speed);
 }
 static void M_Single(
     const B20M_ASSETS *const assets, const int16_t x, const int16_t y,
     const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, x, y, angle, speed, PELLET_REGULAR, 0, 0,
-        0);
+        g_Session->settings.difficulty, x, y, angle, speed, PELLET_REGULAR, 0,
+        0, 0);
 }
 static void M_Rain(
     const B20M_ASSETS *const assets, const int16_t x, const int16_t y,
     const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, x, y, angle, speed, PELLET_GRAVITY, 1, 0,
-        0);
+        g_Session->settings.difficulty, x, y, angle, speed, PELLET_GRAVITY, 1,
+        0, 0);
 }
 static void M_Laser(
     const B20M_ASSETS *const assets, const int32_t index, const int16_t x,
@@ -570,8 +360,8 @@ static void M_Grc(
                     for (int32_t bit = 0; bit < 8; bit++) {
                         if (address >= 0 && address < 32000
                             && pixels[y * 32 + byte * 8 + bit] != 0) {
-                            g_Video.pages[g_Video.drawing_page]
-                                         [address * 8 + bit] = color & 15;
+                            g_Video->pages[g_Video->drawing_page]
+                                          [address * 8 + bit] = color & 15;
                         }
                     }
                 }
@@ -594,7 +384,7 @@ static void M_Mask(
         for (int32_t x = 0; x < 8; x++) {
             const int32_t offset = (top + y) * 640 + left + x;
             if (offset < VIDEO_PAGE_SIZE && (mask[y] & (0x80u >> x)) != 0) {
-                g_Video.pages[g_Video.drawing_page][offset] = color & 15;
+                g_Video->pages[g_Video->drawing_page][offset] = color & 15;
             }
         }
     }
@@ -631,7 +421,7 @@ static void M_Ray(
 }
 static const PALETTE *M_TransitionTarget(const bool fade)
 {
-    return fade ? &g_Palette.resource : &g_Palette.saved;
+    return fade ? &g_Palette->resource : &g_Palette->saved;
 }
 static void M_BirdsReset(void)
 {
@@ -739,7 +529,7 @@ static uint8_t M_CompareByte(
     uint8_t result = 0;
     if (offset < 32000) {
         for (int32_t bit = 0; bit < 8; bit++) {
-            if (g_Video.pages[1][offset * 8 + bit] == 12) {
+            if (g_Video->pages[1][offset * 8 + bit] == 12) {
                 result |= 0x80u >> bit;
             }
         }
@@ -754,7 +544,7 @@ static void M_MaskedByte(
     if (offset < 32000) {
         for (int32_t bit = 0; bit < 8; bit++) {
             if ((mask & (0x80u >> bit)) != 0) {
-                g_Video.pages[0][offset * 8 + bit] = color & 15;
+                g_Video->pages[0][offset * 8 + bit] = color & 15;
             }
         }
     }
@@ -895,7 +685,7 @@ static void M_GustFinish(const B20M_ASSETS *const assets, const int16_t image)
     Video_SelectDrawingPage(1);
     M_Pi(assets, &assets->backgrounds[image], true);
     M_CopyOther(assets);
-    m_B20M.stage_palette = g_Palette.saved;
+    m_B20M.stage_palette = g_Palette->saved;
     Video_SelectDrawingPage(0);
     M_Hud(assets);
     HudHp_Rerender(m_B20M.status.hp);
@@ -1364,7 +1154,7 @@ static void M_Sling(const B20M_ASSETS *const assets)
         && m_B20M.status.frame % m_B20M.pattern_state == 0) {
         const uint8_t angle = (uint8_t)M_Random(assets);
         Pellets_AddSingle(
-            g_Session.settings.difficulty, Math16_PolarY(320, 40, angle),
+            g_Session->settings.difficulty, Math16_PolarY(320, 40, angle),
             Math16_PolarX(180, 40, angle), 0, 0, PELLET_SLING_AIMED, 72, 0, 0);
     }
     if (m_B20M.status.frame >= 299) {
@@ -1449,8 +1239,8 @@ static void M_TopRain(const B20M_ASSETS *const assets)
     if (m_B20M.status.frame % 8 == 0) {
         M_Group(
             assets, M_Random(assets) % 640, 64,
-            g_Session.settings.difficulty == 3 ? PELLET_GROUP_RANDOM_WIDE
-                                               : PELLET_GROUP_SINGLE,
+            g_Session->settings.difficulty == 3 ? PELLET_GROUP_RANDOM_WIDE
+                                                : PELLET_GROUP_SINGLE,
             44);
     }
 }
@@ -1493,10 +1283,10 @@ static void M_Radial(const B20M_ASSETS *const assets)
         }
         M_Single(assets, 320, 160, (uint8_t)(m_B20M.radial_angle - 4), 96);
         M_Single(assets, 320, 160, (uint8_t)(m_B20M.radial_angle + 4), 96);
-        if (g_Session.settings.difficulty >= 2) {
+        if (g_Session->settings.difficulty >= 2) {
             M_Single(assets, 320, 160, (uint8_t)(m_B20M.radial_angle - 4), 64);
             M_Single(assets, 320, 160, (uint8_t)(m_B20M.radial_angle + 4), 64);
-            if (g_Session.settings.difficulty == 3) {
+            if (g_Session->settings.difficulty == 3) {
                 M_Single(assets, 320, 160, m_B20M.radial_angle, 64);
                 M_Single(assets, 320, 160, m_B20M.radial_angle, 48);
             }
@@ -1925,8 +1715,8 @@ static void M_Leaves(const B20M_ASSETS *const assets, const int16_t interval)
 }
 static void M_Hud(const B20M_ASSETS *const assets)
 {
-    g_Stage.first_stage = true;
-    StageTimer_Redraw(true, g_Stage.timer_initialized, 0);
+    Stage_SetFirstStage(true);
+    StageTimer_Redraw(true, g_Stage->timer_initialized, 0);
     Hud_ScoreAndCombo();
 }
 static void M_BeginEntrance(const void *const data)
@@ -1982,19 +1772,17 @@ static bool M_ResumeEntrance(
             M_Pi(assets, &assets->backgrounds[0], true);
             Video_SelectDrawingPage(0);
             m_B20M.sequence_stage = B20M_ENTRANCE_DIAGONAL_STEP;
-            if (!Transition_BeginDiagonal(
-                    &g_Palette, &g_Palette.saved, M_TransitionTarget(false),
-                    assets->interleave, 40, tick)) {
+            if (!Palette_BeginGlobalDiagonalTransition(
+                    M_TransitionTarget(false), assets->interleave, 40, tick)) {
                 return false;
             }
             continue;
         case B20M_ENTRANCE_DIAGONAL_STEP:
-            if (!Transition_Advance(
-                    &g_Palette, &g_Palette.saved, M_TransitionTarget(false),
-                    assets->interleave, tick)) {
+            if (!Palette_AdvanceGlobalDiagonalTransition(
+                    M_TransitionTarget(false), assets->interleave, tick)) {
                 return false;
             }
-            Rng_Seed(g_Session.frame_rand);
+            Rng_Seed(g_Session->frame_rand);
             m_B20M.entrance_active = false;
             Palette_SetStage(&m_B20M.stage_palette);
             m_B20M.sequence_stage = B20M_ENTRANCE_DONE;
@@ -2058,20 +1846,20 @@ static void M_BeginTransform(const B20M_ASSETS *const assets)
 {
     m_B20M.status.frame = 0;
     m_B20M.hit.frame = 399;
-    Shots_EraseAndReset();
-    Pellets_EraseAndResetMoving();
+    Shots_RemoveAll();
+    Pellets_RemoveAll();
     ShootoutLasers_EraseAndReset(10);
     Orb_Relaunch();
     Player_Center();
     Player_StopActions();
-    Player_Reset(g_Session.settings.difficulty);
+    Player_Reset(g_Session->settings.difficulty);
     m_B20M.hit.invincible = false;
-    Rng_Seed(g_Session.frame_rand);
+    Rng_Seed(g_Session->frame_rand);
     Sound_Fade();
     Video_SelectDrawingPage(1);
     // The absent BOSS6.GRP leaves the previous image and palette intact.
     M_Color(assets, 15, 0, 0, 0);
-    m_B20M.boss_palette = g_Palette.saved;
+    m_B20M.boss_palette = g_Palette->saved;
     M_CopyOther(assets);
     Video_SelectDrawingPage(1);
     M_Pi(assets, &assets->backgrounds[4], false);
@@ -2104,11 +1892,10 @@ static bool M_Transform(const B20M_ASSETS *const assets, const uint64_t tick)
                 return Wait_Scroll(&m_B20M.wait, 0);
             }
             for (int32_t i = 0; i < 3; i++) {
-                g_Palette.resource.colors[15][i] = 0;
+                Palette_SetGlobalResourceComponent(15, i, 0);
             }
-            ASSERT(Transition_BeginDiagonal(
-                &g_Palette, &g_Palette.saved, M_TransitionTarget(true),
-                assets->interleave, 0, tick));
+            ASSERT(Palette_BeginGlobalDiagonalTransition(
+                M_TransitionTarget(true), assets->interleave, 0, tick));
             Video_SelectDrawingPage(1);
             Sound_Load(14);
             Sound_Play();
@@ -2134,7 +1921,7 @@ static bool M_Transform(const B20M_ASSETS *const assets, const uint64_t tick)
             m_B20M.patterns_done = 0;
             m_B20M.status.phase = B20M_PHASE_SECOND_FORM;
             Player_EndInvincibility();
-            m_B20M.boss_palette = g_Palette.saved;
+            m_B20M.boss_palette = g_Palette->saved;
             m_B20M.stage_palette = m_B20M.boss_palette;
             m_B20M.status.hp = 6;
             HudHp_Begin(3, 10);
@@ -2153,7 +1940,7 @@ static void M_BeginDefeat(const B20M_ASSETS *const assets)
     Video_SelectDrawingPage(1);
     M_Pi(assets, &assets->backgrounds[5], true);
     M_Color(assets, 6, 0, 0, 0);
-    m_B20M.boss_palette = g_Palette.saved;
+    m_B20M.boss_palette = g_Palette->saved;
     M_CopyOther(assets);
     Video_SelectDrawingPage(0);
     m_B20M.sequence = B20M_SEQUENCE_DEFEAT;
@@ -2186,10 +1973,11 @@ static bool M_Defeat(const B20M_ASSETS *const assets, const uint64_t tick)
                 if (m_B20M.status.frame % 2 == 0) {
                     for (int32_t i = 0; i < 16; i++) {
                         for (int32_t j = 0; j < 3; j++) {
-                            g_Palette.saved.colors[i][j]--;
+                            Palette_SetGlobalSavedComponent(
+                                i, j, g_Palette->saved.colors[i][j] - 1);
                         }
                     }
-                    M_Palette(assets, &g_Palette.saved);
+                    M_Palette(assets, &g_Palette->saved);
                 }
                 if (m_B20M.status.frame > 230) {
                     m_B20M.sequence_stage = B20M_DEFEAT_BONUS;
@@ -2205,7 +1993,7 @@ static bool M_Defeat(const B20M_ASSETS *const assets, const uint64_t tick)
             for (int32_t i = 0; i < 5; i++) {
                 Stage_AddScore(10000);
             }
-            g_Stage.game_cleared = true;
+            Stage_SetGameCleared();
             m_B20M.finished = true;
             m_B20M.sequence = B20M_SEQUENCE_NONE;
             return true;
@@ -2245,34 +2033,34 @@ static void M_Pulse(const B20M_ASSETS *const assets)
         return;
     }
     M_Palette(assets, &m_B20M.boss_palette);
-    int8_t *const color = g_Palette.saved.colors[6];
+    const int8_t *const color = g_Palette->saved.colors[6];
     if (m_B20M.patterns_done == 0) {
         if (color[0] < 10) {
-            color[0]++;
+            Palette_SetGlobalSavedComponent(6, 0, color[0] + 1);
         } else {
             m_B20M.patterns_done = 1;
         }
         if (color[1] < 10) {
-            color[1]++;
+            Palette_SetGlobalSavedComponent(6, 1, color[1] + 1);
         }
         if (color[2] < 6) {
-            color[2]++;
+            Palette_SetGlobalSavedComponent(6, 2, color[2] + 1);
         }
     } else {
         if (color[0] > 0) {
-            color[0]--;
+            Palette_SetGlobalSavedComponent(6, 0, color[0] - 1);
         } else {
             m_B20M.patterns_done = 0;
         }
         if (color[1] > 0) {
-            color[1]--;
+            Palette_SetGlobalSavedComponent(6, 1, color[1] - 1);
         }
         if (color[2] > 0) {
-            color[2]--;
+            Palette_SetGlobalSavedComponent(6, 2, color[2] - 1);
         }
     }
-    M_Palette(assets, &g_Palette.saved);
-    m_B20M.boss_palette = g_Palette.saved;
+    M_Palette(assets, &g_Palette->saved);
+    m_B20M.boss_palette = g_Palette->saved;
 }
 static bool M_Pattern(const B20M_ASSETS *const assets)
 {
@@ -2414,7 +2202,7 @@ static void M_AfterGust(const B20M_ASSETS *const assets)
     M_PhaseNext(
         assets, phase == B20M_PHASE_GUST_4 ? B20M_PHASE_BIRDS : phase + 1);
     if (phase != B20M_PHASE_GUST_1) {
-        m_B20M.boss_palette = g_Palette.saved;
+        m_B20M.boss_palette = g_Palette->saved;
     }
     m_B20M.patterns_until_next = phase == B20M_PHASE_GUST_1
         ? 1 + M_Random(assets) % 5
@@ -2470,9 +2258,9 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         m_B20M.status.frame = -1;
         m_B20M.hit.frame = 0;
         m_B20M.hit.invincible = false;
-        m_B20M.boss_palette = g_Palette.saved;
+        m_B20M.boss_palette = g_Palette->saved;
         m_B20M.stage_palette = m_B20M.boss_palette;
-        Rng_Seed(g_Session.frame_rand);
+        Rng_Seed(g_Session->frame_rand);
         m_B20M.sequence = B20M_SEQUENCE_RINGS;
         return M_RingEntrance(assets, tick);
     }

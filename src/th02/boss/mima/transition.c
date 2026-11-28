@@ -27,27 +27,6 @@ typedef enum {
 } MIMA_SCRIPT;
 
 typedef enum {
-    MIMA_TALK_ENTER,
-    MIMA_TALK_INTRO,
-    MIMA_TALK_APPEARANCE_BEGIN,
-    MIMA_TALK_APPEARANCE,
-    MIMA_TALK_COMMON,
-    MIMA_TALK_BRANCH_BEGIN,
-    MIMA_TALK_BRANCH,
-    MIMA_TALK_WINGED_BEGIN,
-    MIMA_TALK_WINGED,
-    MIMA_TALK_LEAVE,
-    MIMA_TALK_FORM_BEGIN,
-    MIMA_TALK_FORM_BOXES,
-    MIMA_TALK_FORM_END,
-    MIMA_TALK_POST_RUN,
-    MIMA_TALK_FLASH_FORCE,
-    MIMA_TALK_FADE,
-    MIMA_TALK_DELAY,
-    MIMA_TALK_DONE,
-} MIMA_TALK_PHASE;
-
-typedef enum {
     M_BOX,
     M_FLASH,
     M_DELAY,
@@ -59,19 +38,6 @@ typedef struct {
     uint8_t frames;
 } M_OPERATION;
 
-typedef struct {
-    DIALOGUE_SEQUENCE sequence;
-    DIALOGUE_SUMMON summon;
-    DIALOGUE_RUNTIME runtime;
-    WAIT wait;
-    MIMA_TALK_PHASE phase;
-    MIMA_TALK_PHASE after_wait;
-    uint16_t continues;
-    uint8_t faces[2];
-    uint8_t operation;
-    bool box_active;
-} MIMA_TALK;
-
 static const M_OPERATION m_Post[] = {
     { M_BOX, 0 },    { M_FLASH, 0 },  { M_DELAY, 10 }, { M_BOX, 0 },
     { M_DELAY, 30 }, { M_FLASH, 0 },  { M_DELAY, 20 }, { M_BOX, 0 },
@@ -80,6 +46,7 @@ static const M_OPERATION m_Post[] = {
 };
 
 static MIMA_TALK m_Talk;
+MIMA_TALK *const p_Talk = &m_Talk;
 
 static void M_Music(
     const BOSS_MUSIC *const music, const BOSS_MUSIC_REQUEST request)

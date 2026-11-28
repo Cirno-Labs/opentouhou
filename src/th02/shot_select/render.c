@@ -122,3 +122,11 @@ void ShotSelectRender_Begin(
     ShotSelectRender_Description(assets, 2, 7);
     M_Header(session, assets);
 }
+
+const SHOT_SELECT_RENDER g_ShotSelectRender = {
+    .begin = ShotSelectRender_Begin,
+    .description = ShotSelectRender_Description,
+    .background = ShotSelectRender_Background,
+    .picture = ShotSelectRender_Picture,
+    .darken = ShotSelectRender_Darken,
+};

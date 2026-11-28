@@ -73,3 +73,10 @@ void MainMenuRender_Restore(const TITLE_ASSETS *const assets)
     Video_CopyPage(0);
     Video_AccessPage(0);
 }
+
+const MAIN_MENU_RENDER g_MainMenuRender = {
+    .init = MainMenuRender_Init,
+    .put = MainMenuRender_Put,
+    .restore = MainMenuRender_Restore,
+    .clear = Menu_Clear,
+};

@@ -1,4 +1,4 @@
-#include "th01/boss/private.h"
+#include "th01/boss/private_b15j.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"
 #include "th01/rng.h"
@@ -14,51 +14,16 @@
 
 #include <string.h>
 
-typedef struct {
-    BOS souls;
-    BOS tears;
-    PTN ripples;
-    PI_IMAGE background;
-    PALETTE palette;
-    SCENE_DATA next_scene;
-} B15J_ASSETS;
-
-typedef enum {
-    B15J_PHASE_ENTRANCE = 0,
-    B15J_PHASE_SPIRAL = 2,
-    B15J_PHASE_RECOLOR = 3,
-    B15J_PHASE_SOULS = 4,
-    B15J_PHASE_TEARS = 5,
-    B15J_PHASE_PATTERNS = 6,
-} B15J_PHASE;
-
-typedef struct {
-    BOSS_ENTITY souls[2];
-    BOSS_ENTITY tears[10];
-    int8_t tear_frame[10];
-    BOSS_HIT hit;
-    PALETTE boss_palette;
-    PALETTE post_defeat;
-    BOSS_DEFEAT defeat;
-    BOSS_STATE status;
-    int16_t pattern_state;
-    int16_t subphase;
-    int16_t patterns_done;
-    int16_t spiral_distance;
-    int16_t random_range;
-    int16_t ring_radius;
-    uint8_t spiral_angle;
-    uint8_t spiral_drift;
-    uint8_t four_angle;
-    uint8_t entrance_stage;
-    bool hp_bar_filled;
-    bool entrance_active;
-    bool entrance_waiting;
-    bool defeating;
-    bool finished;
-} B15J;
-
 static B15J m_B15J;
+B15J *const p_B15J = &m_B15J;
+
+static const BOSS_DEFEAT_PARAMS m_Defeat = {
+    .shift = 16,
+    .step = 2,
+    .whiteout_period = 7,
+    .whitein_period = 5,
+    .clears_stage = true,
+};
 
 static RESULT M_LoadRipples(
     VFS *const vfs, const ALLOCATOR *const a, PTN *const out)
@@ -70,7 +35,7 @@ static RESULT M_LoadRipples(
     return result;
 }
 
-static RESULT M_ValidateAssets(const B15J_ASSETS *const a)
+RESULT B15J_ValidateAssets(const B15J_ASSETS *const a)
 {
     FAIL_IF(
         a == nullptr || a->souls.pixels == nullptr
@@ -91,18 +56,18 @@ static RESULT M_ValidateAssets(const B15J_ASSETS *const a)
     return OK;
 }
 
-static RESULT M_LoadAssets(
+RESULT B15J_LoadAssets(
     VFS *const vfs, const ALLOCATOR *const a, void *const data)
 {
     B15J_ASSETS *const out = data;
     *out = (B15J_ASSETS) {};
     B15J_ASSETS loaded = {};
-    MUST(Boss_LoadBos(vfs, "TAMASII.BOS", a, &loaded.souls));
-    MUST(Boss_LoadBos(vfs, "TAMASII2.BOS", a, &loaded.tears));
+    MUST(BossAssets_LoadBos(vfs, "TAMASII.BOS", a, &loaded.souls));
+    MUST(BossAssets_LoadBos(vfs, "TAMASII2.BOS", a, &loaded.tears));
     MUST(M_LoadRipples(vfs, a, &loaded.ripples));
-    MUST(Boss_LoadBackground(vfs, "BOSS4.GRP", a, &loaded.background));
+    MUST(BossAssets_LoadBackground(vfs, "BOSS4.GRP", a, &loaded.background));
     MUST(Scene_Load(vfs, 6, a, &loaded.next_scene));
-    MUST(M_ValidateAssets(&loaded));
+    MUST(B15J_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;
     return OK;
@@ -118,14 +83,14 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     const B15J_ASSETS *const assets = data;
     Boss_Select(&m_B15J.status);
     ASSERT(!m_B15J.entrance_active && !m_B15J.defeating);
-    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(B15J_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15J.souls[0], 0, &assets->souls)));
     BossEntity_CopyMetadata(&m_B15J.souls[1], &m_B15J.souls[0]);
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15J.tears[0], 1, &assets->tears)));
     for (int32_t i = 1; i < 10; i++) {
         BossEntity_CopyMetadata(&m_B15J.tears[i], &m_B15J.tears[0]);
     }
-    m_B15J.boss_palette = g_Palette.saved;
+    m_B15J.boss_palette = g_Palette->saved;
     for (int32_t i = 0; i < 10; i++) {
         m_B15J.tear_frame[i] = 0;
     }
@@ -140,7 +105,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
             &m_B15J.souls[i], 0, 0, (BOSS_BOUNDS) { 32, 576, 64, 400 });
     }
     m_B15J.post_defeat = (PALETTE) {};
-    Particles_Init();
+    Particles_ResetStage();
 }
 
 static int8_t M_Byte(const int32_t value)
@@ -173,8 +138,8 @@ static void M_CopyLine(const int16_t y, const uint16_t mask)
     }
     for (int32_t x = 0; x < 640; x++) {
         const int32_t shift = (x & 8) + 7 - (x & 7);
-        g_Video.pages[0][y * 640 + x] =
-            (mask & (1u << shift)) != 0 ? g_Video.pages[1][y * 640 + x] : 0;
+        g_Video->pages[0][y * 640 + x] =
+            (mask & (1u << shift)) != 0 ? g_Video->pages[1][y * 640 + x] : 0;
     }
     Video_SelectDrawingPage(0);
 }
@@ -216,10 +181,10 @@ static bool M_Entrance(
         m_B15J.status.frame = 0;
         m_B15J.hit.frame = 0;
         m_B15J.hit.invincible = false;
-        m_B15J.boss_palette = g_Palette.saved;
+        m_B15J.boss_palette = g_Palette->saved;
         const int32_t colors[] = { 2, 6, 8, 11 };
         for (int32_t i = 0; i < 4; i++) {
-            Palette_SetColor(&g_Palette, colors[i], 15, 15, 15);
+            Palette_SetGlobalColor(colors[i], 15, 15, 15);
         }
     }
     while (true) {
@@ -271,9 +236,9 @@ static bool M_Entrance(
                 m_B15J.status.phase = B15J_PHASE_SPIRAL;
                 m_B15J.patterns_done = 0;
                 m_B15J.status.frame = 0;
-                Palette_Set(&g_Palette, &m_B15J.boss_palette);
+                Palette_SetGlobal(&m_B15J.boss_palette);
                 m_B15J.hp_bar_filled = false;
-                Palette_SetStage(&g_Palette.saved);
+                Palette_SetStage(&g_Palette->saved);
                 m_B15J.entrance_active = false;
                 return true;
             }
@@ -283,12 +248,14 @@ static bool M_Entrance(
                     for (int32_t i = 0; i < 4; i++) {
                         const int32_t color = colors[i];
                         if (m_B15J.boss_palette.colors[color][component]
-                            < g_Palette.saved.colors[color][component]) {
-                            g_Palette.saved.colors[color][component]--;
+                            < g_Palette->saved.colors[color][component]) {
+                            Palette_SetGlobalSavedComponent(
+                                color, component,
+                                g_Palette->saved.colors[color][component] - 1);
                         }
                     }
                 }
-                Palette_Set(&g_Palette, &g_Palette.saved);
+                Palette_SetGlobal(&g_Palette->saved);
             }
             m_B15J.entrance_waiting = m_B15J.status.frame % 2 != 0;
         }
@@ -414,7 +381,7 @@ static void M_GroupSoul(
     const PELLET_GROUP group, const int16_t speed, const int16_t dy)
 {
     Pellets_AddGroup(
-        g_Session.settings.difficulty, Math16_Wrap(m_B15J.souls[i].left + 12),
+        g_Session->settings.difficulty, Math16_Wrap(m_B15J.souls[i].left + 12),
         Math16_Wrap(m_B15J.souls[i].top + dy), group, speed);
 }
 
@@ -425,8 +392,8 @@ static void M_Single(
     const int16_t cy)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, x, y, angle, speed, motion, motion_speed,
-        cx, cy);
+        g_Session->settings.difficulty, x, y, angle, speed, motion,
+        motion_speed, cx, cy);
 }
 
 static void M_SymmetricSpiral(
@@ -684,22 +651,22 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
     } else if (m_B15J.status.phase == B15J_PHASE_RECOLOR) {
         m_B15J.status.frame = Math16_Wrap(m_B15J.status.frame + 1);
         if (m_B15J.status.frame % 20 == 19) {
-            g_Palette.saved.colors[5][0] =
-                M_Byte(g_Palette.saved.colors[5][0] + 1);
-            g_Palette.saved.colors[5][2] =
-                M_Byte(g_Palette.saved.colors[5][2] - 1);
-            g_StagePalette.colors[5][0] =
-                M_Byte(g_StagePalette.colors[5][0] + 1);
-            g_StagePalette.colors[5][2] =
-                M_Byte(g_StagePalette.colors[5][2] - 1);
-            Palette_Set(&g_Palette, &g_StagePalette);
+            Palette_SetGlobalSavedComponent(
+                5, 0, M_Byte(g_Palette->saved.colors[5][0] + 1));
+            Palette_SetGlobalSavedComponent(
+                5, 2, M_Byte(g_Palette->saved.colors[5][2] - 1));
+            Palette_SetStageComponent(
+                5, 0, M_Byte(g_StagePalette->colors[5][0] + 1));
+            Palette_SetStageComponent(
+                5, 2, M_Byte(g_StagePalette->colors[5][2] - 1));
+            Palette_SetGlobal(g_StagePalette);
         }
         if (m_B15J.status.frame >= 100) {
             m_B15J.status.phase = B15J_PHASE_SOULS;
             m_B15J.status.frame = 0;
             m_B15J.subphase = 0;
-            Palette_Set(&g_Palette, &g_StagePalette);
-            m_B15J.boss_palette = g_Palette.saved;
+            Palette_SetGlobal(g_StagePalette);
+            m_B15J.boss_palette = g_Palette->saved;
         }
     } else if (m_B15J.status.phase == B15J_PHASE_SOULS) {
         M_Common();
@@ -759,9 +726,9 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         M_Hit(assets, miko);
         if (m_B15J.status.hp <= 0) {
             Sound_Fade();
-            Pellets_EraseAndResetMoving();
+            Pellets_RemoveAll();
             ShootoutLasers_EraseAndReset(4);
-            BossDefeat_Begin(&m_B15J.defeat, BOSS_DEFEAT_REGULAR);
+            BossDefeat_Begin(&m_B15J.defeat, m_Defeat);
             m_B15J.defeating = true;
             return M_Death(assets, miko);
         }
@@ -787,7 +754,7 @@ static void M_FinishEntrance(void)
 
 const BOSS_STRATEGY g_BossKikuri = {
     .assets_size = sizeof(B15J_ASSETS),
-    .load_assets = M_LoadAssets,
+    .load_assets = B15J_LoadAssets,
     .init = M_Init,
     .setup = M_Setup,
     .update = M_Update,
@@ -795,4 +762,5 @@ const BOSS_STRATEGY g_BossKikuri = {
     .begin_life = M_BeginLife,
     .finish_entrance = M_FinishEntrance,
     .song = 9,
+    .defeat = m_Defeat,
 };

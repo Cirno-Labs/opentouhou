@@ -20,6 +20,7 @@
 
 static BOMB m_Bomb;
 const BOMB *const g_Bomb = &m_Bomb;
+BOMB *const p_Bomb = &m_Bomb;
 
 typedef struct {
     bool (*update)(

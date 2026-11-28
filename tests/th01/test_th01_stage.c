@@ -1,18 +1,18 @@
 #include "tests/test.h"
+#include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_video.h"
 #include "tests/th01/th01_world.h"
-#include "th01/hud.c"
-#include "th01/items.c"
-#include "th01/orb.c"
-#include "th01/orb.h"
+#include "th01/hud/hud_private.h"
+#include "th01/items_private.h"
+#include "th01/orb_private.h"
 #include "th01/pellets.h"
-#include "th01/player.c"
-#include "th01/player.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shots.h"
 #include "th01/stage.h"
-#include "th01/stage_objects.c"
+#include "th01/stage/private.h"
+#include "th01/stage/private_objects.h"
 
 #include "core/base/arena.h"
 #include "pc98/zun/master_rng.h"
@@ -48,9 +48,9 @@ static void M_Init(CASE *const state, const uint8_t hp)
 {
     *state = (CASE) {};
     Th01Test_ResetWorld();
-    memset(&m_Orb, 0, sizeof(m_Orb));
-    m_Orb.left = 96;
-    m_Orb.top = 128;
+    memset(p_Orb, 0, sizeof(*p_Orb));
+    p_Orb->left = 96;
+    p_Orb->top = 128;
     g_Rng = 1;
     Arena_Init(&state->arena, "stage", 1024 * 1024);
     Video_Init(Arena_Allocator(&state->arena));
@@ -76,8 +76,8 @@ static void M_Init(CASE *const state, const uint8_t hp)
         digits, 10, Arena_Allocator(&state->arena), &state->font)));
     Hud_Init(Arena_Allocator(&state->arena));
     Hud_Load(nullptr, &state->sprites, &state->font);
-    g_Session.stage_id = 0;
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
+    p_Session->stage_id = 0;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
 }
 
 TEST(card_scores_caps_widths_and_synchronous_order)
@@ -87,10 +87,10 @@ TEST(card_scores_caps_widths_and_synchronous_order)
         for (int32_t variant = 0; variant < 9; variant++) {
             CASE state;
             M_Init(&state, 0);
-            g_Stage.combo = combos[variant];
-            g_Session.stage_id = 19;
-            g_Session.settings.difficulty = rank;
-            const ORB orb = m_Orb;
+            p_Stage->combo = combos[variant];
+            p_Session->stage_id = 19;
+            p_Session->settings.difficulty = rank;
+            const ORB orb = *p_Orb;
             const uint32_t rng = g_Rng;
             Stage_HitTestCards();
             const uint32_t square = (uint32_t)(int32_t)Math16_Wrap(
@@ -99,16 +99,16 @@ TEST(card_scores_caps_widths_and_synchronous_order)
             if (expected > 25600) {
                 expected = 25600;
             }
-            CHECK_EQ_INT(g_Stage.score, expected);
-            CHECK_EQ_INT(g_Stage.combo, Math16_Wrap(combos[variant] + 1));
+            CHECK_EQ_INT(g_Stage->score, expected);
+            CHECK_EQ_INT(g_Stage->combo, Math16_Wrap(combos[variant] + 1));
             CHECK_EQ_INT(
-                g_Stage.maximum_combo,
+                g_Stage->maximum_combo,
                 combos[variant] == 32767 ? 0 : combos[variant] + 1);
-            CHECK_EQ_INT(m_StageObjects.cards[0].flag, STAGE_CARD_FLIPPING);
-            CHECK(memcmp(&orb, &m_Orb, sizeof(ORB)) == 0);
+            CHECK_EQ_INT(p_StageObjects->cards[0].flag, STAGE_CARD_FLIPPING);
+            CHECK(memcmp(&orb, p_Orb, sizeof(ORB)) == 0);
             CHECK_EQ_INT(g_Rng, rng);
-            CHECK_EQ_INT(m_Hud.score_previous, expected);
-            CHECK_EQ_INT(M_Items(m_Items.points, ITEMS_POINT_COUNT), 1);
+            CHECK_EQ_INT(p_Hud->score_previous, expected);
+            CHECK_EQ_INT(M_Items(p_Items->points, ITEMS_POINT_COUNT), 1);
             Arena_Free(&state.arena);
         }
     }
@@ -120,18 +120,18 @@ TEST(all_postfix_drop_cycles_and_bomb_short_circuit)
         for (int32_t damaging = 0; damaging < 2; damaging++) {
             CASE state;
             M_Init(&state, 0);
-            m_Player.bomb_damaging = damaging;
-            g_Stage.flip_cycle = (uint8_t)cycle;
+            p_Player->bomb_damaging = damaging;
+            p_Stage->flip_cycle = (uint8_t)cycle;
             const uint32_t rng = g_Rng;
             Stage_HitTestCards();
             const uint8_t next = (uint8_t)(cycle + 1);
             const bool drop = cycle % 10 == 0;
             const bool reset = drop && next >= 140;
-            CHECK_EQ_INT(g_Stage.flip_cycle, reset ? 1 : next);
+            CHECK_EQ_INT(g_Stage->flip_cycle, reset ? 1 : next);
             CHECK_EQ_INT(
-                M_Items(m_Items.bombs, ITEMS_BOMB_COUNT), reset && !damaging);
+                M_Items(p_Items->bombs, ITEMS_BOMB_COUNT), reset && !damaging);
             CHECK_EQ_INT(
-                M_Items(m_Items.points, ITEMS_POINT_COUNT),
+                M_Items(p_Items->points, ITEMS_POINT_COUNT),
                 drop && (!reset || damaging));
             CHECK_EQ_INT(g_Rng, rng);
             Arena_Free(&state.arena);
@@ -141,15 +141,15 @@ TEST(all_postfix_drop_cycles_and_bomb_short_circuit)
         for (uint32_t seed = 1; seed < 12; seed++) {
             CASE state;
             M_Init(&state, 0);
-            m_StageObjects.cards[0].flag = flag;
-            m_Player.bomb_damaging = true;
-            m_Orb.left = 500;
+            p_StageObjects->cards[0].flag = flag;
+            p_Player->bomb_damaging = true;
+            p_Orb->left = 500;
             g_Rng = seed;
             uint32_t expected = seed;
             const bool selected = MasterRng_Next(&expected) % 4 != 0;
             Stage_HitTestCards();
             CHECK_EQ_INT(g_Rng, expected);
-            CHECK_EQ_INT(g_Stage.combo, selected && flag == 0);
+            CHECK_EQ_INT(g_Stage->combo, selected && flag == 0);
             Arena_Free(&state.arena);
         }
     }
@@ -161,8 +161,8 @@ TEST(card_hp_frames_revenge_and_stage_exit)
         for (int32_t stage = 9; stage <= 10; stage++) {
             CASE state;
             M_Init(&state, (uint8_t)hp);
-            g_Session.settings.difficulty = SETTINGS_DIFFICULTY_LUNATIC;
-            g_Session.stage_id = (int16_t)(stage - 1);
+            p_Session->settings.difficulty = SETTINGS_DIFFICULTY_LUNATIC;
+            p_Session->stage_id = (int16_t)(stage - 1);
             const size_t used = state.arena.used;
             for (int32_t flip = 0; flip <= hp; flip++) {
                 Stage_HitTestCards();
@@ -170,13 +170,13 @@ TEST(card_hp_frames_revenge_and_stage_exit)
                     Stage_UpdateCards(&state.sprites, &state.font);
                     CHECK_EQ_INT(M_Pellets(), flip + (frame >= 24));
                     CHECK_EQ_INT(
-                        m_StageObjects.cards[0].flip_frame,
+                        p_StageObjects->cards[0].flip_frame,
                         frame == 29 ? 0 : frame + 1);
                     CHECK_EQ_INT(
-                        m_StageObjects.cards[0].hp,
+                        p_StageObjects->cards[0].hp,
                         hp - flip - (frame == 29 && hp > flip));
-                    CHECK_EQ_INT(g_Stage.cleared, flip == hp && frame == 29);
-                    CHECK_EQ_INT(m_Player.is_hit, g_Stage.cleared);
+                    CHECK_EQ_INT(g_Stage->cleared, flip == hp && frame == 29);
+                    CHECK_EQ_INT(p_Player->is_hit, g_Stage->cleared);
                     CHECK_EQ_INT(state.arena.used, used);
                 }
             }
@@ -192,11 +192,11 @@ TEST(score_popups_render_before_card_animation_and_clear_at_28)
     CHECK(IS_OK(Stage_ValidateScoreFont(&state.font)));
     const uint32_t scores[] = { 100, 1000, 1001, 10000, 10001, 25600 };
     for (int32_t i = 0; i < 6; i++) {
-        STAGE_CARD *const card = &m_StageObjects.cards[0];
+        STAGE_CARD *const card = &p_StageObjects->cards[0];
         card->flag = STAGE_CARD_ALIVE;
         card->score = scores[i];
         card->flip_frame = 15;
-        memset(g_Video.pages[0], 4, VIDEO_PAGE_SIZE);
+        memset(g_Video->pages[0], 4, VIDEO_PAGE_SIZE);
         Stage_UpdateCards(&state.sprites, &state.font);
         const int16_t x = card->left
             + (scores[i] > 10000      ? -8
@@ -206,7 +206,7 @@ TEST(score_popups_render_before_card_animation_and_clear_at_28)
         card->flip_frame = 28;
         Stage_UpdateCards(&state.sprites, &state.font);
         CHECK_EQ_INT(card->score, 0);
-        CHECK_EQ_INT(g_Video.drawing_page, 0);
+        CHECK_EQ_INT(g_Video->drawing_page, 0);
     }
     Arena_Free(&state.arena);
 }
@@ -218,13 +218,13 @@ TEST(card_contact_bounds_and_portal_do_not_change_orb)
         for (int32_t x = 0; x < 5; x++) {
             CASE state;
             M_Init(&state, 0);
-            m_Orb.left += deltas[x];
-            m_Orb.top += deltas[y];
-            m_Orb.in_portal = true;
-            const ORB orb = m_Orb;
+            p_Orb->left += deltas[x];
+            p_Orb->top += deltas[y];
+            p_Orb->in_portal = true;
+            const ORB orb = *p_Orb;
             Stage_HitTestCards();
-            CHECK_EQ_INT(g_Stage.combo, x > 0 && x < 4 && y > 0 && y < 4);
-            CHECK(memcmp(&orb, &m_Orb, sizeof(ORB)) == 0);
+            CHECK_EQ_INT(g_Stage->combo, x > 0 && x < 4 && y > 0 && y < 4);
+            CHECK(memcmp(&orb, p_Orb, sizeof(ORB)) == 0);
             Arena_Free(&state.arena);
         }
     }
@@ -234,7 +234,7 @@ TEST(card_animation_overwrites_the_preceding_popup)
 {
     CASE state;
     M_Init(&state, 0);
-    STAGE_CARD *const card = &m_StageObjects.cards[0];
+    STAGE_CARD *const card = &p_StageObjects->cards[0];
     card->flag = STAGE_CARD_FLIPPING;
     card->flip_frame = 18;
     card->score = 1000;
@@ -242,6 +242,6 @@ TEST(card_animation_overwrites_the_preceding_popup)
     Stage_UpdateCards(&state.sprites, &state.font);
     CHECK_EQ_INT(Th01Test_Pixel(0, 104, 136), 3);
     CHECK_EQ_INT(Th01Test_Pixel(1, 104, 136), 3);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     Arena_Free(&state.arena);
 }

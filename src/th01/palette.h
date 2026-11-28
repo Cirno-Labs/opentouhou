@@ -1,5 +1,6 @@
 #pragma once
 
+#include "th01/interleave.h"
 #include "th01/video.h"
 
 // Holds signed RGB components in the original's four-bit domain, in R, G, B
@@ -30,11 +31,17 @@ typedef struct {
 
 // The one live gameplay palette, and the color it is restored to after a
 // boss hit flash or a fade.
-extern PALETTE_STATE g_Palette;
-extern PALETTE g_StagePalette;
+extern const PALETTE_STATE *const g_Palette;
+extern const PALETTE *const g_StagePalette;
 
 // Sets the colors that a boss hit flash or a fade restores.
 void Palette_SetStage(const PALETTE *colors);
+
+// Clears the stage-restore color, e.g. when leaving gameplay.
+void Palette_ResetStage(void);
+
+// Replaces the live resource palette outright, without showing it.
+void Palette_SetResource(const PALETTE *colors);
 
 // Sets the stock saved palette, an empty resource palette and tone 100,
 // leaving the DAC unchanged.
@@ -75,3 +82,46 @@ void Palette_BeginFade(
 // Applies and shows one step of fade, and returns false once all steps are
 // done.
 bool Palette_FadeStep(PALETTE_FADE *fade, PALETTE_STATE *state);
+
+// The functions below act on the one live gameplay palette (g_Palette and
+// g_StagePalette) for callers outside palette.c, in place of a writable
+// view of those globals.
+
+// Clamps a single saved component to 0 through 15, saves it and shows it.
+void Palette_SetGlobalColor(
+    int32_t index, int32_t red, int32_t green, int32_t blue);
+
+// Sets all sixteen saved colors from colors (may alias g_Palette's own).
+void Palette_SetGlobal(const PALETTE *colors);
+
+void Palette_SetGlobalGray(int32_t value);
+
+// Sets the stock saved palette, an empty resource palette and tone 100.
+void Palette_ResetGlobal(void);
+
+// Moves the saved components one unit toward target, then shows them.
+void Palette_StepGlobalTo(const PALETTE *target, bool only_brighten);
+
+void Palette_BeginGlobalFade(PALETTE_FADE *fade, PALETTE_FADE_KIND kind);
+bool Palette_GlobalFadeStep(PALETTE_FADE *fade);
+
+// Overwrites one saved (resp. stage-restore) color component directly, for
+// the per-boss decay/step loops that touch a single channel at a time.
+void Palette_SetGlobalSavedComponent(
+    int32_t index, int32_t component, int8_t value);
+void Palette_SetStageComponent(int32_t index, int32_t component, int8_t value);
+void Palette_SetGlobalResourceComponent(
+    int32_t index, int32_t component, int8_t value);
+
+// Quantizes colors (as Palette_Import) into the live resource palette,
+// resp. the stage-restore palette, without showing it.
+void Palette_ImportResource(const GFX_COLOR colors[16]);
+void Palette_ImportStage(const GFX_COLOR colors[16]);
+
+// Drives one interleaved diagonal transition (as Transition_BeginDiagonal /
+// Transition_Advance) of the live saved palette toward target.
+bool Palette_BeginGlobalDiagonalTransition(
+    const PALETTE *target, const INTERLEAVE_ASSETS *assets, uint16_t step_ms,
+    uint64_t host_tick);
+bool Palette_AdvanceGlobalDiagonalTransition(
+    const PALETTE *target, const INTERLEAVE_ASSETS *assets, uint64_t host_tick);

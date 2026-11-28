@@ -2,6 +2,7 @@
 #include "th02/boss.h"
 #include "th02/boss/explosion.h"
 #include "th02/boss/private.h"
+#include "th02/boss/private_rika.h"
 #include "th02/boss/strategy.h"
 #include "th02/bullets.h"
 #include "th02/pillars.h"
@@ -18,32 +19,10 @@
 
 #include <string.h>
 
-typedef enum {
-    RIKA_SWEEP,
-    RIKA_CENTER,
-    RIKA_HOLD,
-} RIKA_PHASE;
-
-typedef struct {
-    ENTITY_POINT current;
-    RIKA_PHASE phase;
-    int16_t kill_frame;
-    uint16_t frame;
-    uint8_t angle;
-    uint8_t first_pattern;
-    uint8_t second_pattern;
-    uint8_t mirrored_pattern;
-    uint8_t fire_mask;
-} RIKA;
-
-typedef struct {
-    int16_t kill_frame;
-    int16_t sprite;
-    bool active;
-} RIKA_MIDBOSS;
-
 static RIKA m_Rika;
+RIKA *const p_Rika = &m_Rika;
 static RIKA_MIDBOSS m_Midboss;
+RIKA_MIDBOSS *const p_RikaMidboss = &m_Midboss;
 
 static const PATTERN *M_Pattern(
     const PATTERN_BANK *const patterns, const int16_t id)
@@ -258,7 +237,7 @@ static void M_MidbossFire(const BOSS_STATE *const boss)
     }
 }
 
-static void M_InitCore(void)
+void Rika_Init(void)
 {
     memset(&m_Rika, 0, sizeof(m_Rika));
     memset(&m_Midboss, 0, sizeof(m_Midboss));
@@ -278,7 +257,7 @@ static bool M_MidbossInvalidateCore(BOSS_STATE *const boss)
     return m_Midboss.active;
 }
 
-static void M_MidbossUpdateCore(
+void Rika_MidbossUpdate(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns)
 {
     RIKA_MIDBOSS *const midboss = &m_Midboss;
@@ -347,7 +326,7 @@ static void M_MidbossUpdateCore(
     Draw_SpriteRoll(M_Pattern(patterns, midboss->sprite), position->x, rolled);
 }
 
-static void M_BeginCore(BOSS_STATE *const boss, const uint8_t rank)
+void Rika_Begin(BOSS_STATE *const boss, const uint8_t rank)
 {
     boss->angle = 32;
     boss->position[0].x = 192;
@@ -369,7 +348,7 @@ static void M_BeginCore(BOSS_STATE *const boss, const uint8_t rank)
     m_Rika.fire_mask = easy ? 7 : 3;
 }
 
-static void M_InvalidateCore(BOSS_STATE *const boss)
+void Rika_Invalidate(BOSS_STATE *const boss)
 {
     const uint8_t back = g_Stage->scroll.back;
     const uint8_t front = g_Stage->scroll.front;
@@ -380,7 +359,7 @@ static void M_InvalidateCore(BOSS_STATE *const boss)
     }
 }
 
-static BOSS_RESULT M_UpdateCore(
+BOSS_RESULT Rika_Update(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns,
     const uint8_t rank)
 {
@@ -404,12 +383,12 @@ static void M_Begin(
     PATTERN_BANK *const patterns, const BOSS_ASSETS *const assets,
     const TH02_SESSION *const session)
 {
-    M_BeginCore(p_BossState, (uint8_t)session->rank);
+    Rika_Begin(p_BossState, (uint8_t)session->rank);
 }
 
 static void M_Invalidate(const bool reduce_effects)
 {
-    M_InvalidateCore(p_BossState);
+    Rika_Invalidate(p_BossState);
 }
 
 static BOSS_RESULT M_Update(
@@ -417,7 +396,7 @@ static BOSS_RESULT M_Update(
     const BOSS_MUSIC *const music, TH02_SESSION *const session,
     const TH02_INPUT *const input)
 {
-    return M_UpdateCore(p_BossState, patterns, (uint8_t)session->rank);
+    return Rika_Update(p_BossState, patterns, (uint8_t)session->rank);
 }
 
 static bool M_MidbossInvalidate(void)
@@ -428,11 +407,11 @@ static bool M_MidbossInvalidate(void)
 static void M_MidbossUpdate(
     const PATTERN_BANK *const patterns, const uint8_t rank)
 {
-    M_MidbossUpdateCore(p_BossState, patterns);
+    Rika_MidbossUpdate(p_BossState, patterns);
 }
 
 const BOSS_STRATEGY g_BossRika = {
-    .init = M_InitCore,
+    .init = Rika_Init,
     .begin = M_Begin,
     .invalidate = M_Invalidate,
     .update = M_Update,

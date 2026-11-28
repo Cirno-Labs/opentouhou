@@ -1,4 +1,4 @@
-#include "th02/random.h"
+#include "th02/random_private.h"
 
 #include "pc98/zun/master_rng.h"
 
@@ -6,6 +6,7 @@
 
 static RANDOM_STATE m_Rng;
 const RANDOM_STATE *const g_Rng = &m_Rng;
+RANDOM_STATE *const p_Rng = &m_Rng;
 
 void Random_Reset(void)
 {

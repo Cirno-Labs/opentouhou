@@ -1,4 +1,4 @@
-#include "th01/boss/private.h"
+#include "th01/boss/private_b20j.h"
 #include "th01/gameplay.h"
 #include "th01/grz.h"
 #include "th01/pellets.h"
@@ -7,7 +7,7 @@
 #include "th01/shootout_lasers.h"
 #include "th01/sound.h"
 #include "th01/sprite.h"
-#include "th01/stage_objects.h"
+#include "th01/stage/objects.h"
 #include "th01/tram.h"
 #include "th01/wait.h"
 
@@ -19,115 +19,8 @@
 
 #include <string.h>
 
-typedef struct {
-    BOS head;
-    BOS face;
-    BOS aim;
-    GRZ body;
-    PI_IMAGE scroll;
-    PI_IMAGE upper;
-    PI_IMAGE layers[4];
-    const uint8_t *diamond;
-    const uint8_t *flake;
-} B20J_ASSETS;
-
-typedef struct {
-    int16_t left[4][5];
-    int16_t top[4][5];
-    MATH16_VECTOR velocity[4];
-    int16_t target_left[4];
-    bool target_locked[4];
-} B20J_SNAKES;
-
-typedef enum {
-    B20J_PHASE_START,
-    B20J_PHASE_PATTERNS_1,
-    B20J_PHASE_FLASH_1,
-    B20J_PHASE_PATTERNS_2,
-    B20J_PHASE_FLASH_2,
-    B20J_PHASE_PATTERNS_3,
-    B20J_PHASE_FLASH_3,
-    B20J_PHASE_FINAL,
-} B20J_PHASE;
-
-typedef enum {
-    B20J_ENTRANCE_SCROLL = 1,
-    B20J_ENTRANCE_SCROLL_STEP,
-    B20J_ENTRANCE_SCROLL_END,
-    B20J_ENTRANCE_SHAKE_DELAY,
-    B20J_ENTRANCE_SHAKE,
-    B20J_ENTRANCE_SHAKE_STEP,
-    B20J_ENTRANCE_PAN,
-    B20J_ENTRANCE_PAN_STEP,
-    B20J_ENTRANCE_TREMBLE,
-    B20J_ENTRANCE_TREMBLE_STEP,
-    B20J_ENTRANCE_FLASH_DELAY,
-    B20J_ENTRANCE_FLASH,
-    B20J_ENTRANCE_FADE_IN,
-} B20J_ENTRANCE;
-
-typedef enum {
-    B20J_DEFEAT_KUJI = 1,
-    B20J_DEFEAT_SHAKE,
-    B20J_DEFEAT_SHAKE_STEP,
-    B20J_DEFEAT_SCROLL,
-    B20J_DEFEAT_SCROLL_STEP,
-    B20J_DEFEAT_CLEAR,
-} B20J_DEFEAT;
-
-typedef struct {
-    BOSS_ENTITY head;
-    BOSS_ENTITY face;
-    BOSS_ENTITY aim;
-    BOSS_HIT hit;
-    PALETTE boss_palette;
-    PALETTE stage_palette;
-    B20J_SNAKES two_snakes;
-    B20J_SNAKES four_snakes;
-    MATH16_VECTOR diamond_velocity[2];
-    int16_t diamond_left[4];
-    int16_t diamond_top[4];
-    int16_t diamond_edges_frame;
-    MATH16_VECTOR row_velocity;
-    int16_t row_left;
-    int16_t row_top;
-    int16_t row_direction;
-    int16_t row_speed;
-    int16_t spray_delta;
-    int16_t spray_fired;
-    int16_t ray_x;
-    int16_t ray_y;
-    int16_t ray_previous_x;
-    int16_t ray_previous_y;
-    int16_t slash_left[3];
-    int16_t slash_top[3];
-    BOSS_STATE status;
-    int16_t pattern_state;
-    int16_t pattern;
-    int16_t pattern_previous;
-    int16_t patterns_done;
-    int16_t face_direction;
-    int16_t face_expression;
-    int16_t scroll_line;
-    int16_t scroll_speed;
-    int16_t scroll_quarter;
-    int16_t scroll_frame;
-    int16_t animation_frame;
-    WAIT wait;
-    uint8_t cup_angle;
-    uint8_t spray_offset;
-    uint8_t spray_angle;
-    uint8_t entrance_stage;
-    uint8_t defeat_stage;
-    bool direction_can_change;
-    bool laser_right_to_left;
-    bool hp_bar_filled;
-    bool entrance_active;
-    bool defeating;
-    bool finished;
-} B20J;
-
 static B20J m_B20J;
+B20J *const p_B20J = &m_B20J;
 
 static RESULT M_LoadBody(
     VFS *const vfs, const ALLOCATOR *const a, GRZ *const out)
@@ -149,7 +42,7 @@ static RESULT M_LoadMasks(
     out->flake = shapes + 2 * 8;
     return OK;
 }
-static RESULT M_ValidateAssets(const B20J_ASSETS *const a)
+RESULT B20J_ValidateAssets(const B20J_ASSETS *const a)
 {
     FAIL_IF(a == nullptr, "Missing Konngara assets");
     const BOS *const banks[] = { &a->head, &a->face, &a->aim };
@@ -190,19 +83,19 @@ static RESULT M_LoadAssets(
     B20J_ASSETS *const out = data;
     *out = (B20J_ASSETS) {};
     B20J_ASSETS loaded = {};
-    MUST(Boss_LoadBos(vfs, "BOSS8_1.BOS", a, &loaded.head));
-    MUST(Boss_LoadBos(vfs, "BOSS8_E1.BOS", a, &loaded.face));
-    MUST(Boss_LoadBos(vfs, "BOSS8_E2.BOS", a, &loaded.aim));
+    MUST(BossAssets_LoadBos(vfs, "BOSS8_1.BOS", a, &loaded.head));
+    MUST(BossAssets_LoadBos(vfs, "BOSS8_E1.BOS", a, &loaded.face));
+    MUST(BossAssets_LoadBos(vfs, "BOSS8_E2.BOS", a, &loaded.aim));
     MUST(M_LoadBody(vfs, a, &loaded.body));
-    MUST(Boss_LoadBackground(vfs, "BOSS7_D1.GRP", a, &loaded.scroll));
-    MUST(Boss_LoadBackground(vfs, "BOSS8_A1.GRP", a, &loaded.upper));
+    MUST(BossAssets_LoadBackground(vfs, "BOSS7_D1.GRP", a, &loaded.scroll));
+    MUST(BossAssets_LoadBackground(vfs, "BOSS8_A1.GRP", a, &loaded.upper));
     const char *const names[] = { "BOSS8_D1.GRP", "BOSS8_D2.GRP",
                                   "BOSS8_D3.GRP", "BOSS8_D4.GRP" };
     for (int32_t i = 0; i < 4; i++) {
-        MUST(Boss_LoadBackground(vfs, names[i], a, &loaded.layers[i]));
+        MUST(BossAssets_LoadBackground(vfs, names[i], a, &loaded.layers[i]));
     }
     MUST(M_LoadMasks(vfs, a, &loaded));
-    MUST(M_ValidateAssets(&loaded));
+    MUST(B20J_ValidateAssets(&loaded));
     *out = loaded;
     return OK;
 }
@@ -219,8 +112,8 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     ASSERT(
         !m_B20J.entrance_active && !m_B20J.defeating
         && Wait_Idle(&m_B20J.wait));
-    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
-    m_B20J.boss_palette = g_Palette.saved;
+    ASSERT(Result_Ignore(B20J_ValidateAssets(assets)));
+    m_B20J.boss_palette = g_Palette->saved;
     m_B20J.status.hp = 18;
     m_B20J.status.phase = B20J_PHASE_START;
     m_B20J.status.frame = 0;
@@ -245,9 +138,9 @@ static void M_Pi(
                                .stride = image->width,
                                .key = colorkey ? 15 : -1 };
     Video_Blit(&view, (GFX_RECT) { 0, 0, image->width, image->height }, 0, 0);
-    Palette_Import(&g_Palette.resource, image->palette);
+    Palette_ImportResource(image->palette);
     if (!colorkey) {
-        Palette_Set(&g_Palette, &g_Palette.resource);
+        Palette_SetGlobal(&g_Palette->resource);
     }
 }
 static void M_Grx(const B20J_ASSETS *const assets, const int16_t image)
@@ -320,33 +213,33 @@ static void M_SlashPut(const B20J_ASSETS *const assets, const int16_t image)
 }
 static void M_White(const B20J_ASSETS *const assets)
 {
-    Palette_SetColor(&g_Palette, 9, 15, 15, 15);
+    Palette_SetGlobalColor(9, 15, 15, 15);
 }
 static void M_WhiteIn(const B20J_ASSETS *const assets)
 {
-    int8_t *const col = g_Palette.saved.colors[9];
+    const int8_t *const col = g_Palette->saved.colors[9];
     if (col[0] > 0) {
-        col[0]--;
+        Palette_SetGlobalSavedComponent(9, 0, col[0] - 1);
     }
     if (col[1] > 9) {
-        col[1]--;
+        Palette_SetGlobalSavedComponent(9, 1, col[1] - 1);
     }
     if (col[2] > 10) {
-        col[2]--;
+        Palette_SetGlobalSavedComponent(9, 2, col[2] - 1);
     }
-    Palette_Set(&g_Palette, &g_Palette.saved);
+    Palette_SetGlobal(&g_Palette->saved);
 }
 static void M_BlackOut(const B20J_ASSETS *const assets)
 {
-    PALETTE *const colors = &g_Palette.saved;
     for (int32_t i = 0; i < 16; i++) {
         for (int32_t j = 0; j < 3; j++) {
-            if (colors->colors[i][j] > 0) {
-                colors->colors[i][j]--;
+            if (g_Palette->saved.colors[i][j] > 0) {
+                Palette_SetGlobalSavedComponent(
+                    i, j, g_Palette->saved.colors[i][j] - 1);
             }
         }
     }
-    Palette_Set(&g_Palette, colors);
+    Palette_SetGlobal(&g_Palette->saved);
 }
 static void M_BeginEntrance(const void *const data)
 {
@@ -357,7 +250,7 @@ static void M_BeginEntrance(const void *const data)
     Pellets_Interlace();
     Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
     M_Pi(assets, &assets->scroll, false);
-    m_B20J.stage_palette = g_Palette.saved;
+    m_B20J.stage_palette = g_Palette->saved;
     StageObjects_Init(nullptr, 19, false, nullptr, nullptr);
     Video_SelectDrawingPage(1);
     M_Pi(assets, &assets->upper, false);
@@ -367,7 +260,7 @@ static void M_BeginEntrance(const void *const data)
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B20J.face, 1, &assets->face)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B20J.aim, 2, &assets->aim)));
     Sound_Play();
-    Palette_SetGray(&g_Palette, 0);
+    Palette_SetGlobalGray(0);
     Tram_Clear();
     m_B20J.scroll_line = 0;
     m_B20J.scroll_speed = 32;
@@ -409,7 +302,7 @@ static bool M_ResumeEntrance(
                 continue;
             }
             if (m_B20J.scroll_frame % 8 == 0) {
-                Palette_StepTo(&g_Palette, &g_Palette.resource, true);
+                Palette_StepGlobalTo(&g_Palette->resource, true);
             }
             m_B20J.scroll_frame++;
             m_B20J.entrance_stage = B20J_ENTRANCE_SCROLL;
@@ -460,8 +353,8 @@ static bool M_ResumeEntrance(
                     (uint16_t)(m_B20J.scroll_line * 80 + i) & 0x7fff;
                 if (offset < 32000) {
                     memcpy(
-                        g_Video.pages[0] + offset * 8,
-                        g_Video.pages[1] + offset * 8, 8);
+                        g_Video->pages[0] + offset * 8,
+                        g_Video->pages[1] + offset * 8, 8);
                 }
             }
             Video_SelectDrawingPage(0);
@@ -503,8 +396,8 @@ static bool M_ResumeEntrance(
         case B20J_ENTRANCE_FADE_IN:
             if (m_B20J.animation_frame >= 16) {
                 Video_Copy(
-                    g_Video.drawing_page, (GFX_RECT) { 0, 0, 640, 400 },
-                    1 - g_Video.drawing_page, 0, 0);
+                    g_Video->drawing_page, (GFX_RECT) { 0, 0, 640, 400 },
+                    1 - g_Video->drawing_page, 0, 0);
                 m_B20J.entrance_active = false;
                 Palette_SetStage(&m_B20J.stage_palette);
                 return true;
@@ -527,22 +420,22 @@ static void M_Single(
     const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, x, y, angle, speed, PELLET_REGULAR, 0, 0,
-        0);
+        g_Session->settings.difficulty, x, y, angle, speed, PELLET_REGULAR, 0,
+        0, 0);
 }
 static void M_Rain(
     const B20J_ASSETS *const assets, const int16_t x, const int16_t y,
     const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, x, y, angle, speed, PELLET_GRAVITY, 1, 0,
-        0);
+        g_Session->settings.difficulty, x, y, angle, speed, PELLET_GRAVITY, 1,
+        0, 0);
 }
 static void M_Group(
     const B20J_ASSETS *const assets, const int16_t x, const int16_t y,
     const int16_t group, const int16_t speed)
 {
-    Pellets_AddGroup(g_Session.settings.difficulty, x, y, group, speed);
+    Pellets_AddGroup(g_Session->settings.difficulty, x, y, group, speed);
 }
 static uint8_t M_Angle(const int32_t y, const int32_t x)
 {
@@ -560,7 +453,7 @@ static void M_Diamond(
             const int32_t offset = (top + y) * 640 + left + x;
             if (offset < VIDEO_PAGE_SIZE
                 && (assets->diamond[y] & (0x80u >> x)) != 0) {
-                g_Video.pages[g_Video.drawing_page][offset] = color;
+                g_Video->pages[g_Video->drawing_page][offset] = color;
             }
         }
     }
@@ -781,7 +674,7 @@ static void M_Snakes(const B20J_ASSETS *const assets, const bool four)
             Sound_Effect(SOUND_EFFECT_SPAWN);
         }
         if (!four
-            && m_B20J.status.frame > 240 - g_Session.settings.difficulty * 40
+            && m_B20J.status.frame > 240 - g_Session->settings.difficulty * 40
             && m_B20J.status.frame % 40 == 0) {
             uint8_t angle = M_Random(assets) % 12;
             const int16_t x = m_B20J.status.frame % 120 == 0 ? 410
@@ -1114,7 +1007,7 @@ static void M_Sleeve(const B20J_ASSETS *const assets)
                 M_Rain(assets, 290, 200, angle, 32);
             } else {
                 Pellets_AddSingle(
-                    g_Session.settings.difficulty, 290, 200, angle, 32,
+                    g_Session->settings.difficulty, 290, 200, angle, 32,
                     PELLET_FALL_STRAIGHT_FROM_TOP_THEN_REGULAR, 48, 0, 0);
             }
         }
@@ -1151,7 +1044,7 @@ static bool M_Death(const B20J_ASSETS *const assets)
                 Video_Clear(0);
             }
             const int16_t flash = m_B20J.animation_frame % 2 == 0 ? 15 : 0;
-            Palette_SetColor(&g_Palette, 0, flash, flash, flash);
+            Palette_SetGlobalColor(0, flash, flash, flash);
             M_Grx(assets, m_B20J.animation_frame);
             m_B20J.animation_frame++;
             if (!Wait_Delay(&m_B20J.wait, 10)) {
@@ -1171,7 +1064,7 @@ static bool M_Death(const B20J_ASSETS *const assets)
             if (m_B20J.status.frame > 64) {
                 Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
                 M_Pi(assets, &assets->scroll, false);
-                Palette_SetGray(&g_Palette, 0);
+                Palette_SetGlobalGray(0);
                 Tram_Clear();
                 m_B20J.scroll_line = 0;
                 m_B20J.scroll_frame = 0;
@@ -1193,7 +1086,7 @@ static bool M_Death(const B20J_ASSETS *const assets)
             }
             if (m_B20J.scroll_frame < 150) {
                 if (m_B20J.scroll_frame % 8 == 0) {
-                    Palette_StepTo(&g_Palette, &g_Palette.resource, true);
+                    Palette_StepGlobalTo(&g_Palette->resource, true);
                     Sound_Effect(SOUND_EFFECT_PELLET);
                 }
             } else if (m_B20J.scroll_frame % 8 == 0) {
@@ -1201,7 +1094,7 @@ static bool M_Death(const B20J_ASSETS *const assets)
                     Sound_Fade();
                 }
                 M_BlackOut(assets);
-                if (g_Palette.saved.colors[7][0] == 0) {
+                if (g_Palette->saved.colors[7][0] == 0) {
                     m_B20J.defeat_stage = B20J_DEFEAT_CLEAR;
                     return Wait_Scroll(&m_B20J.wait, 0);
                 }
@@ -1219,7 +1112,7 @@ static bool M_Death(const B20J_ASSETS *const assets)
             for (int32_t i = 0; i < 5; i++) {
                 Stage_AddScore(10000);
             }
-            g_Stage.game_cleared = true;
+            Stage_SetGameCleared();
             m_B20J.finished = true;
             m_B20J.defeating = false;
             return true;
@@ -1314,8 +1207,8 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         m_B20J.hit.frame = 0;
         m_B20J.hit.invincible = false;
         m_B20J.hp_bar_filled = false;
-        m_B20J.boss_palette = g_Palette.saved;
-        Rng_Seed(g_Session.frame_rand);
+        m_B20J.boss_palette = g_Palette->saved;
+        Rng_Seed(g_Session->frame_rand);
         return true;
     }
     if (m_B20J.status.phase < B20J_PHASE_PATTERNS_1

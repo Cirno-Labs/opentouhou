@@ -1,3 +1,17 @@
+# Stands in for src/th02/draw/{circles,shapes,sprites,glyphs}.c: a test
+# that links this before th02_lib in link_with never gets those real
+# objects, since the fakes define every function their headers declare.
+# draw/text.c stays out: DrawText_Read renders into a glyph mask, not
+# VRAM, and is its own object, so it is never pulled in just for drawing.
+th02_fakes_lib = static_library(
+  'th02_fakes_lib',
+  'fake_draw_circles.c',
+  'fake_draw_shapes.c',
+  'fake_draw_sprites.c',
+  'fake_draw_glyphs.c',
+  implicit_include_directories: false,
+)
+
 foreach part : [
     'input',
     'tram',
@@ -90,6 +104,20 @@ test(
   ),
   suite: 'unit',
 )
+# Links the fake draw modules in place of the real ones: th02_lib is an
+# archive, so its draw objects are left out once these define every
+# function their headers declare.
+test(
+  'th02/boss_explosion',
+  executable(
+    'test_th02_boss_explosion',
+    'test_th02_boss_explosion.c',
+    implicit_include_directories: false,
+    link_with: [th02_fakes_lib, th02_lib, core_hash_lib, core_io_lib, core_base_lib],
+    dependencies: [pc98_dep, sdl3],
+  ),
+  suite: 'unit',
+)
 foreach part : ['sound_effects']
   test(
     'th02/' + part,
@@ -143,6 +171,7 @@ test(
   executable(
     'test_th02_high_score_entry_logic',
     'test_th02_high_score_entry_logic.c',
+    'th02_high_score_entry.c',
     implicit_include_directories: false,
     link_with: [th02_lib, core_io_lib, core_base_lib],
     dependencies: [sdl3],
@@ -154,6 +183,7 @@ test(
   executable(
     'test_th02_high_score_view',
     'test_th02_high_score_view.c',
+    'th02_high_score_view.c',
     implicit_include_directories: false,
     link_with: [th02_lib, core_base_lib],
     dependencies: [sdl3],
@@ -177,6 +207,7 @@ foreach part : ['pause_menu', 'pause_menu_render']
     executable(
       'test_th02_' + part,
       'test_th02_' + part + '.c',
+      'th02_pause_menu.c',
       implicit_include_directories: false,
       link_with: [th02_lib, core_base_lib],
       dependencies: [sdl3],
@@ -190,6 +221,7 @@ foreach part : ['menu', 'options']
     executable(
       'test_th02_' + part,
       'test_th02_' + part + '.c',
+      'th02_menu.c',
       implicit_include_directories: false,
       link_with: [th02_lib, core_base_lib],
       dependencies: [sdl3],
@@ -237,6 +269,7 @@ test(
   executable(
     'test_th02_music_room',
     'test_th02_music_room.c',
+    'th02_music_room.c',
     implicit_include_directories: false,
     link_with: [th02_lib, core_base_lib],
     dependencies: [pc98_dep, sdl3],
@@ -294,42 +327,26 @@ foreach part : ['tram_text', 'gaiji', 'palette', 'map', 'mpn']
   )
 endforeach
 foreach part : [
-  'items',
   'miss',
   'bomb',
   'bomb_render',
   'shots',
-  'shot_fire',
-  'shot_hit',
   'shot_render',
   'player',
   'player_render',
-  'bullet_spawn',
   'pillars',
   'stage_effects',
   'enemies',
-  'shot_select',
   'shot_select_render',
-  'dialogue_box',
   'dialogue_render',
   'dialogue_sequence',
   'dialogue_slide',
-  'boss',
-  'boss_strategy',
-  'meira',
   'rika',
   'stones',
-  'marisa',
-  'mima',
-  'sigma',
-  'stage_flow',
-  'gameplay',
   'gameplay_memory',
   'story',
   'credits',
-  'verdict',
   'ending',
-  'ending_assets',
   'ending_images',
   'ending_text',
 ]
@@ -347,6 +364,79 @@ foreach part : [
     suite: 'unit',
   )
 endforeach
+# These assert what their code drew through the fake draw modules, not
+# real pixels, so they draw through th02_fakes_lib.
+foreach part : [
+  'items',
+  'shot_fire',
+  'shot_hit',
+  'bullet_spawn',
+  'dialogue_box',
+  'boss',
+  'boss_strategy',
+  'verdict',
+  'ending_assets',
+]
+  test(
+    'th02/' + part,
+    executable(
+      'test_th02_' + part,
+      'test_th02_' + part + '.c',
+      implicit_include_directories: false,
+      link_with: [
+        th02_fakes_lib, th02_lib, core_io_lib, core_vfs_lib, core_hash_lib,
+        core_base_lib,
+      ],
+      dependencies: [pc98_dep, sdl3],
+    ),
+    suite: 'unit',
+  )
+endforeach
+foreach part : ['meira', 'marisa', 'mima', 'sigma', 'gameplay']
+  test(
+    'th02/' + part,
+    executable(
+      'test_th02_' + part,
+      'test_th02_' + part + '.c',
+      'th02_gameplay.c',
+      'th02_stage_flow.c',
+      implicit_include_directories: false,
+      link_with: [
+        th02_lib, core_io_lib, core_vfs_lib, core_hash_lib, core_base_lib,
+      ],
+      dependencies: [pc98_dep, sdl3],
+    ),
+    suite: 'unit',
+  )
+endforeach
+test(
+  'th02/shot_select',
+  executable(
+    'test_th02_shot_select',
+    'test_th02_shot_select.c',
+    'th02_shot_select.c',
+    implicit_include_directories: false,
+    link_with: [
+      th02_lib, core_io_lib, core_vfs_lib, core_hash_lib, core_base_lib,
+    ],
+    dependencies: [pc98_dep, sdl3],
+  ),
+  suite: 'unit',
+)
+test(
+  'th02/stage_flow',
+  executable(
+    'test_th02_stage_flow',
+    'test_th02_stage_flow.c',
+    'th02_stage_flow.c',
+    implicit_include_directories: false,
+    link_with: [
+      th02_lib, core_io_lib, core_vfs_lib, core_hash_lib, core_base_lib,
+    ],
+    dependencies: [pc98_dep, sdl3],
+  ),
+  suite: 'unit',
+)
 test(
   'th02/stage_data',
   executable(
@@ -485,6 +575,9 @@ test(
   executable(
     'test_th02_opening',
     'test_th02_opening.c',
+    'th02_high_score_view.c',
+    'th02_menu.c',
+    'th02_music_room.c',
     implicit_include_directories: false,
     link_with: [th02_lib, core_io_lib, core_vfs_lib, core_hash_lib, core_base_lib],
     dependencies: [pc98_dep, sdl3],
@@ -497,7 +590,7 @@ test(
     'test_th02_main',
     'test_th02_main.c',
     implicit_include_directories: false,
-    link_with: [th02_lib, builtin_libs['th02'], core_io_lib, core_vfs_lib, core_hash_lib, core_audio_lib, core_base_lib],
+    link_with: [th02_main_lib, th02_lib, builtin_libs['th02'], core_io_lib, core_vfs_lib, core_hash_lib, core_audio_lib, core_base_lib],
     dependencies: [shell_game_dep, pc98_dep, sdl3],
   ),
   suite: 'unit',

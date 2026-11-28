@@ -1,7 +1,7 @@
 #include "replay/th01/start.h"
 
 #include "replay/th01/harness.h"
-#include "th01/session.h"
+#include "th01/session_private.h"
 
 #include "core/base/utils.h"
 
@@ -13,28 +13,28 @@ void Th01Start_Apply(const START_VALUE *const starts, const size_t count)
         const uint32_t value = starts[i].value;
         switch (starts[i].field) {
         case TH01_START_stage:
-            g_Session.stage_id = (int16_t)value;
+            p_Session->stage_id = (int16_t)value;
             break;
         case TH01_START_route:
-            g_Session.route = (uint8_t)value;
+            p_Session->route = (uint8_t)value;
             break;
         case TH01_START_difficulty:
-            g_Session.settings.difficulty = (int32_t)value;
+            p_Session->settings.difficulty = (int32_t)value;
             break;
         case TH01_START_lives:
-            g_Session.lives = (int16_t)value;
+            p_Session->lives = (int16_t)value;
             break;
         case TH01_START_bombs:
-            g_Session.bombs = (int16_t)value;
+            p_Session->bombs = (int16_t)value;
             break;
         case TH01_START_score:
-            g_Session.score = value;
+            p_Session->score = value;
             break;
         case TH01_START_continues:
-            g_Session.continues_total = (int32_t)value;
+            p_Session->continues_total = (int32_t)value;
             break;
         case TH01_START_pellet_speed:
-            g_Session.pellet_speed = (int16_t)value;
+            p_Session->pellet_speed = (int16_t)value;
             break;
         case TH01_START_boss_hp:
         case TH01_START_stage_time:
@@ -45,9 +45,9 @@ void Th01Start_Apply(const START_VALUE *const starts, const size_t count)
             break;
         }
     }
-    const size_t scene = (size_t)g_Session.stage_id / 5;
-    if (scene_set && scene < ARRAY_SIZE(g_Session.continues_per_scene)) {
-        g_Session.continues_per_scene[scene] = scene_continues;
+    const size_t scene = (size_t)p_Session->stage_id / 5;
+    if (scene_set && scene < ARRAY_SIZE(p_Session->continues_per_scene)) {
+        p_Session->continues_per_scene[scene] = scene_continues;
     }
 }
 

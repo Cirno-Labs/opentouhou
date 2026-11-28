@@ -2,38 +2,15 @@
 
 #include "th02/ending/credits.h"
 #include "th02/ending/images.h"
-#include "th02/ending/story.h"
+#include "th02/ending/private.h"
 #include "th02/ending/verdict.h"
-#include "th02/wait.h"
 
 #include "core/base/assert.h"
 
 #include <string.h>
 
-typedef enum {
-    ENDING_PREPARE,
-    ENDING_STORY_SCENE,
-    ENDING_CREDITS,
-    ENDING_VERDICT,
-    ENDING_FINISH_IN,
-    ENDING_FINISH_HOLD,
-    ENDING_FINISH_KEY,
-    ENDING_FINISH_OUT,
-    ENDING_DONE,
-} ENDING_PHASE;
-
-typedef struct ENDING {
-    const ENDING_ASSETS *assets;
-    const TH02_SESSION *session;
-    STORY_AUDIO music;
-    void *music_context;
-    bool extra_unlocked;
-    WAIT wait;
-    ENDING_PHASE phase;
-    ENDING_STORY route;
-} ENDING;
-
 static ENDING m_Ending;
+ENDING *const p_Ending = &m_Ending;
 
 static void M_Fade(const PALETTE_FADE_KIND kind, const int16_t speed)
 {

@@ -1,5 +1,7 @@
 #include "th01/video.h"
 
+#include "th01/video_private.h"
+
 #include "core/base/assert.h"
 #include "core/base/utils.h"
 #include "pc98/zun/math16.h"
@@ -15,7 +17,9 @@ typedef struct {
     int32_t height;
 } VIDEO_REGION;
 
-VIDEO g_Video;
+static VIDEO m_Video;
+const VIDEO *const g_Video = &m_Video;
+VIDEO *const p_Video = &m_Video;
 
 static void M_Order(int32_t *const a, int32_t *const b)
 {
@@ -84,7 +88,7 @@ static void M_FlushLine(
         }
         for (int32_t bit = 0; bit < 8; bit++) {
             if ((mask & (0x80u << (byte * 8) >> bit)) != 0) {
-                g_Video.pages[g_Video.drawing_page][offset * 8 + bit] =
+                p_Video->pages[p_Video->drawing_page][offset * 8 + bit] =
                     color & 15;
             }
         }
@@ -109,9 +113,9 @@ static void M_RestoreRawLine(const uint16_t offset)
         }
         for (int32_t bit = 0; bit < 8; bit++) {
             const uint32_t pixel = planar * 8 + bit;
-            g_Video.pages[0][pixel] =
-                (uint8_t)((g_Video.pages[0][pixel] & ~mask)
-                          | (g_Video.pages[1][pixel] & mask));
+            p_Video->pages[0][pixel] =
+                (uint8_t)((p_Video->pages[0][pixel] & ~mask)
+                          | (p_Video->pages[1][pixel] & mask));
         }
     }
 }
@@ -231,38 +235,43 @@ static void M_Line(
     }
 }
 
+void Video_Close(void)
+{
+    memset(p_Video, 0, sizeof(*p_Video));
+}
+
 void Video_Init(const ALLOCATOR *const allocator)
 {
     uint8_t *const pages = Allocator_AllocZ(allocator, 2 * VIDEO_PAGE_SIZE);
-    memset(&g_Video, 0, sizeof(g_Video));
-    g_Video.pages[0] = pages;
-    g_Video.pages[1] = pages + VIDEO_PAGE_SIZE;
+    memset(p_Video, 0, sizeof(*p_Video));
+    p_Video->pages[0] = pages;
+    p_Video->pages[1] = pages + VIDEO_PAGE_SIZE;
     for (int32_t i = 0; i < 16; i++) {
-        g_Video.palette[i].alpha = 255;
+        p_Video->palette[i].alpha = 255;
     }
 }
 
 void Video_SelectDrawingPage(const int32_t page)
 {
     ASSERT(page >= 0 && page < 2);
-    g_Video.drawing_page = page;
+    p_Video->drawing_page = page;
 }
 
 void Video_SelectVisiblePage(const int32_t page)
 {
     ASSERT(page >= 0 && page < 2);
-    g_Video.visible_page = page;
+    p_Video->visible_page = page;
 }
 
 void Video_Clear(const uint8_t color)
 {
-    memset(g_Video.pages[g_Video.drawing_page], color & 15, VIDEO_PAGE_SIZE);
+    memset(p_Video->pages[p_Video->drawing_page], color & 15, VIDEO_PAGE_SIZE);
 }
 
 void Video_Pixel(const int32_t x, const int32_t y, const uint8_t color)
 {
     if (x >= 0 && x < VIDEO_WIDTH && y >= 0 && y < VIDEO_HEIGHT) {
-        g_Video.pages[g_Video.drawing_page][y * VIDEO_WIDTH + x] = color & 15;
+        p_Video->pages[p_Video->drawing_page][y * VIDEO_WIDTH + x] = color & 15;
     }
 }
 
@@ -274,7 +283,7 @@ void Video_HorizontalLine(
     right = MIN(right, VIDEO_WIDTH - 1);
     if (left <= right && y >= 0 && y < VIDEO_HEIGHT) {
         memset(
-            g_Video.pages[g_Video.drawing_page] + y * VIDEO_WIDTH + left,
+            p_Video->pages[p_Video->drawing_page] + y * VIDEO_WIDTH + left,
             color & 15, (size_t)(right - left + 1));
     }
 }
@@ -349,7 +358,7 @@ void Video_Blit(
             : image->coverage
                 + (size_t)(region.sy + row) * image->coverage_stride
                 + region.sx;
-        uint8_t *const destination = g_Video.pages[g_Video.drawing_page]
+        uint8_t *const destination = p_Video->pages[p_Video->drawing_page]
             + (region.dy + row) * VIDEO_WIDTH + region.dx;
         for (int32_t col = 0; col < region.width; col++) {
             if (pixels[col] != image->key
@@ -375,7 +384,7 @@ void Video_Mask(
     for (int32_t row = 0; row < region.height; row++) {
         const uint8_t *const pixels =
             mask->pixels + (size_t)(region.sy + row) * mask->stride + region.sx;
-        uint8_t *const destination = g_Video.pages[g_Video.drawing_page]
+        uint8_t *const destination = p_Video->pages[p_Video->drawing_page]
             + (region.dy + row) * VIDEO_WIDTH + region.dx;
         for (int32_t col = 0; col < region.width; col++) {
             if (pixels[col] != 0) {
@@ -402,9 +411,9 @@ void Video_Copy(
     for (int32_t i = 0; i < region.height; i++) {
         const int32_t row = backwards ? region.height - 1 - i : i;
         memmove(
-            g_Video.pages[destination_page] + (region.dy + row) * VIDEO_WIDTH
+            p_Video->pages[destination_page] + (region.dy + row) * VIDEO_WIDTH
                 + region.dx,
-            g_Video.pages[source_page] + (region.sy + row) * VIDEO_WIDTH
+            p_Video->pages[source_page] + (region.sy + row) * VIDEO_WIDTH
                 + region.sx,
             (size_t)region.width);
     }
@@ -446,7 +455,7 @@ void Video_Read(
     for (int32_t row = 0; row < region.height; row++) {
         memcpy(
             pixels + (size_t)(region.dy + row) * stride + region.dx,
-            g_Video.pages[page] + (region.sy + row) * VIDEO_WIDTH + region.sx,
+            p_Video->pages[page] + (region.sy + row) * VIDEO_WIDTH + region.sx,
             (size_t)region.width);
     }
 }
@@ -456,7 +465,7 @@ void Video_SetDac(
     const int32_t blue)
 {
     ASSERT(index >= 0 && index < 16);
-    g_Video.palette[index] =
+    p_Video->palette[index] =
         (GFX_COLOR) { (uint8_t)((red & 15) * 17), (uint8_t)((green & 15) * 17),
                       (uint8_t)((blue & 15) * 17), 255 };
 }
@@ -473,7 +482,7 @@ void Video_SetPalette(const GFX_COLOR palette[16])
 void Video_SetScroll(const int16_t top)
 {
     const int16_t reduced = top % VIDEO_HEIGHT;
-    g_Video.scroll_top = reduced < 0 ? reduced + VIDEO_HEIGHT : reduced;
+    p_Video->scroll_top = reduced < 0 ? reduced + VIDEO_HEIGHT : reduced;
 }
 
 bool Video_Invert32(
@@ -486,7 +495,7 @@ bool Video_Invert32(
     }
     for (int32_t y = top; y < top + 32; y++) {
         for (int32_t x = left / 8 * 8; x < left / 8 * 8 + 32; x++) {
-            g_Video.pages[g_Video.drawing_page][y * VIDEO_WIDTH + x] ^=
+            p_Video->pages[p_Video->drawing_page][y * VIDEO_WIDTH + x] ^=
                 plane_bit;
         }
     }

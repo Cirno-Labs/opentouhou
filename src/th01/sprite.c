@@ -8,8 +8,8 @@ static int32_t M_Floor(const int32_t value, const int32_t unit)
 static void M_Write(const int32_t offset, const uint8_t color, const bool erase)
 {
     if (offset >= 0 && offset < VIDEO_PAGE_SIZE) {
-        g_Video.pages[g_Video.drawing_page][offset] =
-            erase ? g_Video.pages[1][offset] : color;
+        g_Video->pages[g_Video->drawing_page][offset] =
+            erase ? g_Video->pages[1][offset] : color;
     }
 }
 
@@ -90,7 +90,7 @@ void Sprite_Restore16(
                 const uint32_t offset =
                     (uint32_t)((top + y) * 640 + x + bit) & 0x3ffffu;
                 if (offset < VIDEO_PAGE_SIZE) {
-                    g_Video.pages[0][offset] = g_Video.pages[1][offset];
+                    g_Video->pages[0][offset] = g_Video->pages[1][offset];
                 }
             }
         }

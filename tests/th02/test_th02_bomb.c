@@ -10,7 +10,7 @@
 #include "th02/background/private.h"
 #include "th02/bomb.h"
 #include "th02/bullets/private.h"
-#include "th02/performance.c"
+#include "th02/performance_private.h"
 #include "th02/player.h"
 #include "th02/random.h"
 #include "th02/sparks.h"
@@ -55,14 +55,14 @@ static void M_Init(FIXTURE *const fixture, const uint8_t type)
     Sparks_Init();
     Bullets_Init();
     Score_Init();
-    memset(&m_Performance, 0, sizeof(m_Performance));
+    memset(p_Performance, 0, sizeof(*p_Performance));
     memset(p_Palette, 0, sizeof((*p_Palette)));
     Grcg_Init();
     memset(&p_Background->cache, 0, sizeof(p_Background->cache));
     Tram_Init();
-    memset(&m_Rng, 0, sizeof(m_Rng));
+    memset(p_Rng, 0, sizeof(*p_Rng));
     memset(fixture, 0, sizeof(*fixture));
-    memset(&m_Player, 0, sizeof(m_Player));
+    memset(p_Player, 0, sizeof(*p_Player));
     Arena_Init(&fixture->arena, "Bomb controller", 1024 * 1024);
     Video_Init(Arena_Allocator(&fixture->arena));
     Clip_Reset();
@@ -76,7 +76,7 @@ static void M_Init(FIXTURE *const fixture, const uint8_t type)
     memset(fixture->tail, 0x80, sizeof(fixture->tail));
     p_Palette->tone = 100;
     memset(p_Palette->colors, 87, sizeof(p_Palette->colors));
-    m_Score.bombs = 3;
+    p_Score->bombs = 3;
     fixture->pages = (PLAYFIELD_PAGES) { 0, 1, 0 };
     fixture->slowdown = 1;
     p_Background->cache.mode = TILE_IMAGES;
@@ -114,37 +114,37 @@ TEST(
 {
     FIXTURE fixture;
     M_Init(&fixture, 0);
-    m_Bomb.ages[3] = 4;
-    m_Bomb.frame = 47;
-    m_Bomb.stage_bombs = m_Performance.total_bombs = 255;
-    m_Score.bombs = INT8_MIN;
+    p_Bomb->ages[3] = 4;
+    p_Bomb->frame = 47;
+    p_Bomb->stage_bombs = p_Performance->total_bombs = 255;
+    p_Score->bombs = INT8_MIN;
     p_Bullets->slots[0] = (BULLET) {
         .state = ENTITY_ACTIVE,
         .kind = BULLET_PELLET,
         .position = { { 100 * 16, 100 * 16 }, { 120 * 16, 120 * 16 } },
     };
     M_Activate(&fixture);
-    CHECK_EQ_INT(m_Score.bombs, 127);
-    CHECK_EQ_INT(m_Bomb.stage_bombs, 0);
-    CHECK_EQ_INT(m_Performance.total_bombs, 0);
-    CHECK_EQ_INT(m_Bomb.ages[3], 4);
-    CHECK_EQ_INT(m_Bomb.center.x, 220);
-    CHECK_EQ_INT(m_Bomb.center.y, 196);
-    CHECK_EQ_INT(m_Bomb.frame, 0);
-    CHECK_EQ_INT(m_Player.bomb_invincible, 1);
+    CHECK_EQ_INT(p_Score->bombs, 127);
+    CHECK_EQ_INT(p_Bomb->stage_bombs, 0);
+    CHECK_EQ_INT(p_Performance->total_bombs, 0);
+    CHECK_EQ_INT(p_Bomb->ages[3], 4);
+    CHECK_EQ_INT(p_Bomb->center.x, 220);
+    CHECK_EQ_INT(p_Bomb->center.y, 196);
+    CHECK_EQ_INT(p_Bomb->frame, 0);
+    CHECK_EQ_INT(p_Player->bomb_invincible, 1);
 
     CHECK_EQ_INT(p_Bullets->slots[0].state, ENTITY_REMOVE);
     CHECK_EQ_INT(p_Bullets->slots[0].position[0].x, 120 * 16);
     CHECK(p_Background->cache.columns[4] != 0);
     M_Activate(&fixture);
-    CHECK_EQ_INT(m_Score.bombs, 127);
+    CHECK_EQ_INT(p_Score->bombs, 127);
 
     Bomb_ResetStage();
-    CHECK_EQ_INT(m_Bomb.active, 0);
-    CHECK_EQ_INT(m_Bomb.ages[3], 4);
-    m_Score.bombs = 0;
+    CHECK_EQ_INT(p_Bomb->active, 0);
+    CHECK_EQ_INT(p_Bomb->ages[3], 4);
+    p_Score->bombs = 0;
     M_Activate(&fixture);
-    CHECK_EQ_INT(m_Bomb.active, 0);
+    CHECK_EQ_INT(p_Bomb->active, 0);
     M_Free(&fixture, UINT64_C(4110778921578225087));
 }
 
@@ -154,11 +154,11 @@ TEST(
     for (uint8_t type = 0; type < 3; type++) {
         FIXTURE fixture;
         M_Init(&fixture, type);
-        m_Bomb.columns[49] = (ENTITY_POINT) { 17, 19 };
-        m_Bomb.ages[49] = 231;
+        p_Bomb->columns[49] = (ENTITY_POINT) { 17, 19 };
+        p_Bomb->ages[49] = 231;
         M_Activate(&fixture);
         size_t ticks = 0;
-        while (m_Bomb.active != 0 && ticks < 256) {
+        while (p_Bomb->active != 0 && ticks < 256) {
             Bomb_Invalidate(fixture.pages, &fixture.assets);
             M_Update(&fixture);
             ticks++;
@@ -167,18 +167,18 @@ TEST(
             Video_AccessPage(fixture.pages.back);
         }
         CHECK_EQ_INT(ticks, type == 2 ? 162 : 190);
-        CHECK_EQ_INT(m_Bomb.active, 0);
-        CHECK_EQ_INT(m_Player.bomb_invincible, 0);
-        CHECK_EQ_INT(m_Player.invincibility, 70);
-        CHECK_EQ_INT(m_Score.bombs, 2);
-        CHECK_EQ_INT(m_Bomb.stage_bombs, 1);
-        CHECK_EQ_INT(m_Performance.total_bombs, 1);
+        CHECK_EQ_INT(p_Bomb->active, 0);
+        CHECK_EQ_INT(p_Player->bomb_invincible, 0);
+        CHECK_EQ_INT(p_Player->invincibility, 70);
+        CHECK_EQ_INT(p_Score->bombs, 2);
+        CHECK_EQ_INT(p_Bomb->stage_bombs, 1);
+        CHECK_EQ_INT(p_Performance->total_bombs, 1);
         CHECK_EQ_INT(p_Palette->tone, 100);
         CHECK_EQ_INT(p_Background->cache.mode, TILE_IMAGES);
         CHECK_EQ_INT(fixture.slowdown, 1);
         CHECK_EQ_INT(g_Grcg->mode, 0);
-        CHECK_EQ_INT(m_Bomb.columns[49].y, 19);
-        CHECK_EQ_INT(m_Bomb.ages[49], 231);
+        CHECK_EQ_INT(p_Bomb->columns[49].y, 19);
+        CHECK_EQ_INT(p_Bomb->ages[49], 231);
 
         CHECK_EQ_INT(fixture.frame, 0);
         const uint64_t pcm[] = { UINT64_C(10798969055977867667),
@@ -193,9 +193,9 @@ TEST(transition_overread_fix_skips_only_frame_31_and_retains_exact_mode)
     for (uint8_t type = 0; type < 3; type++) {
         FIXTURE fixture;
         M_Init(&fixture, type);
-        m_Bomb.active = 1;
-        m_Bomb.circle_done = 1;
-        m_Bomb.frame = 29;
+        p_Bomb->active = 1;
+        p_Bomb->circle_done = 1;
+        p_Bomb->frame = 29;
         fixture.fix_transition_overread = true;
         fixture.transition_tail = nullptr;
         fixture.assets.transition[14][0][0] = 0x80;
@@ -204,13 +204,13 @@ TEST(transition_overread_fix_skips_only_frame_31_and_retains_exact_mode)
         CHECK_EQ_INT(g_Video.pages[0][16 * 640 + 32], color);
         memset(g_Video.pages[0], 7, VIDEO_PAGE_SIZE);
         M_Update(&fixture);
-        CHECK_EQ_INT(m_Bomb.frame, 31);
+        CHECK_EQ_INT(p_Bomb->frame, 31);
         for (size_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
             CHECK_EQ_INT(g_Video.pages[0][i], 7);
         }
         CHECK_EQ_INT(g_Grcg->mode, 0);
-        CHECK_EQ_INT(m_Score.bombs, 3);
-        m_Bomb.frame = 30;
+        CHECK_EQ_INT(p_Score->bombs, 3);
+        p_Bomb->frame = 30;
         fixture.fix_transition_overread = false;
         fixture.transition_tail = fixture.tail;
         M_Update(&fixture);
@@ -233,16 +233,16 @@ TEST(transition_fix_preserves_complete_animation_state_and_random_stream)
             }
             M_Activate(&fixture);
             size_t ticks = 0;
-            while (m_Bomb.active != 0 && ticks < 256) {
+            while (p_Bomb->active != 0 && ticks < 256) {
                 Bomb_Invalidate(fixture.pages, &fixture.assets);
                 M_Update(&fixture);
                 BOMB_SNAPSHOT observed = {};
-                observed.bomb = m_Bomb;
-                observed.player = m_Player;
-                observed.random = m_Rng;
+                observed.bomb = *p_Bomb;
+                observed.player = *p_Player;
+                observed.random = *p_Rng;
                 observed.sparks = *g_Sparks;
                 observed.score = *g_Score;
-                observed.performance = m_Performance;
+                observed.performance = *p_Performance;
                 observed.palette = (*p_Palette);
                 observed.slowdown = fixture.slowdown;
                 observed.pcm = fixture.pcm;
@@ -295,7 +295,7 @@ TEST(transition_fix_preserves_complete_animation_state_and_random_stream)
                 ticks++;
             }
             CHECK_EQ_INT(ticks, type == 2 ? 162 : 190);
-            CHECK_EQ_INT(m_Bomb.active, 0);
+            CHECK_EQ_INT(p_Bomb->active, 0);
             if (fixed == 0) {
                 expected_ticks = ticks;
             } else {
@@ -321,7 +321,7 @@ static uint64_t M_HashValue(uint64_t hash, const uint32_t value)
 
 static uint64_t M_HashState(const FIXTURE *const fixture, uint64_t hash)
 {
-    const BOMB *const bomb = &m_Bomb;
+    const BOMB *const bomb = p_Bomb;
     const int32_t values[] = {
         bomb->frame,
         bomb->circle_frame,
@@ -333,10 +333,10 @@ static uint64_t M_HashState(const FIXTURE *const fixture, uint64_t hash)
         bomb->stage_bombs,
         bomb->active,
         bomb->row,
-        m_Player.bomb_invincible,
-        m_Player.invincibility,
-        m_Score.bombs,
-        m_Performance.total_bombs,
+        p_Player->bomb_invincible,
+        p_Player->invincibility,
+        p_Score->bombs,
+        p_Performance->total_bombs,
         fixture->slowdown,
         p_Palette->tone,
         p_Background->cache.mode,
@@ -390,14 +390,14 @@ static uint64_t M_HashState(const FIXTURE *const fixture, uint64_t hash)
             hash = M_HashValue(hash, p_Background->cache.dirty[x][y]);
         }
     }
-    hash = M_HashValue(hash, m_Rng.seed);
-    hash = M_HashValue(hash, m_Rng.cursor);
+    hash = M_HashValue(hash, p_Rng->seed);
+    hash = M_HashValue(hash, p_Rng->cursor);
     for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-        hash = M_HashValue(hash, m_Rng.ring[i]);
+        hash = M_HashValue(hash, p_Rng->ring[i]);
     }
     for (size_t i = 0; i < TRAM_PLANE_CELLS; i++) {
-        hash = M_HashValue(hash, m_Tram.codes[i]);
-        hash = M_HashValue(hash, m_Tram.attributes[i]);
+        hash = M_HashValue(hash, p_Tram->codes[i]);
+        hash = M_HashValue(hash, p_Tram->attributes[i]);
     }
     for (size_t page = 0; page < 2; page++) {
         for (size_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
@@ -420,12 +420,12 @@ TEST(full_animations_keep_live_scroll_reduction_transition_pixels_and_sound)
                 if (fixed != 0) {
                     fixture.transition_tail = nullptr;
                 }
-                m_Rng.cursor = 255;
+                p_Rng->cursor = 255;
                 for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-                    m_Rng.ring[i] = (uint8_t)(i ^ 0x5a);
+                    p_Rng->ring[i] = (uint8_t)(i ^ 0x5a);
                 }
-                m_Bomb.columns[49] = (ENTITY_POINT) { 17, 19 };
-                m_Bomb.ages[49] = 231;
+                p_Bomb->columns[49] = (ENTITY_POINT) { 17, 19 };
+                p_Bomb->ages[49] = 231;
                 for (size_t i = 0; i < sizeof(fixture.assets.transition); i++) {
                     ((uint8_t *)fixture.assets.transition)[i] =
                         (uint8_t)(i * 13 + 7);
@@ -435,7 +435,7 @@ TEST(full_animations_keep_live_scroll_reduction_transition_pixels_and_sound)
                 }
                 M_Activate(&fixture);
                 size_t ticks = 0;
-                while (m_Bomb.active != 0 && ticks < 256) {
+                while (p_Bomb->active != 0 && ticks < 256) {
                     fixture.pages.scroll = (int16_t)((ticks * 7 + 399) % 400);
                     Bomb_Invalidate(fixture.pages, &fixture.assets);
                     M_Update(&fixture);
@@ -448,7 +448,7 @@ TEST(full_animations_keep_live_scroll_reduction_transition_pixels_and_sound)
                     ticks++;
                 }
                 CHECK_EQ_INT(ticks, type == 2 ? 162 : 190);
-                CHECK_EQ_INT(m_Bomb.active, 0);
+                CHECK_EQ_INT(p_Bomb->active, 0);
                 TestSound_Free(&fixture.sound);
                 Arena_Free(&fixture.arena);
             }

@@ -7,12 +7,11 @@
 #include "th02/background/private.h"
 #include "th02/bullets.h"
 #include "th02/bullets/private.h"
-#include "th02/bullets/spawn.c"
-#include "th02/performance.c"
+#include "th02/performance_private.h"
 #include "th02/player.h"
 #include "th02/random.h"
-#include "th02/sparks.c"
 #include "th02/sparks.h"
+#include "th02/sparks_private.h"
 
 #include "core/base/arena.h"
 #include "core/base/memory.h"
@@ -32,8 +31,8 @@ static uint64_t M_HashState(uint64_t hash)
 {
     const int32_t parameters[] = {
         p_Bullets->motion_a, p_Bullets->motion_b, p_Bullets->turn_limit,
-        m_Spawn.rank,        m_Spawn.speed_bias,  m_Spawn.base_layers,
-        m_Spawn.layers,      m_Spawn.slow_cycle,
+        p_Spawn->rank,       p_Spawn->speed_bias, p_Spawn->base_layers,
+        p_Spawn->layers,     p_Spawn->slow_cycle,
     };
     for (size_t i = 0; i < ARRAY_SIZE(parameters); i++) {
         hash = M_HashValue(hash, (uint32_t)parameters[i]);
@@ -51,10 +50,10 @@ static uint64_t M_HashState(uint64_t hash)
             hash = M_HashValue(hash, (uint32_t)values[j]);
         }
     }
-    hash = M_HashValue(hash, m_Rng.seed);
-    hash = M_HashValue(hash, m_Rng.cursor);
+    hash = M_HashValue(hash, p_Rng->seed);
+    hash = M_HashValue(hash, p_Rng->cursor);
     for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-        hash = M_HashValue(hash, m_Rng.ring[i]);
+        hash = M_HashValue(hash, p_Rng->ring[i]);
     }
     return hash;
 }
@@ -62,32 +61,32 @@ static uint64_t M_HashState(uint64_t hash)
 TEST(stage_init_preserves_records_and_consumes_two_draws_per_spark)
 {
     memset(p_Bullets, 0xa5, sizeof(*p_Bullets));
-    memset(&m_Spawn, 0xa5, sizeof(m_Spawn));
-    memset(&m_Sparks, 0x5a, sizeof(m_Sparks));
+    memset(p_Spawn, 0xa5, sizeof(*p_Spawn));
+    memset(p_Sparks, 0x5a, sizeof(*p_Sparks));
     const BULLET before_bullet = p_Bullets->slots[0];
-    const SPARK before_spark = m_Sparks.slots[0];
+    const SPARK before_spark = p_Sparks->slots[0];
     Random_Reset();
-    memset(m_Rng.ring, 0x3c, sizeof(m_Rng.ring));
-    m_Rng.cursor = 37;
-    m_Sparks.next = 17;
-    m_Sparks.acceleration_x = -1;
+    memset(p_Rng->ring, 0x3c, sizeof(p_Rng->ring));
+    p_Rng->cursor = 37;
+    p_Sparks->next = 17;
+    p_Sparks->acceleration_x = -1;
     Bullets_ResetStage(3, true);
-    CHECK_EQ_INT(m_Rng.seed, UINT32_C(0x7db41981));
-    CHECK_EQ_INT(m_Rng.cursor, 37);
-    CHECK_EQ_INT(m_Rng.ring[0], 0x3c);
-    CHECK_EQ_INT(m_Rng.ring[255], 0x3c);
-    CHECK_EQ_INT(m_Sparks.slots[0].angle, 90);
-    CHECK_EQ_INT(m_Sparks.slots[0].base_speed, 2);
-    CHECK_EQ_INT(m_Sparks.slots[63].angle, 228);
-    CHECK_EQ_INT(m_Sparks.slots[63].base_speed, 52);
-    CHECK_EQ_INT(m_Sparks.next, 17);
-    CHECK_EQ_INT(m_Sparks.acceleration_x, -1);
-    CHECK_EQ_INT(m_Sparks.sprite_interval, 7);
-    CHECK_EQ_INT(m_Sparks.age_limit, 24);
+    CHECK_EQ_INT(p_Rng->seed, UINT32_C(0x7db41981));
+    CHECK_EQ_INT(p_Rng->cursor, 37);
+    CHECK_EQ_INT(p_Rng->ring[0], 0x3c);
+    CHECK_EQ_INT(p_Rng->ring[255], 0x3c);
+    CHECK_EQ_INT(p_Sparks->slots[0].angle, 90);
+    CHECK_EQ_INT(p_Sparks->slots[0].base_speed, 2);
+    CHECK_EQ_INT(p_Sparks->slots[63].angle, 228);
+    CHECK_EQ_INT(p_Sparks->slots[63].base_speed, 52);
+    CHECK_EQ_INT(p_Sparks->next, 17);
+    CHECK_EQ_INT(p_Sparks->acceleration_x, -1);
+    CHECK_EQ_INT(p_Sparks->sprite_interval, 7);
+    CHECK_EQ_INT(p_Sparks->age_limit, 24);
     size_t sprites = 0;
     for (size_t i = 0; i < SPARK_COUNT; i++) {
-        CHECK_EQ_INT(m_Sparks.slots[i].state, ENTITY_FREE);
-        sprites += m_Sparks.slots[i].preferred == 14;
+        CHECK_EQ_INT(p_Sparks->slots[i].state, ENTITY_FREE);
+        sprites += p_Sparks->slots[i].preferred == 14;
     }
     CHECK_EQ_INT(sprites, 8);
     for (size_t i = 0; i < BULLET_COUNT; i++) {
@@ -99,12 +98,12 @@ TEST(stage_init_preserves_records_and_consumes_two_draws_per_spark)
             sizeof(before_bullet.position))
         == 0);
     CHECK_EQ_INT(p_Bullets->slots[0].reserved, before_bullet.reserved);
-    CHECK_EQ_INT(m_Sparks.slots[0].age, before_spark.age);
-    CHECK_EQ_INT(m_Sparks.slots[0].drawing, before_spark.drawing);
-    CHECK_EQ_INT(m_Sparks.slots[0].reserved_1, before_spark.reserved_1);
-    CHECK_EQ_INT(m_Sparks.slots[0].reserved_2, before_spark.reserved_2);
-    CHECK_EQ_INT(m_Spawn.slow_cycle, 0xa5);
-    CHECK_EQ_INT(m_Spawn.speed_bias, 12);
+    CHECK_EQ_INT(p_Sparks->slots[0].age, before_spark.age);
+    CHECK_EQ_INT(p_Sparks->slots[0].drawing, before_spark.drawing);
+    CHECK_EQ_INT(p_Sparks->slots[0].reserved_1, before_spark.reserved_1);
+    CHECK_EQ_INT(p_Sparks->slots[0].reserved_2, before_spark.reserved_2);
+    CHECK_EQ_INT(p_Spawn->slow_cycle, 0xa5);
+    CHECK_EQ_INT(p_Spawn->speed_bias, 12);
     CHECK_EQ_INT(p_Bullets->motion_a, 1);
     CHECK_EQ_INT(p_Bullets->motion_b, 64);
     CHECK_EQ_INT(p_Bullets->turn_limit, 1);
@@ -204,13 +203,13 @@ TEST(spawn_patterns_layers_pages_and_partial_pools_keep_state_and_rng)
                         for (size_t pattern = 0; pattern < ARRAY_SIZE(patterns);
                              pattern++) {
                             Player_Init();
-                            m_Player.current = (ENTITY_POINT) { 208, 336 };
-                            m_Bomb.active = bomb;
-                            m_Performance.value = performance[perf];
+                            p_Player->current = (ENTITY_POINT) { 208, 336 };
+                            p_Bomb->active = bomb;
+                            p_Performance->value = performance[perf];
                             memset(p_Bullets, 0xa5, sizeof(*p_Bullets));
                             BulletSpawn_Init(rank);
                             BulletSpawn_Layers(2);
-                            m_Spawn.slow_cycle = 255;
+                            p_Spawn->slow_cycle = 255;
                             for (size_t i = 0; i < BULLET_COUNT; i++) {
                                 p_Bullets->slots[i].state = layout == 0
                                         || (layout == 1 && (i == 4 || i == 149))
@@ -219,9 +218,9 @@ TEST(spawn_patterns_layers_pages_and_partial_pools_keep_state_and_rng)
                             }
                             Random_Reset();
                             Random_Seed(0x12345678);
-                            m_Rng.cursor = 255;
+                            p_Rng->cursor = 255;
                             for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
-                                m_Rng.ring[i] = (uint8_t)(i ^ 0x5a);
+                                p_Rng->ring[i] = (uint8_t)(i ^ 0x5a);
                             }
                             Bullets_AddPellets(
                                 back, 100, 40, 3, patterns[pattern], 24);
@@ -245,13 +244,13 @@ TEST(pellet_layers_preserve_unwritten_bytes_and_the_other_page)
         p_Bullets->slots[i].state = ENTITY_FREE;
     }
     BulletSpawn_Init(1);
-    m_Spawn.layers = 2;
+    p_Spawn->layers = 2;
     Random_Reset();
     Player_Init();
-    m_Player.current = (ENTITY_POINT) { 208, 336 };
-    m_Performance.value = 0;
+    p_Player->current = (ENTITY_POINT) { 208, 336 };
+    p_Performance->value = 0;
     Bullets_AddPellets(1, 100, 40, 0, BULLET_RING4, 128);
-    CHECK_EQ_INT(m_Rng.cursor, 0);
+    CHECK_EQ_INT(p_Rng->cursor, 0);
     for (size_t i = 0; i < 12; i++) {
         const BULLET *const bullet = &p_Bullets->slots[i];
         CHECK_EQ_INT(bullet->state, ENTITY_ACTIVE);
@@ -280,16 +279,16 @@ TEST(partial_random_volley_consumes_only_allocated_slots)
     p_Bullets->slots[4].state = p_Bullets->slots[149].state = ENTITY_FREE;
     BulletSpawn_Init(3);
     Random_Reset();
-    m_Rng.cursor = 255;
-    m_Rng.ring[255] = 0;
-    m_Rng.ring[0] = 7;
-    m_Rng.ring[1] = 64;
-    m_Rng.ring[2] = 31;
+    p_Rng->cursor = 255;
+    p_Rng->ring[255] = 0;
+    p_Rng->ring[0] = 7;
+    p_Rng->ring[1] = 64;
+    p_Rng->ring[2] = 31;
     Player_Init();
-    m_Player.current = (ENTITY_POINT) { 208, 336 };
-    m_Performance.value = 0;
+    p_Player->current = (ENTITY_POINT) { 208, 336 };
+    p_Performance->value = 0;
     Bullets_AddSprites(0, 100, 40, 3, BULLET_RANDOM_SPEED, 300, 64);
-    CHECK_EQ_INT(m_Rng.cursor, 3);
+    CHECK_EQ_INT(p_Rng->cursor, 3);
     CHECK_EQ_INT(p_Bullets->slots[4].state, ENTITY_ACTIVE);
     CHECK_EQ_INT(p_Bullets->slots[149].state, ENTITY_ACTIVE);
     CHECK_EQ_INT(p_Bullets->slots[5].state, ENTITY_REMOVE);
@@ -306,26 +305,26 @@ TEST(gravity_bypasses_tuning_but_full_and_rejected_spawns_keep_rng)
     BulletSpawn_Init(0);
     Random_Reset();
     Player_Init();
-    m_Player.current = (ENTITY_POINT) { 208, 336 };
-    m_Performance.value = -48;
+    p_Player->current = (ENTITY_POINT) { 208, 336 };
+    p_Performance->value = -48;
     Bullets_AddSprites(0, 100, 40, 0, BULLET_MOTION_GRAVITY, 55, 3);
     CHECK_EQ_INT(p_Bullets->slots[0].speed, 3);
     CHECK_EQ_INT(p_Bullets->slots[0].velocity.x, 3);
-    CHECK_EQ_INT(m_Spawn.slow_cycle, 0);
-    CHECK_EQ_INT(m_Rng.cursor, 0);
+    CHECK_EQ_INT(p_Spawn->slow_cycle, 0);
+    CHECK_EQ_INT(p_Rng->cursor, 0);
     for (size_t i = 0; i < BULLET_COUNT; i++) {
         p_Bullets->slots[i].state = ENTITY_ACTIVE;
     }
     Bullets_AddPellets(0, 100, 40, 0, BULLET_RANDOM_SPEED, 3);
-    CHECK_EQ_INT(m_Spawn.slow_cycle, 1);
-    CHECK_EQ_INT(m_Rng.cursor, 0);
-    m_Bomb.active = 1;
+    CHECK_EQ_INT(p_Spawn->slow_cycle, 1);
+    CHECK_EQ_INT(p_Rng->cursor, 0);
+    p_Bomb->active = 1;
     Bullets_AddPellets(0, 100, 40, 0, BULLET_RANDOM_SPEED, 3);
-    CHECK_EQ_INT(m_Spawn.slow_cycle, 1);
-    m_Bomb.active = 0;
+    CHECK_EQ_INT(p_Spawn->slow_cycle, 1);
+    p_Bomb->active = 0;
     Bullets_AddPellets(0, 23, 40, 0, BULLET_RANDOM_SPEED, 3);
-    CHECK_EQ_INT(m_Spawn.slow_cycle, 1);
-    CHECK_EQ_INT(m_Rng.cursor, 0);
+    CHECK_EQ_INT(p_Spawn->slow_cycle, 1);
+    CHECK_EQ_INT(p_Rng->cursor, 0);
 }
 
 typedef struct {
@@ -344,12 +343,12 @@ static FRAME_FIXTURE *M_Frame(void)
     Bullets_Init();
     Player_Init();
     Grcg_Init();
-    memset(&m_Rng, 0, sizeof(m_Rng));
+    memset(p_Rng, 0, sizeof(*p_Rng));
     FRAME_FIXTURE *const fixture = Mem_AllocZ(sizeof(*fixture));
     Arena_Init(&fixture->arena, "bullet frame", 1024 * 1024);
     Video_Init(Arena_Allocator(&fixture->arena));
     TestClip_Set(0, 0, 639, 399);
-    m_Player.current = (ENTITY_POINT) { 208, 336 };
+    p_Player->current = (ENTITY_POINT) { 208, 336 };
     fixture->patterns.entries[50] = (PATTERN) {
         .size = 0x0210,
         .data = fixture->tiny,
@@ -426,7 +425,7 @@ TEST(slowing_rounds_toward_zero_and_homing_keeps_byte_phase_wrap)
     FRAME_FIXTURE *const fixture = M_Frame();
     p_Bullets->motion_b = 256;
     p_Bullets->turn_limit = 1;
-    m_Player.current = (ENTITY_POINT) { 91, 92 };
+    p_Player->current = (ENTITY_POINT) { 91, 92 };
     p_Bullets->slots[0] = M_Bullet(BULLET_MOTION_SLOW_THEN_AIM);
     p_Bullets->slots[1] = M_Bullet(BULLET_MOTION_HOMING);
     p_Bullets->slots[1].phase = 255;
@@ -475,7 +474,7 @@ TEST(drift_and_corner_bounces_wrap_bytes_before_testing_signed_limits)
 TEST(collision_edges_override_existing_hit_and_removed_slots_do_not_draw)
 {
     FRAME_FIXTURE *const fixture = M_Frame();
-    m_Player.hit = 255;
+    p_Player->hit = 255;
     for (size_t i = 0; i < 4; i++) {
         p_Bullets->slots[i] = M_Bullet(0);
         p_Bullets->slots[i].kind = BULLET_PELLET;
@@ -486,7 +485,7 @@ TEST(collision_edges_override_existing_hit_and_removed_slots_do_not_draw)
     p_Bullets->slots[2].position[0] = (ENTITY_POINT) { 214 * 16, 348 * 16 };
     p_Bullets->slots[3].position[0] = (ENTITY_POINT) { 20 * 16 + 15, 100 * 16 };
     M_Step(fixture);
-    CHECK_EQ_INT(m_Player.hit, 1);
+    CHECK_EQ_INT(p_Player->hit, 1);
     CHECK_EQ_INT(p_Bullets->slots[0].state, ENTITY_REMOVE);
     CHECK_EQ_INT(p_Bullets->slots[1].state, ENTITY_ACTIVE);
     CHECK_EQ_INT(p_Bullets->slots[2].state, ENTITY_ACTIVE);

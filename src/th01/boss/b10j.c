@@ -1,4 +1,4 @@
-#include "th01/boss/private.h"
+#include "th01/boss/private_b10j.h"
 #include "th01/missiles.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"
@@ -18,78 +18,16 @@
 
 #include <string.h>
 
-typedef struct {
-    uint8_t masks[2][8][4];
-} B10J_PILLARS;
-
-typedef struct {
-    BOS still;
-    BOS animation;
-    PTN missiles;
-    PI_IMAGE background;
-    PALETTE palette;
-    SCENE_DATA next_scene;
-    B10J_PILLARS pillars;
-} B10J_ASSETS;
-
-typedef struct {
-    uint8_t angle;
-    int16_t radius;
-} B10J_SQUARE;
-
-typedef enum {
-    B10J_PHASE_START,
-    B10J_PHASE_FIRST,
-    B10J_PHASE_SPREAD,
-    B10J_PHASE_SECOND,
-} B10J_PHASE;
-
-typedef struct {
-    BOSS_ENTITY still;
-    BOSS_ENTITY animation;
-    BOSS_HIT hit;
-    PALETTE boss_palette;
-    PALETTE post_defeat;
-    PALETTE_FADE setup_fade;
-    VSYNC_WAIT setup_wait;
-    BOSS_DEFEAT defeat;
-    uint8_t background[128 * 160];
-    B10J_SQUARE squares[6];
-    int16_t pillar_time[8];
-    int16_t pillar_x[8];
-    int16_t pillar_bottom[8];
-    int16_t laser_x[4];
-    int16_t laser_y[4];
-    BOSS_STATE status;
-    int16_t pattern;
-    int16_t pattern_state;
-    int16_t target_left;
-    uint8_t hop;
-    uint8_t direction;
-    uint8_t missile_angle;
-    uint8_t pellet_angle;
-    uint8_t spread_interval;
-    uint8_t spread_speed;
-    bool meteor_active;
-    bool hp_bar_filled;
-    bool setup_active;
-    bool entrance_active;
-    bool entrance_waiting;
-    bool defeating;
-    bool finished;
-} B10J;
-
 static B10J m_B10J;
+B10J *const p_B10J = &m_B10J;
 
-static RESULT M_LoadMissiles(
-    VFS *const vfs, const ALLOCATOR *const a, PTN *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, "BOSS3_M.PTN", VFS_IN_MEMORY, &reader));
-    const RESULT result = Ptn_Load(&reader, a, out);
-    Reader_Close(&reader);
-    return result;
-}
+static const BOSS_DEFEAT_PARAMS m_Defeat = {
+    .shift = 16,
+    .step = 2,
+    .whiteout_period = 7,
+    .whitein_period = 5,
+    .clears_stage = true,
+};
 
 static RESULT M_LoadPillars(VFS *const vfs, B10J_PILLARS *const out)
 {
@@ -106,7 +44,7 @@ static RESULT M_LoadPillars(VFS *const vfs, B10J_PILLARS *const out)
     return OK;
 }
 
-static RESULT M_ValidateAssets(const B10J_ASSETS *const a)
+RESULT B10J_ValidateAssets(const B10J_ASSETS *const a)
 {
     FAIL_IF(
         a == nullptr || a->still.pixels == nullptr
@@ -135,13 +73,13 @@ static RESULT M_LoadAssets(
     B10J_ASSETS *const out = data;
     *out = (B10J_ASSETS) {};
     B10J_ASSETS loaded = {};
-    MUST(Boss_LoadBos(vfs, "BOSS3_1.BOS", a, &loaded.still));
-    MUST(Boss_LoadBos(vfs, "BOSS3_2.BOS", a, &loaded.animation));
-    MUST(Boss_LoadBackground(vfs, "BOSS3.GRP", a, &loaded.background));
-    MUST(M_LoadMissiles(vfs, a, &loaded.missiles));
+    MUST(BossAssets_LoadBos(vfs, "BOSS3_1.BOS", a, &loaded.still));
+    MUST(BossAssets_LoadBos(vfs, "BOSS3_2.BOS", a, &loaded.animation));
+    MUST(BossAssets_LoadBackground(vfs, "BOSS3.GRP", a, &loaded.background));
+    MUST(BossAssets_LoadMissiles(vfs, a, &loaded.missiles));
     MUST(Scene_Load(vfs, 4, a, &loaded.next_scene));
     MUST(M_LoadPillars(vfs, &loaded.pillars));
-    MUST(M_ValidateAssets(&loaded));
+    MUST(B10J_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;
     return OK;
@@ -161,16 +99,16 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     Boss_Select(&m_B10J.status);
     ASSERT(
         !m_B10J.setup_active && !m_B10J.entrance_active && !m_B10J.defeating);
-    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(B10J_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B10J.still, 0, &assets->still)));
     ASSERT(Result_Ignore(
         BossEntity_Bind(&m_B10J.animation, 1, &assets->animation)));
-    Palette_Set(&g_Palette, &assets->palette);
-    m_B10J.post_defeat = g_Palette.saved;
-    m_B10J.boss_palette = g_Palette.saved;
+    Palette_SetGlobal(&assets->palette);
+    m_B10J.post_defeat = g_Palette->saved;
+    m_B10J.boss_palette = g_Palette->saved;
     m_B10J.still.image = 0;
     m_B10J.animation.image = 1;
-    Palette_BeginFade(&m_B10J.setup_fade, &g_Palette, PALETTE_FADE_WHITE_IN);
+    Palette_BeginGlobalFade(&m_B10J.setup_fade, PALETTE_FADE_WHITE_IN);
     VSyncIrq_BeginWait(&m_B10J.setup_wait);
     m_B10J.setup_active = true;
     m_B10J.finished = false;
@@ -184,7 +122,7 @@ static bool M_ResumeSetup(const void *const data, const BOSS_CONTEXT *const ctx)
     if (!VSyncIrq_WaitReady(&m_B10J.setup_wait)) {
         return false;
     }
-    Palette_FadeStep(&m_B10J.setup_fade, &g_Palette);
+    Palette_GlobalFadeStep(&m_B10J.setup_fade);
     if (m_B10J.setup_fade.remaining != 0) {
         VSyncIrq_BeginWait(&m_B10J.setup_wait);
         return false;
@@ -197,9 +135,9 @@ static bool M_ResumeSetup(const void *const data, const BOSS_CONTEXT *const ctx)
     m_B10J.status.phase = B10J_PHASE_START;
     m_B10J.status.hp = 12;
     HudHp_Begin(2, 6);
-    Particles_Init();
-    Missiles_Reset();
-    Palette_SetStage(&g_Palette.saved);
+    Particles_ResetStage();
+    Missiles_ResetStage();
+    Palette_SetStage(&g_Palette->saved);
     m_B10J.setup_active = false;
     return true;
 }
@@ -366,7 +304,7 @@ static void M_Add(
     const int16_t y, const uint8_t angle, const int16_t speed, const bool chase)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, x, y, angle, speed,
+        g_Session->settings.difficulty, x, y, angle, speed,
         chase ? PELLET_CHASE : PELLET_REGULAR, chase ? speed : 0, 0, 0);
 }
 
@@ -580,16 +518,15 @@ static void M_Hop(const B10J_ASSETS *const assets, const PTN *const miko)
     }
     if (m_B10J.hop >= 4) {
         M_PutStill(assets, miko);
-        Palette_Set(&g_Palette, &g_StagePalette);
+        Palette_SetGlobal(g_StagePalette);
         m_B10J.hop = 255;
         m_B10J.direction = (uint8_t)(1 - m_B10J.direction);
         m_B10J.meteor_active = true;
         m_B10J.status.frame = 0;
     } else {
         for (int32_t i = 0; i < 16; i++) {
-            const int8_t *const color = g_Palette.saved.colors[i];
-            Palette_SetColor(
-                &g_Palette, i, color[0] - 4, color[1] - 4, color[2] - 4);
+            const int8_t *const color = g_Palette->saved.colors[i];
+            Palette_SetGlobalColor(i, color[0] - 4, color[1] - 4, color[2] - 4);
         }
         m_B10J.hop++;
         m_B10J.status.frame = 1;
@@ -613,7 +550,8 @@ static void M_Pillar(
             }
             for (int32_t bit = 0; bit < 8; bit++) {
                 if ((mask[byte] & (0x80u >> bit)) != 0) {
-                    g_Video.pages[g_Video.drawing_page][address * 8 + bit] = 10;
+                    g_Video->pages[g_Video->drawing_page][address * 8 + bit] =
+                        10;
                 }
             }
         }
@@ -687,7 +625,7 @@ static void M_Pillars(const B10J_ASSETS *const assets, const PTN *const miko)
             m_B10J.pillar_time[i] -= 8;
         } else if (m_B10J.pillar_time[i] != -999) {
             Pellets_AddGroup(
-                g_Session.settings.difficulty,
+                g_Session->settings.difficulty,
                 Math16_Wrap(m_B10J.still.left + 64),
                 Math16_Wrap(m_B10J.still.top + 80),
                 PELLET_GROUP_THREE_WIDE_AIMED, 36);
@@ -848,8 +786,8 @@ static bool M_Entrance(const B10J_ASSETS *const assets, const PTN *const miko)
             m_B10J.status.phase = B10J_PHASE_FIRST;
             m_B10J.pattern = 0;
             m_B10J.hp_bar_filled = false;
-            Palette_SetStage(&g_Palette.saved);
-            m_B10J.boss_palette = g_Palette.saved;
+            Palette_SetStage(&g_Palette->saved);
+            m_B10J.boss_palette = g_Palette->saved;
             M_InitHop(assets, miko);
             m_B10J.entrance_active = false;
             return true;
@@ -884,8 +822,8 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
     if (m_B10J.defeating) {
         return M_Death(assets, miko);
     }
-    Missiles_UpdateAndRender((uint16_t)g_Session.frame_rand, &assets->missiles);
-    Particles_UpdateAndRender(PARTICLES_TOP_RIGHT, 7);
+    Missiles_Update((uint16_t)g_Session->frame_rand, &assets->missiles);
+    Particles_Update(PARTICLES_TOP_RIGHT, 7);
     if (m_B10J.status.phase == B10J_PHASE_START) {
         Video_SelectDrawingPage(0);
         m_B10J.status.frame = 0;
@@ -980,10 +918,10 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
             M_Erase(assets, miko);
             Video_SelectDrawingPage(0);
             Sound_Fade();
-            Pellets_EraseAndResetMoving();
-            Missiles_Reset();
+            Pellets_RemoveAll();
+            Missiles_ResetStage();
             ShootoutLasers_EraseAndReset(5);
-            BossDefeat_Begin(&m_B10J.defeat, BOSS_DEFEAT_REGULAR);
+            BossDefeat_Begin(&m_B10J.defeat, m_Defeat);
             m_B10J.defeating = true;
             return M_Death(assets, miko);
         }
@@ -1007,4 +945,5 @@ const BOSS_STRATEGY g_BossMima = {
     .background = M_StageBackground,
     .update_on_life_begin = true,
     .song = 8,
+    .defeat = m_Defeat,
 };

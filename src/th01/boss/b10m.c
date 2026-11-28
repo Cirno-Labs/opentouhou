@@ -1,4 +1,4 @@
-#include "th01/boss/private.h"
+#include "th01/boss/private_b10m.h"
 #include "th01/line_bullets.h"
 #include "th01/missiles.h"
 #include "th01/particles.h"
@@ -16,88 +16,18 @@
 
 #include <string.h>
 
-typedef struct {
-    BOS eyes;
-    PTN missiles;
-    PI_IMAGE background;
-    PALETTE palette;
-    SCENE_DATA next_scene;
-} B10M_ASSETS;
-
-typedef enum {
-    B10M_STAR_WAIT,
-    B10M_STAR_SPIN_1,
-    B10M_STAR_REVERSE_1,
-    B10M_STAR_SPIN_2,
-    B10M_STAR_REVERSE_2,
-    B10M_STAR_SPIN_3,
-    B10M_STAR_SLAM,
-    B10M_STAR_RETURN,
-    B10M_STAR_GROW,
-    B10M_STAR_GROWN_SLAM,
-} B10M_STAR_PHASE;
-
-typedef enum {
-    B10M_PHASE_ENTRANCE,
-    B10M_PHASE_LATERAL,
-    B10M_PHASE_TO_MISSILES,
-    B10M_PHASE_MISSILES,
-    B10M_PHASE_TO_SPRAY,
-    B10M_PHASE_SPRAY,
-    B10M_PHASE_TO_MISSILES_CLOCK,
-    B10M_PHASE_MISSILES_CLOCK,
-    B10M_PHASE_TO_LASERS,
-    B10M_PHASE_LASERS,
-    B10M_PHASE_TO_STAR,
-    B10M_PHASE_STAR_SPAWN,
-    B10M_PHASE_STAR_RISE,
-    B10M_PHASE_STAR_ATTACK,
-} B10M_PHASE;
-
-typedef struct {
-    int16_t x[5];
-    int16_t y[5];
-    int16_t radius;
-    MATH16_VECTOR center;
-    MATH16_VECTOR velocity;
-    int16_t phase;
-    int16_t angle;
-} B10M_PENTAGRAM;
-
-typedef struct {
-    BOSS_ENTITY eyes[5];
-    BOSS_HIT hit;
-    PALETTE boss_palette;
-    PALETTE post_defeat;
-    BOSS_DEFEAT defeat;
-    B10M_PENTAGRAM pentagram;
-    BOSS_STATE status;
-    int16_t pattern_interval;
-    int16_t pattern_state;
-    int16_t subphase;
-    int16_t target_left;
-    int16_t after_hit_frame;
-    int8_t iterations;
-    uint8_t angle;
-    uint8_t angle_southeast;
-    bool hp_bar_filled;
-    bool defeating;
-    bool finished;
-} B10M;
-
 static B10M m_B10M;
+B10M *const p_B10M = &m_B10M;
 
-static RESULT M_LoadMissiles(
-    VFS *const vfs, const ALLOCATOR *const a, PTN *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, "BOSS3_M.PTN", VFS_IN_MEMORY, &reader));
-    RESULT result = Ptn_Load(&reader, a, out);
-    Reader_Close(&reader);
-    return result;
-}
+static const BOSS_DEFEAT_PARAMS m_Defeat = {
+    .shift = 16,
+    .step = 2,
+    .whiteout_period = 7,
+    .whitein_period = 5,
+    .clears_stage = true,
+};
 
-static RESULT M_ValidateAssets(const B10M_ASSETS *const a)
+RESULT B10M_ValidateAssets(const B10M_ASSETS *const a)
 {
     FAIL_IF(
         a == nullptr || a->eyes.pixels == nullptr || a->eyes.coverage == nullptr
@@ -121,11 +51,11 @@ static RESULT M_LoadAssets(
     B10M_ASSETS *const out = data;
     *out = (B10M_ASSETS) {};
     B10M_ASSETS loaded = {};
-    MUST(Boss_LoadBos(vfs, "BOSS2.BOS", a, &loaded.eyes));
-    MUST(Boss_LoadBackground(vfs, "BOSS2.GRP", a, &loaded.background));
-    MUST(M_LoadMissiles(vfs, a, &loaded.missiles));
+    MUST(BossAssets_LoadBos(vfs, "BOSS2.BOS", a, &loaded.eyes));
+    MUST(BossAssets_LoadBackground(vfs, "BOSS2.GRP", a, &loaded.background));
+    MUST(BossAssets_LoadMissiles(vfs, a, &loaded.missiles));
     MUST(Scene_Load(vfs, 3, a, &loaded.next_scene));
-    MUST(M_ValidateAssets(&loaded));
+    MUST(B10M_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;
     return OK;
@@ -141,14 +71,14 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     const B10M_ASSETS *const assets = data;
     Boss_Select(&m_B10M.status);
     ASSERT(!m_B10M.defeating);
-    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(B10M_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B10M.eyes[0], 0, &assets->eyes)));
     for (int32_t i = 1; i < 5; i++) {
         BossEntity_CopyMetadata(&m_B10M.eyes[i], &m_B10M.eyes[0]);
     }
-    Palette_Set(&g_Palette, &assets->palette);
-    m_B10M.boss_palette = g_Palette.saved;
-    m_B10M.post_defeat = g_Palette.saved;
+    Palette_SetGlobal(&assets->palette);
+    m_B10M.boss_palette = g_Palette->saved;
+    m_B10M.post_defeat = g_Palette->saved;
     Palette_SetStage(&m_B10M.post_defeat);
     const int16_t left[] = { 64, 512, 192, 384, 288 };
     const int16_t top[] = { 128, 128, 176, 176, 64 };
@@ -166,8 +96,8 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     m_B10M.status.hp = 16;
     m_B10M.finished = false;
     HudHp_Begin(8, 12);
-    Particles_Init();
-    Missiles_Reset();
+    Particles_ResetStage();
+    Missiles_ResetStage();
 }
 
 static int8_t M_Byte(const int32_t value)
@@ -233,8 +163,8 @@ static void M_Common(void)
 
 static void M_Snap(const B10M_ASSETS *const assets, const PTN *const miko)
 {
-    Palette_Set(&g_Palette, &g_StagePalette);
-    m_B10M.boss_palette = g_Palette.saved;
+    Palette_SetGlobal(g_StagePalette);
+    m_B10M.boss_palette = g_Palette->saved;
 }
 
 static void M_Group(
@@ -242,7 +172,7 @@ static void M_Group(
     const PELLET_GROUP group, const int16_t speed, const bool iris)
 {
     Pellets_AddGroup(
-        g_Session.settings.difficulty, Math16_Wrap(m_B10M.eyes[eye].left + 28),
+        g_Session->settings.difficulty, Math16_Wrap(m_B10M.eyes[eye].left + 28),
         Math16_Wrap(m_B10M.eyes[eye].top + (iris ? 28 : 32)), group, speed);
 }
 
@@ -251,7 +181,7 @@ static void M_Single(
     const uint8_t angle, const PELLET_MOTION motion)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, Math16_Wrap(m_B10M.eyes[eye].left + 28),
+        g_Session->settings.difficulty, Math16_Wrap(m_B10M.eyes[eye].left + 28),
         Math16_Wrap(m_B10M.eyes[eye].top + 32), angle, 64, motion,
         motion == PELLET_REGULAR ? 0 : 64, 0, 0);
 }
@@ -280,18 +210,19 @@ static void M_Toggle(
     M_Lock(assets, miko, close | open);
     *frame = Math16_Wrap(*frame + 1);
     if (*frame % 10 != 0) {
-        if (dec < 3 && g_Palette.saved.colors[15][dec] > 0) {
-            g_Palette.saved.colors[15][dec]--;
-            g_StagePalette.colors[15][dec] =
-                M_Byte(g_StagePalette.colors[15][dec] - 1);
+        if (dec < 3 && g_Palette->saved.colors[15][dec] > 0) {
+            Palette_SetGlobalSavedComponent(
+                15, dec, g_Palette->saved.colors[15][dec] - 1);
+            Palette_SetStageComponent(
+                15, dec, M_Byte(g_StagePalette->colors[15][dec] - 1));
         }
         if (inc < 3) {
-            g_Palette.saved.colors[15][inc] =
-                M_Byte(g_Palette.saved.colors[15][inc] + 1);
-            g_StagePalette.colors[15][inc] =
-                M_Byte(g_StagePalette.colors[15][inc] + 1);
+            Palette_SetGlobalSavedComponent(
+                15, inc, M_Byte(g_Palette->saved.colors[15][inc] + 1));
+            Palette_SetStageComponent(
+                15, inc, M_Byte(g_StagePalette->colors[15][inc] + 1));
         }
-        Palette_Set(&g_Palette, &g_StagePalette);
+        Palette_SetGlobal(g_StagePalette);
     }
     if (*frame == 20) {
         M_Image(close, 2);
@@ -345,9 +276,11 @@ static void M_Entrance(const B10M_ASSETS *const assets, const PTN *const miko)
         Player_ClearHit();
     }
     if (m_B10M.status.frame % 40 == 0) {
-        g_StagePalette.colors[15][0] = M_Byte(g_StagePalette.colors[15][0] + 1);
-        g_StagePalette.colors[15][1] = M_Byte(g_StagePalette.colors[15][1] + 1);
-        Palette_Set(&g_Palette, &g_StagePalette);
+        Palette_SetStageComponent(
+            15, 0, M_Byte(g_StagePalette->colors[15][0] + 1));
+        Palette_SetStageComponent(
+            15, 1, M_Byte(g_StagePalette->colors[15][1] + 1));
+        Palette_SetGlobal(g_StagePalette);
     }
     const int16_t open_at[] = { 100, 120, 140, 160, 180, 200 };
     bool opening = false;
@@ -384,14 +317,14 @@ static void M_Entrance(const B10M_ASSETS *const assets, const PTN *const miko)
             M_Active(31, false);
         }
         if ((m_B10M.status.frame == 240
-             && g_Session.settings.difficulty == SETTINGS_DIFFICULTY_HARD)
+             && g_Session->settings.difficulty == SETTINGS_DIFFICULTY_HARD)
             || (m_B10M.status.frame == 260
-                && g_Session.settings.difficulty
+                && g_Session->settings.difficulty
                     == SETTINGS_DIFFICULTY_LUNATIC)) {
             M_Group(assets, miko, 4, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
             M_Group(assets, miko, 3, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
             M_Group(assets, miko, 2, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
-            if (g_Session.settings.difficulty == SETTINGS_DIFFICULTY_LUNATIC) {
+            if (g_Session->settings.difficulty == SETTINGS_DIFFICULTY_LUNATIC) {
                 M_Group(
                     assets, miko, 0, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
                 M_Group(
@@ -627,11 +560,11 @@ static void M_Lasers(const B10M_ASSETS *const assets, const PTN *const miko)
             m_B10M.subphase = 6;
             m_B10M.status.frame = 0;
             m_B10M.pattern_state = 0;
-            if (g_Session.settings.difficulty == SETTINGS_DIFFICULTY_HARD) {
+            if (g_Session->settings.difficulty == SETTINGS_DIFFICULTY_HARD) {
                 M_Group(
                     assets, miko, 4, PELLET_GROUP_THREE_NARROW_AIMED, 3, true);
             }
-            if (g_Session.settings.difficulty == SETTINGS_DIFFICULTY_LUNATIC) {
+            if (g_Session->settings.difficulty == SETTINGS_DIFFICULTY_LUNATIC) {
                 M_Group(
                     assets, miko, 4, PELLET_GROUP_FIVE_NARROW_AIMED, 4, true);
             }
@@ -647,7 +580,7 @@ static void M_Lasers(const B10M_ASSETS *const assets, const PTN *const miko)
             m_B10M.subphase = (int16_t)((iteration + 1) * 2);
             m_B10M.status.frame = 0;
             m_B10M.pattern_state = 0;
-            if (g_Session.settings.difficulty > SETTINGS_DIFFICULTY_NORMAL) {
+            if (g_Session->settings.difficulty > SETTINGS_DIFFICULTY_NORMAL) {
                 M_Group(
                     assets, miko, 4, PELLET_GROUP_THREE_NARROW_AIMED, 3, true);
             }
@@ -843,7 +776,7 @@ static void M_AttackStar(const B10M_ASSETS *const assets, const PTN *const miko)
                 Math16_Wrap(p->y[i] - p->center.y),
                 Math16_Wrap(p->x[i] - p->center.x));
             Pellets_AddSingle(
-                g_Session.settings.difficulty, p->x[i], p->y[i], m_B10M.angle,
+                g_Session->settings.difficulty, p->x[i], p->y[i], m_B10M.angle,
                 48, PELLET_REGULAR, 0, 0, 0);
         }
     }
@@ -920,7 +853,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
     if (m_B10M.defeating) {
         return M_Death(assets, miko);
     }
-    Missiles_UpdateAndRender((uint16_t)g_Session.frame_rand, &assets->missiles);
+    Missiles_Update((uint16_t)g_Session->frame_rand, &assets->missiles);
     if (m_B10M.status.phase == B10M_PHASE_ENTRANCE) {
         M_Entrance(assets, miko);
     } else if (m_B10M.status.phase == B10M_PHASE_LATERAL) {
@@ -1018,12 +951,12 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         M_Hit(assets, miko);
         if (m_B10M.status.hp <= 0) {
             Sound_Fade();
-            Pellets_EraseAndResetMoving();
+            Pellets_RemoveAll();
             if (attack) {
-                Missiles_Reset();
+                Missiles_ResetStage();
             }
             ShootoutLasers_EraseAndReset(5);
-            BossDefeat_Begin(&m_B10M.defeat, BOSS_DEFEAT_REGULAR);
+            BossDefeat_Begin(&m_B10M.defeat, m_Defeat);
             m_B10M.defeating = true;
             return M_Death(assets, miko);
         }
@@ -1066,4 +999,5 @@ const BOSS_STRATEGY g_BossYuugenMagan = {
     .update = M_Update,
     .background = M_StageBackground,
     .song = 8,
+    .defeat = m_Defeat,
 };

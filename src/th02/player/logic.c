@@ -1,8 +1,7 @@
-#include "th02/player/logic.h"
-
 #include "th02/background.h"
 #include "th02/bomb.h"
 #include "th02/miss.h"
+#include "th02/player/private.h"
 #include "th02/player/render.h"
 #include "th02/shots.h"
 #include "th02/sound_effects.h"
@@ -16,6 +15,7 @@
 
 static PLAYER m_Player;
 const PLAYER *const g_Player = &m_Player;
+PLAYER *const p_Player = &m_Player;
 
 static void M_Protect(void)
 {

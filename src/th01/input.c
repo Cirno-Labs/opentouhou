@@ -1,4 +1,4 @@
-#include "th01/input.h"
+#include "th01/input_private.h"
 
 #include "core/base/assert.h"
 #include "core/input/codes.h"
@@ -35,6 +35,7 @@ static const INPUT_ACTION m_Actions[] = {
 const INPUT_SCHEMA g_InputSchema = INPUT_SCHEMA_OF(TH01_INPUT, m_Actions, 1);
 
 static GAME_INPUT m_GameInput;
+GAME_INPUT *const p_GameInput = &m_GameInput;
 const GAME_INPUT *const g_GameInput = &m_GameInput;
 
 static bool M_ChangedPair(

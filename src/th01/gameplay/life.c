@@ -17,22 +17,10 @@
 #include "th01/timer.h"
 #include "th01/vsync_irq.h"
 
-typedef enum {
-    GP_LIFE_BEGIN,
-    GP_LIFE_BOSS_BEGIN,
-    GP_LIFE_WAIT_SHOT,
-    GP_LIFE_WAIT_SHOT_DELAY,
-    GP_LIFE_FRAME_BEGIN,
-    GP_LIFE_PLAYER_BOMB,
-    GP_LIFE_ITEMS,
-    GP_LIFE_TIMER,
-    GP_LIFE_BOSS,
-    GP_LIFE_ORB,
-    GP_LIFE_AFTER_ORB,
-} GAMEPLAY_LIFE_PHASE;
-
 static GAMEPLAY_LIFE_PHASE m_LifePhase;
+GAMEPLAY_LIFE_PHASE *const p_LifePhase = &m_LifePhase;
 static GAMEPLAY_LIFE_PHASE m_AfterPlayer;
+GAMEPLAY_LIFE_PHASE *const p_AfterPlayer = &m_AfterPlayer;
 
 static PLAYER_SPRITES M_PlayerSprites(void)
 {
@@ -58,7 +46,7 @@ static bool M_BossTick(const TH01_INPUT *const raw, const uint64_t host_tick)
 
 static void M_LifeBegin(const TH01_INPUT *const raw, const uint64_t host_tick)
 {
-    Player_Reset(g_Session.settings.difficulty);
+    Player_Reset(g_Session->settings.difficulty);
     M_DefaultActors();
     GameInput_ResetMenu();
     GameInput_Consume(GAME_INPUT_PRESS_PAUSE);
@@ -67,10 +55,10 @@ static void M_LifeBegin(const TH01_INPUT *const raw, const uint64_t host_tick)
     Stage_UpdateObstacles(Gameplay_StageSprites(), true);
     const BOSS_STRATEGY *const boss = Gameplay_Boss();
     const int32_t song = boss != nullptr ? boss->song : Session_Scene();
-    if (!g_Gameplay.bgm_started && song >= 0) {
+    if (!g_Gameplay->bgm_started && song >= 0) {
         Sound_Load((size_t)song);
         Sound_Play();
-        g_Gameplay.bgm_started = true;
+        p_Gameplay->bgm_started = true;
     }
     GameInput_ResetGame();
     Player_ResumeInvincibility();
@@ -89,12 +77,12 @@ static void M_LifeBegin(const TH01_INPUT *const raw, const uint64_t host_tick)
 
 static void M_StartFrames(void)
 {
-    g_Gameplay.wait_for_shot = false;
+    p_Gameplay->wait_for_shot = false;
     GameInput_Consume(GAME_INPUT_PRESS_SHOT);
-    g_Stage.timer_initialized = true;
-    Rng_Seed(g_Session.frame_rand);
+    Stage_SetTimerInitialized(true);
+    Rng_Seed(g_Session->frame_rand);
     GameInput_OpenBombWindow();
-    g_Stage.first_stage = false;
+    Stage_SetFirstStage(false);
     m_LifePhase = GP_LIFE_FRAME_BEGIN;
 }
 
@@ -102,7 +90,7 @@ static void M_PlayerBegin(const GAMEPLAY_LIFE_PHASE after)
 {
     m_AfterPlayer = after;
     const PLAYER_SPRITES sprites = M_PlayerSprites();
-    if (Player_BeginUpdate(&g_Gameplay.player_bomb, &sprites)) {
+    if (Player_BeginUpdate(&p_Gameplay->player_bomb, &sprites)) {
         const BOMB_UPDATE result = Bomb_BeginUpdate(
             &g_GameplayAssets->miko, &g_GameplayAssets->bomb,
             (int16_t)g_Player->bomb_frame);
@@ -111,20 +99,20 @@ static void M_PlayerBegin(const GAMEPLAY_LIFE_PHASE after)
             return;
         }
         Player_FinishBombUpdate(
-            &g_Gameplay.player_bomb, &sprites, result == BOMB_UPDATE_DONE);
+            &p_Gameplay->player_bomb, &sprites, result == BOMB_UPDATE_DONE);
     }
     m_LifePhase = after;
 }
 
 void GameplayLife_Begin(void)
 {
-    g_Gameplay.sequence = GAMEPLAY_SEQUENCE_LIFE;
+    p_Gameplay->sequence = GAMEPLAY_SEQUENCE_LIFE;
     m_LifePhase = GP_LIFE_BEGIN;
 }
 
 void GameplayLife_Resume(void)
 {
-    g_Gameplay.sequence = GAMEPLAY_SEQUENCE_LIFE;
+    p_Gameplay->sequence = GAMEPLAY_SEQUENCE_LIFE;
     m_LifePhase = GP_LIFE_AFTER_ORB;
 }
 
@@ -141,7 +129,7 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         m_LifePhase = GP_LIFE_WAIT_SHOT;
         return true;
     case GP_LIFE_WAIT_SHOT:
-        if (g_Stage.boss != BOSS_NONE || !g_Gameplay.wait_for_shot
+        if (g_Stage->boss != BOSS_NONE || !g_Gameplay->wait_for_shot
             || g_GameInput->shot) {
             M_StartFrames();
         } else {
@@ -158,15 +146,15 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         return true;
     case GP_LIFE_FRAME_BEGIN:
         if (g_Player->is_hit) {
-            g_Stage.timer_initialized = false;
+            Stage_SetTimerInitialized(false);
             GameplayExit_Begin();
             return true;
         }
-        g_Session.frame_rand++;
+        Session_AdvanceFrameRand();
         {
             const int32_t period =
-                1800 - g_Session.lives * 200 - g_Player->remaining_bombs * 50;
-            if (period != 0 && g_Session.frame_rand % (uint32_t)period == 0) {
+                1800 - g_Session->lives * 200 - g_Player->remaining_bombs * 50;
+            if (period != 0 && g_Session->frame_rand % (uint32_t)period == 0) {
                 Pellets_SpeedRaise(1);
             }
         }
@@ -181,19 +169,18 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         }
         const PLAYER_SPRITES sprites = M_PlayerSprites();
         Player_FinishBombUpdate(
-            &g_Gameplay.player_bomb, &sprites, result == BOMB_UPDATE_DONE);
+            &p_Gameplay->player_bomb, &sprites, result == BOMB_UPDATE_DONE);
         m_LifePhase = m_AfterPlayer;
         return true;
     }
     case GP_LIFE_ITEMS:
-        Items_UpdateAndRender(
-            Gameplay_StageSprites(), &g_GameplayAssets->item_font);
-        g_Stage.frame++;
+        Items_Update(Gameplay_StageSprites(), &g_GameplayAssets->item_font);
+        Stage_AdvanceFrame();
         Orb_AdvanceForceFrame();
         Player_AdvanceBombFrame();
         GameInput_AdvanceBombFrame();
         m_LifePhase =
-            (g_Session.frame_rand & 3) == 0 ? GP_LIFE_TIMER : GP_LIFE_BOSS;
+            (g_Session->frame_rand & 3) == 0 ? GP_LIFE_TIMER : GP_LIFE_BOSS;
         return true;
     case GP_LIFE_TIMER:
         if (!StageTimer_TickAndPut()) {
@@ -202,15 +189,15 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         m_LifePhase = GP_LIFE_BOSS;
         return true;
     case GP_LIFE_BOSS:
-        if (!g_Gameplay.waiting) {
+        if (!g_Gameplay->waiting) {
             Invincibility_UpdateAndRender(
-                &g_Gameplay.invincibility, &g_GameplayAssets->invincibility);
-            g_Gameplay.waiting = true;
+                &p_Gameplay->invincibility, &g_GameplayAssets->invincibility);
+            p_Gameplay->waiting = true;
         }
         if (!M_BossTick(raw, host_tick)) {
             return false;
         }
-        g_Gameplay.waiting = false;
+        p_Gameplay->waiting = false;
         ShootoutLasers_UpdateAll(g_GameplayAssets->lasers);
         m_LifePhase = GP_LIFE_ORB;
         return Stage_BeginOrbComposite(
@@ -230,7 +217,7 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         return true;
     case GP_LIFE_AFTER_ORB:
         Extend_UpdateAndRender();
-        if (g_Stage.game_cleared) {
+        if (g_Stage->game_cleared) {
             GameplayEnd_BeginVictory();
         } else {
             if (g_Pellets->destroy_score_delta != 0) {

@@ -176,17 +176,17 @@ TEST(text_overlay_keeps_digital_colors_blink_gaiji_and_wrapping_text_start)
     CHECK(Result_Ignore(Presenter_Init()));
 
     Tram_Init();
-    m_Tram.codes[4094] = 'A';
-    m_Tram.codes[4095] = 'B';
-    m_Tram.codes[0] = 'C';
-    m_Tram.codes[1] = m_Tram.codes[2] = 0x0156;
-    m_Tram.codes[3] = 'D';
-    m_Tram.attributes[4094] = 0x01;
-    m_Tram.attributes[4095] = 0xe1;
-    m_Tram.attributes[0] = 0x23;
-    m_Tram.attributes[1] = m_Tram.attributes[2] = 0x81;
-    m_Tram.attributes[3] = 0x65;
-    const TRAM before = m_Tram;
+    p_Tram->codes[4094] = 'A';
+    p_Tram->codes[4095] = 'B';
+    p_Tram->codes[0] = 'C';
+    p_Tram->codes[1] = p_Tram->codes[2] = 0x0156;
+    p_Tram->codes[3] = 'D';
+    p_Tram->attributes[4094] = 0x01;
+    p_Tram->attributes[4095] = 0xe1;
+    p_Tram->attributes[0] = 0x23;
+    p_Tram->attributes[1] = p_Tram->attributes[2] = 0x81;
+    p_Tram->attributes[3] = 0x65;
+    const TRAM before = *p_Tram;
     GAIJI gaiji = {};
     for (size_t y = 0; y < 16; y++) {
         gaiji.rows[1][y] = 0x4081;
@@ -217,7 +217,7 @@ TEST(text_overlay_keeps_digital_colors_blink_gaiji_and_wrapping_text_start)
         Gfx_BeginTick((GFX_COLOR) { 255, 0, 255, 255 });
         Presenter_Draw(mode != 2, &gaiji, &font, 4094, mode == 0);
         M_CheckScreen(expected);
-        CHECK(memcmp(&m_Tram, &before, sizeof(m_Tram)) == 0);
+        CHECK(memcmp(p_Tram, &before, sizeof(*p_Tram)) == 0);
     }
     Mem_Free(expected);
     Presenter_Close();

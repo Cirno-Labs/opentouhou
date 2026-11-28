@@ -1,40 +1,24 @@
-#include "th02/pause_menu/logic.h"
+#include "th02/pause_menu/private.h"
 
 #include <string.h>
 
-typedef enum {
-    PAUSE_MENU_SHOW,
-    PAUSE_MENU_READ,
-    PAUSE_MENU_DONE,
-} PAUSE_MENU_PHASE;
-
-typedef struct {
-    const PAUSE_MENU_ASSETS *assets;
-    uint16_t frame;
-    uint16_t keys;
-    uint8_t state;
-    uint8_t selected;
-    uint8_t first_color;
-    uint8_t second_color;
-    PAUSE_MENU_PHASE phase;
-    PAUSE_MENU_RESULT result;
-} PAUSE;
-
 static PAUSE m_Pause;
+PAUSE *const p_Pause = &m_Pause;
+static const PAUSE_MENU_RENDER *m_Render;
 
 static void M_Draw(
     const PAUSE_MENU_DRAW_KIND kind, const uint16_t x, const uint16_t y,
     const uint16_t attribute)
 {
     if (m_Pause.assets != nullptr) {
-        PauseMenuRender_Draw(m_Pause.assets, kind, x, y, attribute);
+        m_Render->draw(m_Pause.assets, kind, x, y, attribute);
     }
 }
 
 static void M_Tone(const int16_t tone)
 {
     if (m_Pause.assets != nullptr) {
-        Palette_SetTone(tone);
+        m_Render->tone(tone);
     }
 }
 
@@ -141,9 +125,10 @@ static PAUSE_MENU_RESULT M_Update(const uint16_t keys)
     return PAUSE_MENU_FRAME;
 }
 
-void PauseMenu_Init(void)
+void PauseMenu_Init(const PAUSE_MENU_RENDER *const render)
 {
     memset(&m_Pause, 0, sizeof(m_Pause));
+    m_Render = render;
 }
 
 void PauseMenu_Begin(const PAUSE_MENU_ASSETS *const assets, const uint16_t keys)

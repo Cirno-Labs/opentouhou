@@ -1,5 +1,4 @@
-#include "th01/bomb.h"
-
+#include "th01/bomb_private.h"
 #include "th01/pellets.h"
 #include "th01/sound.h"
 
@@ -8,19 +7,8 @@
 
 #include <string.h>
 
-typedef struct {
-    PALETTE white;
-    PALETTE bright;
-    int16_t left[18];
-    int16_t top[18];
-    int16_t frame;
-    int16_t scroll;
-    int8_t tint_offset;
-    VSYNC_WAIT wait;
-    bool waiting;
-} BOMB;
-
 static BOMB m_Bomb;
+BOMB *const p_Bomb = &m_Bomb;
 
 static RESULT M_Load(
     VFS *const vfs, const char *const name, const ALLOCATOR *const allocator,
@@ -57,7 +45,7 @@ static void M_KujiPut(
             const bool same_row = offset / 80 == row / 80;
             if (((left >= 0 && same_row) || (left < 0 && !same_row))
                 && offset < 32000 && coverage[y * sprites->width + x] != 0) {
-                g_Video.pages[g_Video.drawing_page][offset * 8 + x % 8] = 7;
+                g_Video->pages[g_Video->drawing_page][offset * 8 + x % 8] = 7;
             }
         }
     }
@@ -69,7 +57,7 @@ static BOMB_UPDATE M_Finish(void)
     if (frame == 140) {
         Video_Copy(1, (GFX_RECT) { 0, 0, 640, 400 }, 0, 0, 0);
         Video_SelectDrawingPage(0);
-        Palette_Set(&g_Palette, &g_StagePalette);
+        Palette_SetGlobal(g_StagePalette);
         Player_EndBomb();
         return BOMB_UPDATE_DONE;
     }
@@ -110,7 +98,7 @@ RESULT Bomb_ValidateAssets(const BOMB_ASSETS *const assets)
     return OK;
 }
 
-RESULT Bomb_LoadAssets(
+RESULT BombAssets_Load(
     VFS *const vfs, const ALLOCATOR *const allocator, BOMB_ASSETS *const out)
 {
     *out = (BOMB_ASSETS) {};
@@ -131,7 +119,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
     if (frame == 0) {
         Pellets_Decay();
         Sprite_PtnPut(miko, 3, -1, g_Player->left, PLAYER_TOP);
-        m_Bomb.white = g_Palette.saved;
+        m_Bomb.white = g_Palette->saved;
         for (int32_t color = 0; color < 16; color++) {
             for (int32_t component = 0; component < 3; component++) {
                 const int8_t value = m_Bomb.white.colors[color][component];
@@ -143,8 +131,8 @@ BOMB_UPDATE Bomb_BeginUpdate(
         m_Bomb.tint_offset = -1;
     } else if (frame < 50) {
         if (frame % 2 == 0) {
-            Palette_SetColor(
-                &g_Palette, 7, m_Bomb.white.colors[7][0] + m_Bomb.tint_offset,
+            Palette_SetGlobalColor(
+                7, m_Bomb.white.colors[7][0] + m_Bomb.tint_offset,
                 m_Bomb.white.colors[7][1] + m_Bomb.tint_offset,
                 m_Bomb.white.colors[7][2]);
         }
@@ -193,9 +181,9 @@ BOMB_UPDATE Bomb_BeginUpdate(
                                                       : 13);
                 peak.colors[color][2] = 15;
             }
-            Palette_Set(&g_Palette, &peak);
+            Palette_SetGlobal(&peak);
         } else if (frame % 4 == 2) {
-            Palette_Set(&g_Palette, &m_Bomb.bright);
+            Palette_SetGlobal(&m_Bomb.bright);
         }
         if (frame % 4 != 0) {
             return M_Finish();

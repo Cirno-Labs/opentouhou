@@ -1,4 +1,4 @@
-#include "th02/performance.h"
+#include "th02/performance_private.h"
 
 #include "pc98/zun/math16.h"
 
@@ -6,6 +6,7 @@
 
 static PERFORMANCE m_Performance;
 const PERFORMANCE *const g_Performance = &m_Performance;
+PERFORMANCE *const p_Performance = &m_Performance;
 
 void Performance_Init(const int8_t rank)
 {

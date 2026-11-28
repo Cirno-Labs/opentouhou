@@ -119,7 +119,7 @@ static void M_Animate(
     }
 }
 
-void ZunLogo1_Init(ZUN_LOGO1 *const logo, uint8_t *pages[2])
+void ZunLogo1_Init(ZUN_LOGO1 *const logo, uint8_t *const pages[2])
 {
     *logo = (ZUN_LOGO1) {
         .random = 1, .period = 23, .star_phase = 64, .visible_page = 1
@@ -138,7 +138,8 @@ void ZunLogo1_Init(ZUN_LOGO1 *const logo, uint8_t *pages[2])
 }
 
 bool ZunLogo1_Tick(
-    ZUN_LOGO1 *const logo, uint8_t *pages[2], const uint8_t *const sprites)
+    ZUN_LOGO1 *const logo, uint8_t *const pages[2],
+    const uint8_t *const sprites)
 {
     if (logo->half_tick) {
         logo->visible_page = logo->drawing_page;

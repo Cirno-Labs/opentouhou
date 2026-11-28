@@ -1,6 +1,5 @@
-#include "th02/items.h"
-
 #include "th02/background.h"
+#include "th02/items_private.h"
 #include "th02/miss.h"
 #include "th02/player.h"
 #include "th02/shots.h"
@@ -13,6 +12,7 @@
 
 static ITEMS m_Items;
 const ITEMS *const g_Items = &m_Items;
+ITEMS *const p_Items = &m_Items;
 
 static const uint8_t m_Ring[] = { 0, 1, 0, 1, 1, 0, 0, 1, 1, 0 };
 static const uint8_t m_Sprites[] = { 68, 69, 70, 71, 87 };

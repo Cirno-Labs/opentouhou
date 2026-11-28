@@ -1,21 +1,31 @@
-#include "th02/high_score_entry/logic.h"
+#include "tests/th02/th02_high_score_entry.h"
 
 static void M_Table(
-    const HIGH_SCORE_SECTION *section, bool ending, int8_t place)
+    const HIGH_SCORE_SECTION *const section, const bool ending,
+    const int8_t place)
 {
+    (void)section;
+    (void)ending;
+    (void)place;
 }
-static void M_AlphabetDraw(uint8_t col, uint8_t row, uint16_t attribute)
+static void M_AlphabetDraw(
+    const uint8_t col, const uint8_t row, const uint16_t attribute)
 {
+    (void)col;
+    (void)row;
+    (void)attribute;
 }
 static void M_NameDraw(
-    const HIGH_SCORE_SECTION *section, int8_t place, uint8_t position)
+    const HIGH_SCORE_SECTION *const section, const int8_t place,
+    const uint8_t position)
 {
+    (void)section;
+    (void)place;
+    (void)position;
 }
 
-#define HighScoreEntryRender_Table M_Table
-#define HighScoreEntryRender_Alphabet M_AlphabetDraw
-#define HighScoreEntryRender_Name M_NameDraw
-#include "th02/high_score_entry/logic.c"
-#undef HighScoreEntryRender_Table
-#undef HighScoreEntryRender_Alphabet
-#undef HighScoreEntryRender_Name
+const HIGH_SCORE_ENTRY_RENDER g_TestHighScoreEntryRender = {
+    .table = M_Table,
+    .alphabet = M_AlphabetDraw,
+    .name = M_NameDraw,
+};

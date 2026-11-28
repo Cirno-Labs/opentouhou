@@ -5,10 +5,10 @@
 #include "tests/th02/th02_score_fixture.h"
 #include "th02/background/private.h"
 #include "th02/bullets/private.h"
-#include "th02/enemies.c"
-#include "th02/items.c"
-#include "th02/performance.c"
-#include "th02/sparks.c"
+#include "th02/enemies_private.h"
+#include "th02/items_private.h"
+#include "th02/performance_private.h"
+#include "th02/sparks_private.h"
 
 #include "core/base/memory.h"
 
@@ -51,8 +51,8 @@ TEST(main_entry_restores_continue_score_and_recovery_items)
         f.stage.stage = stages[i];
         f.session.score = 12345;
         TestGameplay_Start(&f);
-        CHECK_EQ_INT(m_Score.value, scores[i]);
-        CHECK_EQ_INT(m_Items.big_power, (stages[i] % 5) + 2);
+        CHECK_EQ_INT(p_Score->value, scores[i]);
+        CHECK_EQ_INT(p_Items->big_power, (stages[i] % 5) + 2);
         CHECK_EQ_INT(f.session.score, 12345);
         CHECK_EQ_INT(f.session.continues_used, continues[i]);
         Arena_Free(&f.arena);
@@ -121,25 +121,25 @@ TEST(map_end_boss_waits_share_vsync_and_disable_ordinary_enemy_calls)
     for (unsigned frame = 0; frame < 20 && !complete; frame++) {
         VSyncIrq_VSync();
         complete = Gameplay_Update(&input) != GAMEPLAY_RUNNING;
-        if (m_Flow.phase == STAGE_FLOW_FIGHT && !checked_gate) {
+        if (p_Flow->phase == STAGE_FLOW_FIGHT && !checked_gate) {
             checked_gate = true;
-            m_Enemies.slots[0].state = ENTITY_REMOVE;
-            m_Shots.target = (ENTITY_POINT) { 123, 45 };
+            p_Enemies->slots[0].state = ENTITY_REMOVE;
+            p_Shots->target = (ENTITY_POINT) { 123, 45 };
         }
     }
     CHECK(complete);
     CHECK(checked_gate);
-    CHECK_EQ_INT(m_Enemies.slots[0].state, ENTITY_REMOVE);
-    CHECK_EQ_INT(m_Shots.target.x, 123);
-    CHECK_EQ_INT(m_Shots.target.y, 45);
+    CHECK_EQ_INT(p_Enemies->slots[0].state, ENTITY_REMOVE);
+    CHECK_EQ_INT(p_Shots->target.x, 123);
+    CHECK_EQ_INT(p_Shots->target.y, 45);
     CHECK_EQ_INT(TestGameplay_State()->loop.wait, STAGE_NEXT);
-    CHECK_EQ_INT(m_Flow.phase, STAGE_FLOW_DONE);
+    CHECK_EQ_INT(p_Flow->phase, STAGE_FLOW_DONE);
     CHECK_EQ_INT(g_Stage->world.frame, 2);
     CHECK_EQ_INT(f.session.frame, 715);
     CHECK_EQ_INT(state.begins, 3);
     CHECK_EQ_INT(state.ends, 3);
     CHECK_EQ_INT(state.updates, 1);
-    CHECK_EQ_INT(m_Score.value, 0);
+    CHECK_EQ_INT(p_Score->value, 0);
     Arena_Free(&f.arena);
 }
 
@@ -151,10 +151,10 @@ TEST(stage_entry_keeps_cached_images_alive_through_wait_and_page_swaps)
     const uint8_t pattern_byte = fixture.assets.patterns.entries[0].data[0];
     CHECK_EQ_INT(game->phase, GAMEPLAY_PREPARE);
     CHECK_EQ_INT(g_Video.pages[0][144 * VIDEO_WIDTH + 96], 3);
-    CHECK_EQ_INT(m_Score.lives, 2);
-    CHECK_EQ_INT(m_Score.bombs, 3);
-    CHECK_EQ_INT(m_Score.highest, 12345);
-    CHECK_EQ_INT(m_Score.highest_continues, 6);
+    CHECK_EQ_INT(p_Score->lives, 2);
+    CHECK_EQ_INT(p_Score->bombs, 3);
+    CHECK_EQ_INT(p_Score->highest, 12345);
+    CHECK_EQ_INT(p_Score->highest_continues, 6);
     CHECK_EQ_INT(fixture.session.frame, 713);
     TH02_INPUT input = { .right = true, .shot = true };
     for (size_t frame = 0; frame < 99; frame++) {
@@ -167,10 +167,10 @@ TEST(stage_entry_keeps_cached_images_alive_through_wait_and_page_swaps)
     TestGameplay_FinishReveal(&fixture, &input);
     CHECK_EQ_INT(game->phase, GAMEPLAY_STAGE);
     CHECK_EQ_INT(g_Stage->world.frame, 0);
-    CHECK_EQ_INT(m_Player.current.x, 213);
+    CHECK_EQ_INT(p_Player->current.x, 213);
     CHECK_EQ_INT(g_Video.pages[1][32], 12);
     CHECK_EQ_INT(g_Video.pages[0][416], 11);
-    CHECK_EQ_INT(m_Shots.slots[0].state, ENTITY_ACTIVE);
+    CHECK_EQ_INT(p_Shots->slots[0].state, ENTITY_ACTIVE);
     uint8_t *const overlay = Mem_Alloc(VIDEO_VISIBLE_SIZE);
     const TRAM_FONT font = {};
     Tram_Scanout(&game->assets.gaiji, &font, 0, true, overlay, VIDEO_WIDTH);
@@ -183,7 +183,7 @@ TEST(stage_entry_keeps_cached_images_alive_through_wait_and_page_swaps)
     }
     CHECK_EQ_INT(g_Stage->world.frame, 32);
     CHECK_EQ_INT(fixture.session.frame, 745);
-    CHECK_EQ_INT(m_Player.current.x, 357);
+    CHECK_EQ_INT(p_Player->current.x, 357);
     CHECK_EQ_INT(game->assets.patterns.entries[0].data[0], pattern_byte);
     CHECK_EQ_INT(game->assets.backdrop.image.pixels[0], 3);
     CHECK_EQ_INT(fixture.pixels[256], 12);
@@ -214,34 +214,34 @@ TEST(active_bomb_damages_stage_enemies_every_other_frame)
     fixture.stage.data.scripts = &script;
     fixture.stage.data.script_count = 1;
     for (size_t i = 0; i < 3; i++) {
-        ENEMY *const enemy = &m_Enemies.slots[i];
+        ENEMY *const enemy = &p_Enemies->slots[i];
         enemy->state = ENTITY_ACTIVE;
         enemy->position[0] = enemy->position[1] = (ENTITY_POINT) { 100, 100 };
         enemy->formation = i == 1 ? 1 : 0;
         enemy->hit_disabled = i == 2;
     }
-    m_Enemies.count = 3;
+    p_Enemies->count = 3;
     Enemies_Update(
         StageScroll_Pages(), g_Stage->scroll.moved, &fixture.stage.data,
         &game->assets.patterns, g_Stage->world.frame,
         (uint8_t)fixture.session.rank, 1);
-    CHECK_EQ_INT(m_Enemies.slots[0].damage, 0);
+    CHECK_EQ_INT(p_Enemies->slots[0].damage, 0);
     Bomb_Activate(StageScroll_Pages());
-    CHECK_EQ_INT(m_Bomb.active, 1);
-    CHECK_EQ_INT(m_Score.bombs, 2);
+    CHECK_EQ_INT(p_Bomb->active, 1);
+    CHECK_EQ_INT(p_Score->bombs, 2);
     for (uint16_t frame = 0; frame < 3; frame++) {
         p_Stage->world.frame = frame;
         Enemies_Update(
             StageScroll_Pages(), g_Stage->scroll.moved, &fixture.stage.data,
             &game->assets.patterns, g_Stage->world.frame,
             (uint8_t)fixture.session.rank, 1);
-        CHECK_EQ_INT(m_Enemies.slots[0].damage, frame / 2 + 1);
-        CHECK_EQ_INT(m_Enemies.slots[0].dying, frame == 2);
-        CHECK_EQ_INT(m_Enemies.slots[1].damage, 0);
-        CHECK_EQ_INT(m_Enemies.slots[2].damage, 0);
+        CHECK_EQ_INT(p_Enemies->slots[0].damage, frame / 2 + 1);
+        CHECK_EQ_INT(p_Enemies->slots[0].dying, frame == 2);
+        CHECK_EQ_INT(p_Enemies->slots[1].damage, 0);
+        CHECK_EQ_INT(p_Enemies->slots[2].damage, 0);
     }
-    CHECK_EQ_INT(m_Score.delta, 102);
-    CHECK_EQ_INT(m_Items.slots[0].state, ENTITY_ACTIVE);
+    CHECK_EQ_INT(p_Score->delta, 102);
+    CHECK_EQ_INT(p_Items->slots[0].state, ENTITY_ACTIVE);
     Arena_Free(&fixture.arena);
 }
 
@@ -266,7 +266,7 @@ TEST(reentry_rebinds_extra_and_selected_bomb_without_reloading)
         }
         CHECK_EQ_INT(g_Stage->scroll.interval, 2);
         CHECK_EQ_INT(g_Stage->world.midboss_row, 200);
-        CHECK_EQ_INT(m_Player.option_sprite, 72 + shot);
+        CHECK_EQ_INT(p_Player->option_sprite, 72 + shot);
         CHECK_EQ_INT(
             TestGameplay_State()->fix_bomb_transition_overread, shot != 1);
         CHECK(TestGameplay_State()->bomb == &fixture.bomb);
@@ -281,7 +281,7 @@ TEST(next_stage_keeps_run_state_and_resets_only_stage_state)
     TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     const TH02_INPUT input = {};
-    m_Flow.phase = STAGE_FLOW_DONE;
+    p_Flow->phase = STAGE_FLOW_DONE;
     bool done = false;
     for (size_t frame = 0; frame < 160 && !done; frame++) {
         VSyncIrq_VSync();
@@ -290,31 +290,31 @@ TEST(next_stage_keeps_run_state_and_resets_only_stage_state)
     CHECK(done);
     CHECK_EQ_INT(game->loop.wait, STAGE_NEXT);
     CHECK_EQ_INT(Gameplay_Update(nullptr), GAMEPLAY_CLEAR);
-    m_Score.value = 1234;
-    m_Score.delta = 7;
-    m_Score.highest = 9000;
-    m_Score.lives = 4;
-    m_Score.bombs = 2;
-    m_Score.extends = 5;
+    p_Score->value = 1234;
+    p_Score->delta = 7;
+    p_Score->highest = 9000;
+    p_Score->lives = 4;
+    p_Score->bombs = 2;
+    p_Score->extends = 5;
     Score_Commit();
-    m_Player.power = 37;
-    m_Shots.weapon.cycle[0] = 17;
-    m_Shots.weapon.cooldown[1] = 9;
-    m_Shots.weapon.parameter[0] = 52;
-    m_Player.hit = 1;
-    m_Player.invincibility = 3;
-    m_Shots.fire_cycle = 254;
-    m_Shots.target = (ENTITY_POINT) { 20, 30 };
-    m_Rng.cursor = 77;
-    memset(&m_Performance, 0, sizeof(m_Performance));
-    m_Performance.value = 5;
-    m_Performance.item_skill = 21;
-    m_Performance.maximum = 16;
-    m_Performance.total_misses = 3;
-    m_Performance.total_bombs = 4;
-    m_Performance.collected = 13;
-    m_Performance.dropped = 9;
-    const PERFORMANCE performance = m_Performance;
+    p_Player->power = 37;
+    p_Shots->weapon.cycle[0] = 17;
+    p_Shots->weapon.cooldown[1] = 9;
+    p_Shots->weapon.parameter[0] = 52;
+    p_Player->hit = 1;
+    p_Player->invincibility = 3;
+    p_Shots->fire_cycle = 254;
+    p_Shots->target = (ENTITY_POINT) { 20, 30 };
+    p_Rng->cursor = 77;
+    memset(p_Performance, 0, sizeof(*p_Performance));
+    p_Performance->value = 5;
+    p_Performance->item_skill = 21;
+    p_Performance->maximum = 16;
+    p_Performance->total_misses = 3;
+    p_Performance->total_bombs = 4;
+    p_Performance->collected = 13;
+    p_Performance->dropped = 9;
+    const PERFORMANCE performance = *p_Performance;
     p_Bullets->slots[0].state = ENTITY_ACTIVE;
     p_Bullets->slots[0].position[0].x = 17;
     p_Stage->scroll.done = 1;
@@ -329,7 +329,7 @@ TEST(next_stage_keeps_run_state_and_resets_only_stage_state)
         .hit_flash = 254,
         .angle = 0xe0,
     };
-    m_Bomb.active = m_Bomb.stage_bombs = 1;
+    p_Bomb->active = p_Bomb->stage_bombs = 1;
     f.session.stage = 1;
     STAGE_ASSETS stage = f.stage;
     stage.stage = 1;
@@ -341,28 +341,28 @@ TEST(next_stage_keeps_run_state_and_resets_only_stage_state)
     CHECK_EQ_INT(game->phase, GAMEPLAY_PREPARE);
     CHECK(game->stage == &stage);
     CHECK(game->assets.patterns.entries[0].data == patterns.entries[0].data);
-    CHECK_EQ_INT(m_Score.value, 1241);
-    CHECK_EQ_INT(m_Score.highest, 9000);
-    CHECK_EQ_INT(m_Score.lives, 4);
-    CHECK_EQ_INT(m_Score.bombs, 2);
-    CHECK_EQ_INT(m_Score.extends, 0);
-    CHECK_EQ_INT(m_Player.power, 37);
-    CHECK_EQ_INT(m_Shots.weapon.level, 5);
-    CHECK_EQ_INT(m_Shots.weapon.cycle[0], 17);
-    CHECK_EQ_INT(m_Shots.weapon.cooldown[1], 9);
-    CHECK_EQ_INT(m_Shots.weapon.parameter[0], 52);
-    CHECK_EQ_INT(m_Player.hit, 0);
-    CHECK_EQ_INT(m_Player.invincibility, 0);
-    CHECK_EQ_INT(m_Player.position[0].x, 208);
-    CHECK_EQ_INT(m_Player.position[1].y, 336);
-    CHECK_EQ_INT(m_Shots.fire_cycle, 254);
-    CHECK_EQ_INT(m_Shots.target.x, -1);
-    CHECK_EQ_INT(m_Rng.cursor, 78);
-    CHECK(memcmp(&m_Performance, &performance, sizeof(performance)) == 0);
+    CHECK_EQ_INT(p_Score->value, 1241);
+    CHECK_EQ_INT(p_Score->highest, 9000);
+    CHECK_EQ_INT(p_Score->lives, 4);
+    CHECK_EQ_INT(p_Score->bombs, 2);
+    CHECK_EQ_INT(p_Score->extends, 0);
+    CHECK_EQ_INT(p_Player->power, 37);
+    CHECK_EQ_INT(p_Shots->weapon.level, 5);
+    CHECK_EQ_INT(p_Shots->weapon.cycle[0], 17);
+    CHECK_EQ_INT(p_Shots->weapon.cooldown[1], 9);
+    CHECK_EQ_INT(p_Shots->weapon.parameter[0], 52);
+    CHECK_EQ_INT(p_Player->hit, 0);
+    CHECK_EQ_INT(p_Player->invincibility, 0);
+    CHECK_EQ_INT(p_Player->position[0].x, 208);
+    CHECK_EQ_INT(p_Player->position[1].y, 336);
+    CHECK_EQ_INT(p_Shots->fire_cycle, 254);
+    CHECK_EQ_INT(p_Shots->target.x, -1);
+    CHECK_EQ_INT(p_Rng->cursor, 78);
+    CHECK(memcmp(p_Performance, &performance, sizeof(performance)) == 0);
     CHECK_EQ_INT(p_Bullets->slots[0].state, ENTITY_FREE);
     CHECK_EQ_INT(p_Bullets->slots[0].position[0].x, 17);
-    CHECK_EQ_INT(m_Bomb.active, 0);
-    CHECK_EQ_INT(m_Bomb.stage_bombs, 0);
+    CHECK_EQ_INT(p_Bomb->active, 0);
+    CHECK_EQ_INT(p_Bomb->stage_bombs, 0);
     CHECK_EQ_INT(g_Stage->scroll.done, 0);
     CHECK_EQ_INT(g_Stage->scroll.rows, 0);
     CHECK_EQ_INT(g_Stage->world.frame, 0);
@@ -401,17 +401,17 @@ TEST(continue_resumes_same_stage_without_resetting_world_or_rng)
     CHECK(done);
     CHECK_EQ_INT(game->loop.wait, STAGE_QUIT);
     f.session.score = 123450;
-    m_Score.value = 12345;
-    m_Score.extends = 2;
-    m_Items.overflow = 41;
-    m_Player.power = 64;
-    m_Player.hit = 1;
-    m_Shots.weapon.cycle[0] = 17;
-    m_Shots.fire_cycle = 123;
+    p_Score->value = 12345;
+    p_Score->extends = 2;
+    p_Items->overflow = 41;
+    p_Player->power = 64;
+    p_Player->hit = 1;
+    p_Shots->weapon.cycle[0] = 17;
+    p_Shots->fire_cycle = 123;
     p_Stage->scroll.page_lines[0] = 398;
     p_Stage->scroll.page_lines[1] = 399;
-    const RANDOM_STATE before_random = m_Rng;
-    const PERFORMANCE performance = m_Performance;
+    const RANDOM_STATE before_random = *p_Rng;
+    const PERFORMANCE performance = *p_Performance;
     const uint16_t count2 = g_VSync.count2;
     const uint64_t edges = g_VSync.edges;
     const uint16_t world_frame = g_Stage->world.frame;
@@ -419,7 +419,7 @@ TEST(continue_resumes_same_stage_without_resetting_world_or_rng)
     const uint16_t rows = g_Stage->scroll.rows;
     Gameplay_EndCredit(true);
     CHECK_EQ_INT(game->phase, GAMEPLAY_CONTINUE_COVER);
-    CHECK_EQ_INT(m_Player.hit, 1);
+    CHECK_EQ_INT(p_Player->hit, 1);
     for (unsigned i = 0; i < 42; i++) {
         CHECK_EQ_INT(Gameplay_Update(&input), GAMEPLAY_RUNNING);
         CHECK_EQ_INT(game->phase, GAMEPLAY_CONTINUE_COVER);
@@ -429,19 +429,19 @@ TEST(continue_resumes_same_stage_without_resetting_world_or_rng)
     CHECK_EQ_INT(game->phase, GAMEPLAY_CONTINUE_REVEAL);
     CHECK_EQ_INT(f.session.continues_used, 1);
     CHECK_EQ_INT(f.session.highest_score, 123450);
-    CHECK_EQ_INT(m_Score.value, 0);
-    CHECK_EQ_INT(m_Score.extends, 2);
-    CHECK_EQ_INT(m_Score.lives, 2);
-    CHECK_EQ_INT(m_Score.bombs, 3);
-    CHECK_EQ_INT(m_Items.big_power, 2);
-    CHECK_EQ_INT(m_Items.overflow, 10);
-    CHECK_EQ_INT(m_Player.power, 1);
-    CHECK_EQ_INT(m_Player.invincibility, 200);
-    CHECK_EQ_INT(m_Player.hit, 0);
-    CHECK_EQ_INT(m_Player.position[0].x, 208);
-    CHECK_EQ_INT(m_Player.position[1].y, 336);
-    CHECK_EQ_INT(m_Shots.weapon.cycle[0], 17);
-    CHECK_EQ_INT(m_Shots.fire_cycle, 123);
+    CHECK_EQ_INT(p_Score->value, 0);
+    CHECK_EQ_INT(p_Score->extends, 2);
+    CHECK_EQ_INT(p_Score->lives, 2);
+    CHECK_EQ_INT(p_Score->bombs, 3);
+    CHECK_EQ_INT(p_Items->big_power, 2);
+    CHECK_EQ_INT(p_Items->overflow, 10);
+    CHECK_EQ_INT(p_Player->power, 1);
+    CHECK_EQ_INT(p_Player->invincibility, 200);
+    CHECK_EQ_INT(p_Player->hit, 0);
+    CHECK_EQ_INT(p_Player->position[0].x, 208);
+    CHECK_EQ_INT(p_Player->position[1].y, 336);
+    CHECK_EQ_INT(p_Shots->weapon.cycle[0], 17);
+    CHECK_EQ_INT(p_Shots->fire_cycle, 123);
     CHECK_EQ_INT(g_Stage->world.frame, world_frame);
     CHECK_EQ_INT(f.session.frame, session_frame);
     CHECK_EQ_INT(g_Stage->scroll.rows, rows);
@@ -450,8 +450,8 @@ TEST(continue_resumes_same_stage_without_resetting_world_or_rng)
     CHECK_EQ_INT(g_VSync.count1, 0);
     CHECK_EQ_INT(g_VSync.count2, (uint16_t)(count2 + 42));
     CHECK_EQ_INT(g_VSync.edges, edges + 42);
-    CHECK(memcmp(&before_random, &m_Rng, sizeof(before_random)) == 0);
-    CHECK(memcmp(&performance, &m_Performance, sizeof(performance)) == 0);
+    CHECK(memcmp(&before_random, p_Rng, sizeof(before_random)) == 0);
+    CHECK(memcmp(&performance, p_Performance, sizeof(performance)) == 0);
     CHECK_EQ_INT(g_Video.drawing_page, g_Stage->scroll.back);
     CHECK_EQ_INT(game->loop.wait, STAGE_QUIT);
     for (unsigned i = 0; i < 42; i++) {
@@ -459,7 +459,7 @@ TEST(continue_resumes_same_stage_without_resetting_world_or_rng)
         CHECK_EQ_INT(Gameplay_Update(&input), GAMEPLAY_RUNNING);
     }
     CHECK_EQ_INT(game->phase, GAMEPLAY_STAGE);
-    CHECK_EQ_INT(m_Player.invincibility, 199);
+    CHECK_EQ_INT(p_Player->invincibility, 199);
     Arena_Free(&f.arena);
 }
 
@@ -562,38 +562,38 @@ TEST(stage_music_fade_precedes_item_and_extend_resets)
     MusicWait_Init(&wait);
     f.music.entry = &wait;
     TestGameplay_Start(&f);
-    CHECK_EQ_INT(m_Rng.cursor, 0);
-    m_Items.slots[0].state = ENTITY_ACTIVE;
-    m_Items.point_count = 37;
-    m_Score.delta = 123;
-    m_Score.extends = 5;
+    CHECK_EQ_INT(p_Rng->cursor, 0);
+    p_Items->slots[0].state = ENTITY_ACTIVE;
+    p_Items->point_count = 37;
+    p_Score->delta = 123;
+    p_Score->extends = 5;
     const TH02_INPUT input = {};
     g_VSync.count1 = 37;
     for (unsigned i = 0; i < 3; i++) {
         CHECK_EQ_INT(Gameplay_Update(&input), GAMEPLAY_RUNNING);
-        CHECK_EQ_INT(m_Rng.cursor, 0);
-        CHECK_EQ_INT(m_Items.slots[0].state, ENTITY_ACTIVE);
-        CHECK_EQ_INT(m_Items.point_count, 37);
-        CHECK_EQ_INT(m_Score.delta, 123);
-        CHECK_EQ_INT(m_Score.extends, 5);
+        CHECK_EQ_INT(p_Rng->cursor, 0);
+        CHECK_EQ_INT(p_Items->slots[0].state, ENTITY_ACTIVE);
+        CHECK_EQ_INT(p_Items->point_count, 37);
+        CHECK_EQ_INT(p_Score->delta, 123);
+        CHECK_EQ_INT(p_Score->extends, 5);
     }
     MusicWait_Stop(&wait);
     CHECK_EQ_INT(Gameplay_Update(&input), GAMEPLAY_RUNNING);
-    CHECK_EQ_INT(m_Rng.cursor, 1);
-    CHECK_EQ_INT(m_Items.slots[0].state, ENTITY_FREE);
-    CHECK_EQ_INT(m_Items.point_count, 0);
-    CHECK_EQ_INT(m_Score.delta, 0);
-    CHECK_EQ_INT(m_Score.extends, 0);
-    m_Score.delta = 19;
+    CHECK_EQ_INT(p_Rng->cursor, 1);
+    CHECK_EQ_INT(p_Items->slots[0].state, ENTITY_FREE);
+    CHECK_EQ_INT(p_Items->point_count, 0);
+    CHECK_EQ_INT(p_Score->delta, 0);
+    CHECK_EQ_INT(p_Score->extends, 0);
+    p_Score->delta = 19;
     CHECK_EQ_INT(Gameplay_Update(&input), GAMEPLAY_RUNNING);
-    CHECK_EQ_INT(m_Rng.cursor, 1);
-    CHECK_EQ_INT(m_Score.delta, 19);
+    CHECK_EQ_INT(p_Rng->cursor, 1);
+    CHECK_EQ_INT(p_Score->delta, 19);
     CHECK_EQ_INT(g_VSync.count1, 37);
     g_VSync.count1 = 100;
     CHECK_EQ_INT(Gameplay_Update(&input), GAMEPLAY_RUNNING);
     CHECK_EQ_INT(TestGameplay_State()->phase, GAMEPLAY_REVEAL);
-    CHECK_EQ_INT(m_Rng.cursor, 1);
-    CHECK_EQ_INT(m_Score.delta, 19);
+    CHECK_EQ_INT(p_Rng->cursor, 1);
+    CHECK_EQ_INT(p_Score->delta, 19);
     Arena_Free(&f.arena);
 }
 
@@ -652,7 +652,7 @@ TEST(world_cleanup_restores_the_back_page_before_swapping_it)
     for (unsigned page = 0; page < 2; page++) {
         memset(g_Video.pages[page] + 100 * VIDEO_WIDTH + 100, 5, 8);
     }
-    SPARK *const spark = &m_Sparks.slots[0];
+    SPARK *const spark = &p_Sparks->slots[0];
     spark->state = ENTITY_REMOVE;
     spark->drawing = 1;
     spark->position[g_Stage->scroll.back] =

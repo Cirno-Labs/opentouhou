@@ -32,7 +32,7 @@ static void M_Init(FIXTURE *const fixture)
     Video_Init(Arena_Allocator(&fixture->arena));
     memset(g_Video.pages[0], 9, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
-    memset(&m_Tram, 0x99, sizeof(m_Tram));
+    memset(p_Tram, 0x99, sizeof(*p_Tram));
     TestClip_Set(0, 0, 639, 399);
     Palette_Init();
     fixture->settings.difficulty = TH02_DIFFICULTY_NORMAL;
@@ -61,9 +61,9 @@ TEST(menu_clear_uses_live_console_state_instead_of_the_fallback_attribute)
     CHECK_EQ_INT(console.cursor_column, 0);
     CHECK_EQ_INT(console.cursor_row, 0);
     CHECK(!console.cursor_visible && !console.system_line_visible);
-    CHECK_EQ_INT(m_Tram.attributes[0], 0xc1);
-    CHECK_EQ_INT(m_Tram.attributes[1999], 0xc1);
-    CHECK_EQ_INT(m_Tram.attributes[2000], 0x9999);
+    CHECK_EQ_INT(p_Tram->attributes[0], 0xc1);
+    CHECK_EQ_INT(p_Tram->attributes[1999], 0xc1);
+    CHECK_EQ_INT(p_Tram->attributes[2000], 0x9999);
     CHECK_EQ_INT(g_Video.pages[0][0], 9);
     CHECK_EQ_INT(g_Video.pages[1][0], 6);
     Arena_Free(&fixture.arena);
@@ -74,20 +74,20 @@ TEST(menu_labels_use_original_glyph_slots_rank_positions_and_lock_color)
     FIXTURE fixture;
     M_Init(&fixture);
     MainMenuRender_Put(&fixture.settings, fixture.extra_unlocked, 0, 0xe1);
-    CHECK_EQ_INT(m_Tram.codes[16 * 80 + 35], 0x3c57);
-    CHECK_EQ_INT(m_Tram.codes[16 * 80 + 36], 0xbc57);
-    CHECK_EQ_INT(m_Tram.attributes[16 * 80 + 35], 0xe1);
-    CHECK_EQ_INT(m_Tram.codes[23 * 80 + 26], 0x3b57);
-    CHECK_EQ_INT(m_Tram.attributes[23 * 80 + 26], 0x81);
-    CHECK_EQ_INT(m_Tram.codes[23 * 80 + 40], 0x3657);
-    CHECK_EQ_INT(m_Tram.codes[23 * 80 + 46], 0x3757);
+    CHECK_EQ_INT(p_Tram->codes[16 * 80 + 35], 0x3c57);
+    CHECK_EQ_INT(p_Tram->codes[16 * 80 + 36], 0xbc57);
+    CHECK_EQ_INT(p_Tram->attributes[16 * 80 + 35], 0xe1);
+    CHECK_EQ_INT(p_Tram->codes[23 * 80 + 26], 0x3b57);
+    CHECK_EQ_INT(p_Tram->attributes[23 * 80 + 26], 0x81);
+    CHECK_EQ_INT(p_Tram->codes[23 * 80 + 40], 0x3657);
+    CHECK_EQ_INT(p_Tram->codes[23 * 80 + 46], 0x3757);
     MainMenuRender_Put(&fixture.settings, fixture.extra_unlocked, 1, 0x35e1);
-    CHECK_EQ_INT(m_Tram.attributes[17 * 80 + 29], 0x21);
+    CHECK_EQ_INT(p_Tram->attributes[17 * 80 + 29], 0x21);
     fixture.extra_unlocked = true;
     MainMenuRender_Put(&fixture.settings, fixture.extra_unlocked, 1, 0x35e1);
-    CHECK_EQ_INT(m_Tram.attributes[17 * 80 + 29], 0x35e1);
+    CHECK_EQ_INT(p_Tram->attributes[17 * 80 + 29], 0x35e1);
     MainMenuRender_Put(&fixture.settings, fixture.extra_unlocked, -1, 0);
-    CHECK_EQ_INT(m_Tram.attributes[23 * 80 + 38], 0x81);
+    CHECK_EQ_INT(p_Tram->attributes[23 * 80 + 38], 0x81);
     for (size_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
         CHECK_EQ_INT(g_Video.pages[0][i], 9);
         CHECK_EQ_INT(g_Video.pages[1][i], 6);
@@ -119,8 +119,8 @@ TEST(menu_init_copies_visible_background_and_keeps_hidden_video_and_text_tails)
         CHECK_EQ_INT(g_Video.pages[1][i], 6);
     }
     for (size_t i = 0; i < TRAM_PLANE_CELLS; i++) {
-        CHECK_EQ_INT(m_Tram.codes[i], i < 2000 ? ' ' : 0x9999);
-        CHECK_EQ_INT(m_Tram.attributes[i], i < 2000 ? 5 : 0x9999);
+        CHECK_EQ_INT(p_Tram->codes[i], i < 2000 ? ' ' : 0x9999);
+        CHECK_EQ_INT(p_Tram->attributes[i], i < 2000 ? 5 : 0x9999);
     }
     Arena_Free(&fixture.arena);
 }
@@ -136,8 +136,8 @@ TEST(score_return_keeps_text_and_tone_while_restoring_both_visible_pages)
     CHECK_EQ_INT(g_Video.visible_page, 0);
     CHECK_EQ_INT(p_Palette->tone, 50);
     for (size_t i = 0; i < TRAM_PLANE_CELLS; i++) {
-        CHECK_EQ_INT(m_Tram.codes[i], 0x9999);
-        CHECK_EQ_INT(m_Tram.attributes[i], 0x9999);
+        CHECK_EQ_INT(p_Tram->codes[i], 0x9999);
+        CHECK_EQ_INT(p_Tram->attributes[i], 0x9999);
     }
     for (size_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
         const bool image = i / 640 < 2 && i % 640 < 16;

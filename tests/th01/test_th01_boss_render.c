@@ -11,7 +11,7 @@ TEST(entity_word_guard_and_animation_raw_rgb_differ)
     ARENA arena;
     Arena_Init(&arena, "boss render", 1024 * 1024);
     Video_Init(Arena_Allocator(&arena));
-    memset(g_Video.pages[1], 1, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 1, VIDEO_PAGE_SIZE);
     Video_SelectDrawingPage(1);
     uint8_t pixels[16] = {};
     uint8_t coverage[16] = {};
@@ -31,7 +31,7 @@ TEST(entity_word_guard_and_animation_raw_rgb_differ)
     BossEntity_Put(&entity, 0, 0, 0);
     CHECK_EQ_INT(Th01Test_Pixel(1, 0, 0), 10);
     CHECK_EQ_INT(Th01Test_Pixel(1, 7, 0), 5);
-    CHECK_EQ_INT(g_Video.drawing_page, 1);
+    CHECK_EQ_INT(g_Video->drawing_page, 1);
     Arena_Free(&arena);
 }
 
@@ -54,10 +54,10 @@ TEST(full_put_and_restore_have_different_right_edge_guards)
     CHECK_EQ_INT(Th01Test_Pixel(0, 8, 1), 0);
     Video_SelectDrawingPage(1);
     BossEntity_RestorePut(&entity, 639, 0, 0);
-    CHECK_EQ_INT(g_Video.drawing_page, 1);
+    CHECK_EQ_INT(g_Video->drawing_page, 1);
     CHECK_EQ_INT(Th01Test_Pixel(1, 639, 0), 0);
     BossEntity_Erase(&entity, 639, 0, 0);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 639, 0), 10);
     Arena_Free(&arena);
 }
@@ -67,7 +67,7 @@ TEST(restored_line_keeps_signed_foreground_shift)
     ARENA arena;
     Arena_Init(&arena, "boss line", 1024 * 1024);
     Video_Init(Arena_Allocator(&arena));
-    memset(g_Video.pages[0], 2, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 2, VIDEO_PAGE_SIZE);
     uint8_t pixels[16] = {};
     uint8_t coverage[16];
     memset(coverage, 1, sizeof(coverage));

@@ -1,37 +1,14 @@
-#include "th01/missiles.h"
-
 #include "th01/finite.h"
+#include "th01/missiles_private.h"
 #include "th01/sound.h"
 
 #include "pc98/zun/math16.h"
 
 #include <string.h>
 
-#define MISSILES_COUNT 50
-
-typedef enum {
-    MISSILE_FREE,
-    MISSILE_MOVING,
-    MISSILE_HIT,
-    MISSILE_HIT_LAST,
-} MISSILE_FLAG;
-
-typedef struct {
-    int16_t left;
-    int16_t top;
-    int16_t previous_left;
-    int16_t previous_top;
-    MATH16_VECTOR velocity;
-    int16_t unused;
-    int8_t reserved;
-    uint8_t flag;
-} MISSILE;
-
-typedef struct {
-    MISSILE slots[MISSILES_COUNT];
-} MISSILES;
-
 static MISSILES m_Missiles;
+const MISSILES *const g_Missiles = &m_Missiles;
+MISSILES *const p_Missiles = &m_Missiles;
 
 static void M_Put(
     const PTN *const sprites, int16_t left, int16_t top, int16_t image,
@@ -82,15 +59,14 @@ bool Missiles_Add(
     return false;
 }
 
-void Missiles_Reset(void)
+void Missiles_ResetStage(void)
 {
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         m_Missiles.slots[i].flag = MISSILE_FREE;
     }
 }
 
-void Missiles_UpdateAndRender(
-    const uint16_t frame_rand, const PTN *const sprites)
+void Missiles_Update(const uint16_t frame_rand, const PTN *const sprites)
 {
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         MISSILE *const m = &m_Missiles.slots[i];
@@ -184,7 +160,7 @@ static void M_RawOr(
             const uint32_t pixel = (address - bases[target]) * 8;
             for (int32_t bit = 0; bit < 8; bit++) {
                 if ((dots & (0x80u >> bit)) != 0) {
-                    g_Video.pages[g_Video.drawing_page][pixel + bit] |=
+                    g_Video->pages[g_Video->drawing_page][pixel + bit] |=
                         (uint8_t)(1u << target);
                 }
             }
@@ -230,8 +206,8 @@ static void M_Put(
                 if (clear_offset < 32000) {
                     for (int32_t bit = 0; bit < 8; bit++) {
                         if ((shifted_mask & (0x80u >> bit)) != 0) {
-                            g_Video.pages[g_Video.drawing_page]
-                                         [clear_offset * 8 + bit] = 0;
+                            g_Video->pages[g_Video->drawing_page]
+                                          [clear_offset * 8 + bit] = 0;
                         }
                     }
                 }

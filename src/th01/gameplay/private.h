@@ -40,8 +40,83 @@ typedef struct {
     INVINCIBILITY invincibility;
 } GAMEPLAY;
 
-extern GAMEPLAY g_Gameplay;
+extern const GAMEPLAY *const g_Gameplay;
+// Writable view of g_Gameplay for the module's own files and tests.
+extern GAMEPLAY *const p_Gameplay;
 extern const GAMEPLAY_ASSETS *g_GameplayAssets;
+
+typedef enum {
+    GP_STAGE_BEGIN,
+    GP_STAGE_BOSS_SETUP,
+    GP_STAGE_FINAL_ENTRANCE,
+    GP_STAGE_OBJECT_ENTRANCE,
+    GP_STAGE_TITLE,
+    GP_STAGE_LABEL,
+    GP_STAGE_NUMBER,
+} GAMEPLAY_STAGE_PHASE;
+
+// Writable view of th01/gameplay/stage.c's state for tests.
+extern GAMEPLAY_STAGE_PHASE *const p_StagePhase;
+
+typedef enum {
+    GP_LIFE_BEGIN,
+    GP_LIFE_BOSS_BEGIN,
+    GP_LIFE_WAIT_SHOT,
+    GP_LIFE_WAIT_SHOT_DELAY,
+    GP_LIFE_FRAME_BEGIN,
+    GP_LIFE_PLAYER_BOMB,
+    GP_LIFE_ITEMS,
+    GP_LIFE_TIMER,
+    GP_LIFE_BOSS,
+    GP_LIFE_ORB,
+    GP_LIFE_AFTER_ORB,
+} GAMEPLAY_LIFE_PHASE;
+
+// Writable view of th01/gameplay/life.c's state for tests.
+extern GAMEPLAY_LIFE_PHASE *const p_LifePhase;
+extern GAMEPLAY_LIFE_PHASE *const p_AfterPlayer;
+
+typedef enum {
+    GP_PAUSE_MENU,
+    GP_PAUSE_DELAY,
+    GP_PAUSE_QUIT_CONFIRM,
+} GAMEPLAY_PAUSE_PHASE;
+
+// Writable view of th01/gameplay/pause.c's state for tests.
+extern GAMEPLAY_PAUSE_PHASE *const p_PausePhase;
+
+typedef enum {
+    GP_EXIT_WAIT,
+    GP_EXIT_MISS,
+} GAMEPLAY_EXIT_PHASE;
+
+// Writable view of th01/gameplay/exit.c's state for tests.
+extern GAMEPLAY_EXIT_PHASE *const p_ExitPhase;
+
+typedef enum {
+    GP_END_STAGE_BONUS,
+    GP_END_TOTAL_BONUS,
+    GP_END_GAMEOVER,
+    GP_END_GAMEOVER_DELAY,
+    GP_END_GAMEOVER_FINISH,
+    GP_END_CONTINUE,
+    GP_END_CONTINUE_DELAY,
+    GP_END_VICTORY_DELAY,
+    GP_END_SWITCH,
+} GAMEPLAY_END_PHASE;
+
+// Names the program that game_switch_binary's black-out leads to: REIIDEN
+// again for a boss stage or a Continue, OP or FUUIN.
+typedef enum {
+    GAMEPLAY_SWITCH_STAGE,
+    GAMEPLAY_SWITCH_CONTINUE,
+    GAMEPLAY_SWITCH_OPENING,
+    GAMEPLAY_SWITCH_ENDING,
+} GAMEPLAY_SWITCH;
+
+// Writable view of th01/gameplay/end.c's state for tests.
+extern GAMEPLAY_END_PHASE *const p_EndPhase;
+extern GAMEPLAY_SWITCH *const p_SwitchTo;
 
 // Returns the sprites of a boss stage or of an ordinary stage.
 const PTN *Gameplay_StageSprites(void);

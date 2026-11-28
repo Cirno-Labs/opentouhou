@@ -1,16 +1,10 @@
-#include "th01/boss/entity.h"
-
+#include "th01/boss/private_entity.h"
 #include "th01/sprite.h"
 
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"
 
 #include <string.h>
-
-typedef struct {
-    const BOS *entities[BOSS_ENTITY_SLOTS];
-    const BOS *animations[BOSS_ANIMATION_SLOTS];
-} BOSS_SPRITES;
 
 typedef enum {
     BOSS_PUT,
@@ -20,6 +14,7 @@ typedef enum {
 } BOSS_PUT_KIND;
 
 static BOSS_SPRITES m_Sprites;
+BOSS_SPRITES *const p_Sprites = &m_Sprites;
 
 static RESULT M_Validate(const BOS *const sprites)
 {
@@ -71,7 +66,7 @@ static uint8_t M_ReadByte(
     }
     uint8_t value = 0;
     for (int32_t bit = 0; bit < 8; bit++) {
-        if ((g_Video.pages[page][byte * 8 + bit] & (1u << target)) != 0) {
+        if ((g_Video->pages[page][byte * 8 + bit] & (1u << target)) != 0) {
             value |= 0x80u >> bit;
         }
     }
@@ -89,7 +84,7 @@ static void M_WriteByte(
     }
     const uint8_t mask = (uint8_t)(1u << target);
     for (int32_t bit = 0; bit < 8; bit++) {
-        uint8_t *const pixel = &g_Video.pages[page][byte * 8 + bit];
+        uint8_t *const pixel = &g_Video->pages[page][byte * 8 + bit];
         *pixel = (uint8_t)((*pixel & ~mask)
                            | ((value & (0x80u >> bit)) != 0 ? mask : 0));
     }
@@ -118,7 +113,7 @@ static void M_EraseByte(
     if (byte < 32000) {
         for (int32_t bit = 0; bit < 8; bit++) {
             if ((mask & (0x80u >> bit)) != 0) {
-                g_Video.pages[page][byte * 8 + bit] = 0;
+                g_Video->pages[page][byte * 8 + bit] = 0;
             }
         }
     }
@@ -210,12 +205,13 @@ static void M_Full(
                                           & coverage)));
                     }
                 } else if (coverage != 0 || kind == BOSS_ANIMATION_PUT) {
-                    M_EraseWord(g_Video.drawing_page, address, coverage);
+                    M_EraseWord(g_Video->drawing_page, address, coverage);
                     for (int32_t plane = 0; plane < 4; plane++) {
                         M_WriteWord(
-                            g_Video.drawing_page, plane, address,
+                            g_Video->drawing_page, plane, address,
                             (uint16_t)(M_ReadWord(
-                                           g_Video.drawing_page, plane, address)
+                                           g_Video->drawing_page, plane,
+                                           address)
                                        | M_SourceWord(
                                            sprites, image, source, plane)));
                     }
@@ -287,11 +283,11 @@ static void M_Line(
                 for (int32_t byte = 0; byte < 2; byte++) {
                     const uint8_t mask = (uint8_t)(coverage >> (byte * 8));
                     M_EraseByte(
-                        g_Video.drawing_page, (uint32_t)address + byte,
+                        g_Video->drawing_page, (uint32_t)address + byte,
                         (uint8_t)(mask >> shift));
                     if (shift != 0) {
                         M_EraseByte(
-                            g_Video.drawing_page, (uint32_t)address + byte + 1,
+                            g_Video->drawing_page, (uint32_t)address + byte + 1,
                             (uint8_t)((uint32_t)mask << (8 - shift)));
                     }
                     for (int32_t part = 0; part < (shift == 0 ? 1 : 2);
@@ -306,8 +302,8 @@ static void M_Line(
                                 ? value >> shift
                                 : (uint8_t)((uint32_t)value << (8 - shift));
                             M_WriteByte(
-                                g_Video.drawing_page, plane, at,
-                                M_ReadByte(g_Video.drawing_page, plane, at)
+                                g_Video->drawing_page, plane, at,
+                                M_ReadByte(g_Video->drawing_page, plane, at)
                                     | dots);
                         }
                     }

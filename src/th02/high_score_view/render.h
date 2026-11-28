@@ -13,6 +13,17 @@ typedef struct {
     TRAM_TEXT shot_types[3];
 } HIGH_SCORE_VIEW_ASSETS;
 
+// The screen's drawing, as HighScoreView_Init takes it: the real
+// functions below in production, a fake observer in tests.
+typedef struct {
+    void (*begin)(
+        const HIGH_SCORES *scores, const TH02_SETTINGS *settings,
+        const HIGH_SCORE_VIEW_ASSETS *assets);
+    void (*frame)(const HIGH_SCORE_VIEW_ASSETS *assets, int16_t frame);
+    void (*flip)(uint8_t drawing_page, uint8_t visible_page);
+    void (*end)(void);
+} HIGH_SCORE_VIEW_RENDER;
+
 void HighScoreViewRender_Begin(
     const HIGH_SCORES *scores, const TH02_SETTINGS *settings,
     const HIGH_SCORE_VIEW_ASSETS *assets);
@@ -20,3 +31,5 @@ void HighScoreViewRender_Frame(
     const HIGH_SCORE_VIEW_ASSETS *assets, int16_t frame);
 void HighScoreViewRender_Flip(uint8_t drawing_page, uint8_t visible_page);
 void HighScoreViewRender_End(void);
+
+extern const HIGH_SCORE_VIEW_RENDER g_HighScoreViewRender;

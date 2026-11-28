@@ -2,19 +2,14 @@
 #include "tests/th01/th01_assets.h"
 #include "tests/th01/th01_world.h"
 #include "th01/ending.h"
-#include "th01/gameplay/end.c"
-#include "th01/gameplay/exit.c"
-#include "th01/gameplay/gameplay.c"
-#include "th01/gameplay/life.c"
-#include "th01/gameplay/pause.c"
-#include "th01/gameplay/stage.c"
-#include "th01/hud.c"
-#include "th01/hud_hp.c"
+#include "th01/gameplay/private.h"
+#include "th01/hud/hp_private.h"
+#include "th01/hud/hud_private.h"
 #include "th01/main.h"
-#include "th01/music.c"
+#include "th01/music_private.h"
 #include "th01/opening.h"
 #include "th01/score.h"
-#include "th01/sound.c"
+#include "th01/sound_private.h"
 
 #include "core/audio.h"
 #include "core/base/arena.h"
@@ -125,7 +120,7 @@ RESULT Opening_MountArchive(VFS *vfs)
     return M_Asset();
 }
 
-RESULT Opening_LoadAssets(
+RESULT OpeningAssets_Load(
     VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
     OPENING_ASSETS *out)
 {
@@ -165,7 +160,7 @@ RESULT ScoreData_WriteSaves(SCORE_SAVES *saves)
     return OK;
 }
 
-RESULT Score_LoadAssets(
+RESULT ScoreAssets_Load(
     VFS *vfs, VFS *user_files, const FONT_ROM *rom, const ALLOCATOR *allocator,
     SCORE_ASSETS *out)
 {
@@ -175,10 +170,10 @@ RESULT Score_LoadAssets(
 
 void Score_SyncSession(void)
 {
-    g_Session.table_high_score =
-        (uint32_t)m_Saves.tables[g_Session.settings.difficulty]
+    Session_SyncTableHighScore(
+        (uint32_t)m_Saves.tables[g_Session->settings.difficulty]
             .entries[0]
-            .score;
+            .score);
 }
 
 RESULT Score_FlushSaves(void)
@@ -186,7 +181,7 @@ RESULT Score_FlushSaves(void)
     return ScoreData_WriteSaves(&m_Saves);
 }
 
-RESULT Ending_LoadAssets(
+RESULT EndingAssets_Load(
     VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
     ENDING_ASSETS *out)
 {
@@ -366,8 +361,8 @@ static void M_Play(void)
         CHECK(M_Tick((TH01_INPUT) {}));
     }
     CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_GAMEPLAY);
-    CHECK(m_Hud.numbers != nullptr);
-    CHECK(m_Health.backgrounds != nullptr);
+    CHECK(p_Hud->numbers != nullptr);
+    CHECK(p_Health->backgrounds != nullptr);
 }
 
 static void M_Shutdown(void)
@@ -387,7 +382,7 @@ TEST(real_main_initializes_public_gameplay_headless_and_with_audio)
         CHECK(Result_Log(g_GameDesc.init(), LOG_LEVEL_ERROR));
         CHECK_EQ_INT(m_Fixture.textures_live, 3);
         M_Play();
-        CHECK((m_Output != nullptr) == (audio != 0));
+        CHECK(((*p_Output) != nullptr) == (audio != 0));
         M_Shutdown();
     }
 }
@@ -447,10 +442,10 @@ TEST(gameover_registration_saves_before_returning_to_continue)
     M_Reset();
     CHECK(Result_Ignore(g_GameDesc.init()));
     M_Play();
-    g_Gameplay.sequence = GAMEPLAY_SEQUENCE_TERMINAL;
-    g_Gameplay.request = GAMEPLAY_REQUEST_SCORE;
-    g_Session.score = 12345;
-    g_Session.stage_id = 4;
+    p_Gameplay->sequence = GAMEPLAY_SEQUENCE_TERMINAL;
+    p_Gameplay->request = GAMEPLAY_REQUEST_SCORE;
+    p_Session->score = 12345;
+    p_Session->stage_id = 4;
     CHECK(M_Tick((TH01_INPUT) {}));
     CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_SCORE);
     CHECK_EQ_INT(m_Fixture.score_begins, 1);
@@ -461,9 +456,9 @@ TEST(gameover_registration_saves_before_returning_to_continue)
     m_Fixture.finish_score = true;
     CHECK(M_Tick((TH01_INPUT) {}));
     CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_GAMEPLAY);
-    CHECK_EQ_INT(g_Gameplay.request, GAMEPLAY_REQUEST_NONE);
-    CHECK_EQ_INT(g_Gameplay.sequence, GAMEPLAY_SEQUENCE_END);
-    CHECK_EQ_INT(m_EndPhase, GP_END_CONTINUE_DELAY);
+    CHECK_EQ_INT(g_Gameplay->request, GAMEPLAY_REQUEST_NONE);
+    CHECK_EQ_INT(g_Gameplay->sequence, GAMEPLAY_SEQUENCE_END);
+    CHECK_EQ_INT(*p_EndPhase, GP_END_CONTINUE_DELAY);
     CHECK(!m_Fixture.saves->pending[0]);
     CHECK_EQ_INT(m_Fixture.written, 1);
     CHECK_EQ_INT(m_Fixture.switch_begins, 0);
@@ -476,8 +471,8 @@ TEST(ending_registration_saves_before_switching_back_to_opening)
     M_Reset();
     CHECK(Result_Ignore(g_GameDesc.init()));
     M_Play();
-    g_Gameplay.sequence = GAMEPLAY_SEQUENCE_TERMINAL;
-    g_Gameplay.request = GAMEPLAY_REQUEST_ENDING;
+    p_Gameplay->sequence = GAMEPLAY_SEQUENCE_TERMINAL;
+    p_Gameplay->request = GAMEPLAY_REQUEST_ENDING;
     CHECK(M_Tick((TH01_INPUT) {}));
     CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_ENDING);
     CHECK_EQ_INT(m_Fixture.ending_begins, 1);
@@ -533,7 +528,7 @@ TEST(vsync_hook_runs_before_each_reference_vsync_and_scene_changes)
     CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_OPENING);
     M_Play();
     CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_GAMEPLAY);
-    CHECK(g_Stage.frame == 0);
+    CHECK(g_Stage->frame == 0);
     CHECK_EQ_INT(g_Opening->frame_rand, 1);
     Th01Hooks_Set((TH01_HOOKS) {});
     M_Shutdown();

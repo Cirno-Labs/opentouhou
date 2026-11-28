@@ -15,3 +15,6 @@ typedef struct {
 } TEST_BOSS;
 
 void TestStageFlow_Boss(const TEST_BOSS *boss);
+
+// Swaps the test boss hook in for StageFlow's real BossFight_* calls.
+void TestStageFlow_Init(void);

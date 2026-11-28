@@ -14,6 +14,19 @@ typedef struct {
 // Writable view of g_Bullets for the module's parts.
 extern BULLETS *const p_Bullets;
 
+// Per-stage spawn tuning: rank bias, layer cycling and the slow-bullet
+// alternation.
+typedef struct {
+    int8_t rank;
+    int8_t speed_bias;
+    uint8_t base_layers;
+    uint8_t layers;
+    uint8_t slow_cycle;
+} BULLET_SPAWN;
+
+// Writable view of the spawn module's private state, for tests.
+extern BULLET_SPAWN *const p_Spawn;
+
 // Clears the spawn state, once per MAIN process.
 void BulletSpawn_Clear(void);
 

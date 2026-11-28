@@ -13,6 +13,21 @@ typedef struct {
     DRAW_TEXT cleared;
 } SHOT_SELECT_ASSETS;
 
+// The screen's drawing, as ShotSelect_Init takes it: the real functions
+// below in production, a fake observer in tests.
+typedef struct {
+    void (*begin)(
+        TH02_SESSION *session, const SHOT_SELECT_ASSETS *assets,
+        const bool cleared[3]);
+    void (*description)(
+        const SHOT_SELECT_ASSETS *assets, uint8_t selection, uint8_t color);
+    void (*background)(uint8_t selection, bool highlight);
+    void (*picture)(
+        const SHOT_SELECT_ASSETS *assets, uint8_t selection, int16_t left,
+        int16_t top);
+    void (*darken)(int16_t left, int16_t top);
+} SHOT_SELECT_RENDER;
+
 // Draws the initial screen and sets session.shot_type to one.
 void ShotSelectRender_Begin(
     TH02_SESSION *session, const SHOT_SELECT_ASSETS *assets,
@@ -24,3 +39,5 @@ void ShotSelectRender_Picture(
     const SHOT_SELECT_ASSETS *assets, uint8_t selection, int16_t left,
     int16_t top);
 void ShotSelectRender_Darken(int16_t left, int16_t top);
+
+extern const SHOT_SELECT_RENDER g_ShotSelectRender;

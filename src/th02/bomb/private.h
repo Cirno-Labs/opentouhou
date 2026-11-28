@@ -1,8 +1,12 @@
 #pragma once
 
+#include "th02/bomb.h"
 #include "th02/bomb/assets.h"
 #include "th02/draw.h"
 #include "th02/tram.h"
+
+// Writable view of g_Bomb for tests.
+extern BOMB *const p_Bomb;
 
 // Draws one circle point without clipping; the origin must be in
 // X=25..415, Y=9..383. Requires RMW charging.

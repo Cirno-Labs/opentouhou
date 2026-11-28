@@ -1,4 +1,4 @@
-#include "th02/tram/cells.h"
+#include "th02/tram/private.h"
 
 #include "core/base/assert.h"
 
@@ -6,6 +6,7 @@
 
 static TRAM m_Tram;
 const TRAM *const g_Tram = &m_Tram;
+TRAM *const p_Tram = &m_Tram;
 
 static uint16_t M_Segment(const uint16_t y)
 {

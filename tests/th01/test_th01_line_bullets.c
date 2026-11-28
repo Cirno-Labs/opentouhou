@@ -1,7 +1,7 @@
 #include "tests/test.h"
 #include "tests/th01/th01_video.h"
 #include "th01/line_bullets.h"
-#include "th01/player.c"
+#include "th01/player_private.h"
 
 #include "core/base/memory.h"
 
@@ -14,26 +14,26 @@ TEST(endpoint_hit_test_uses_supplied_unclipped_coordinates)
     const int16_t ys[] = { 384, 385, 400, 900 };
     for (int32_t x = 0; x < 4; x++) {
         for (int32_t y = 0; y < 4; y++) {
-            memset(&m_Player, 0, sizeof(m_Player));
-            m_Player.left = 300;
-            m_Player.sliding = true;
+            memset(p_Player, 0, sizeof(*p_Player));
+            p_Player->left = 300;
+            p_Player->sliding = true;
             LineBullets_PutPatternedAndHitTest(100, 100, xs[x], ys[y], 7, 0);
-            CHECK(m_Player.is_hit == (x > 0 && x < 3 && y > 0));
-            m_Player.is_hit = false;
-            m_Player.invincible = true;
+            CHECK(p_Player->is_hit == (x > 0 && x < 3 && y > 0));
+            p_Player->is_hit = false;
+            p_Player->invincible = true;
             LineBullets_PutAndHitTest(100, 100, xs[x], ys[y], 7);
-            CHECK(!m_Player.is_hit);
+            CHECK(!p_Player->is_hit);
         }
     }
-    memset(&m_Player, 0, sizeof(m_Player));
-    m_Player.left = 300;
+    memset(p_Player, 0, sizeof(*p_Player));
+    p_Player->left = 300;
     LineBullets_PutAndHitTest(310, 390, 500, 390, 7);
-    CHECK(!m_Player.is_hit);
+    CHECK(!p_Player->is_hit);
     LineBullets_PutAndHitTest(310, 390, 310, 100, 7);
-    CHECK(!m_Player.is_hit);
+    CHECK(!p_Player->is_hit);
     LineBullets_Erase(100, 100, 310, 400);
-    CHECK(!m_Player.is_hit);
-    Mem_Free(g_Video.pages[0]);
+    CHECK(!p_Player->is_hit);
+    Mem_Free(g_Video->pages[0]);
 }
 
 TEST(pattern_is_horizontal_mask_and_axis_paths_differ)
@@ -52,7 +52,7 @@ TEST(pattern_is_horizontal_mask_and_axis_paths_differ)
     for (int32_t x = 10; x <= 12; x++) {
         CHECK_EQ_INT(Th01Test_Pixel(0, x, 30), 7);
     }
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }
 
 TEST(oblique_pattern_omits_final_cache_group)
@@ -63,13 +63,13 @@ TEST(oblique_pattern_omits_final_cache_group)
         CHECK_EQ_INT(Th01Test_Pixel(0, x, 0), x < 4 ? 4 : 0);
         CHECK_EQ_INT(Th01Test_Pixel(0, x, 1), 0);
     }
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }
 
 TEST(raw_restore_uses_neighbor_bytes_and_one_past_cursor)
 {
     Video_Init(&g_HeapAllocator);
-    memset(g_Video.pages[1], 7, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 7, VIDEO_PAGE_SIZE);
     LineBullets_Erase(16, 10, 32, 10);
     for (int32_t x = 0; x < 64; x++) {
         CHECK_EQ_INT(Th01Test_Pixel(0, x, 10), x >= 8 && x < 56 ? 7 : 0);
@@ -85,22 +85,22 @@ TEST(raw_restore_uses_neighbor_bytes_and_one_past_cursor)
     CHECK_EQ_INT(Th01Test_Pixel(0, 8, 9), 7);
     CHECK_EQ_INT(Th01Test_Pixel(0, 39, 9), 7);
     CHECK_EQ_INT(Th01Test_Pixel(0, 8, 10), 0);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }
 
 TEST(segment_crossing_extension_restores_only_mapped_planes)
 {
     Video_Init(&g_HeapAllocator);
     Video_Clear(1);
-    memset(g_Video.pages[1], 15, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 15, VIDEO_PAGE_SIZE);
     Video_SelectDrawingPage(1);
     LineBullets_Erase(0, 1, 0, 1);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     for (int32_t x = 0; x < 24; x++) {
         CHECK_EQ_INT(Th01Test_Pixel(0, x, 0), 5);
     }
     CHECK_EQ_INT(Th01Test_Pixel(0, 24, 0), 1);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }
 
 TEST(mask_writes_wrap_planar_addresses_and_keep_page_selection)
@@ -111,28 +111,28 @@ TEST(mask_writes_wrap_planar_addresses_and_keep_page_selection)
     CHECK_EQ_INT(Th01Test_Pixel(1, 256, 0), 6);
     CHECK_EQ_INT(Th01Test_Pixel(1, 257, 0), 6);
     CHECK_EQ_INT(Th01Test_Pixel(0, 256, 0), 0);
-    CHECK_EQ_INT(g_Video.drawing_page, 1);
+    CHECK_EQ_INT(g_Video->drawing_page, 1);
     LineBullets_Erase(-5, -5, -1, -1);
-    CHECK_EQ_INT(g_Video.drawing_page, 1);
-    Mem_Free(g_Video.pages[0]);
+    CHECK_EQ_INT(g_Video->drawing_page, 1);
+    Mem_Free(g_Video->pages[0]);
 }
 
 TEST(raw_reset_coordinates_wrap_before_clipping)
 {
     Video_Init(&g_HeapAllocator);
-    memset(g_Video.pages[1], 15, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 15, VIDEO_PAGE_SIZE);
     Video_SelectDrawingPage(1);
     Video_LineErase(-11095, -16673, 15360, 23552);
-    CHECK_EQ_INT(g_Video.drawing_page, 1);
+    CHECK_EQ_INT(g_Video->drawing_page, 1);
     for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
-        CHECK_EQ_INT(g_Video.pages[0][i], 0);
+        CHECK_EQ_INT(g_Video->pages[0][i], 0);
     }
     Video_LineErase(277, -32317, 16384, 16384);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 264, 0), 15);
     CHECK_EQ_INT(Th01Test_Pixel(0, 295, 0), 15);
     CHECK_EQ_INT(Th01Test_Pixel(0, 296, 0), 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 264, 1), 15);
     CHECK_EQ_INT(Th01Test_Pixel(0, 624, 398), 15);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }

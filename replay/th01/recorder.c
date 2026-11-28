@@ -9,7 +9,7 @@
 #include "th01/session.h"
 #include "th01/settings.h"
 #include "th01/stage.h"
-#include "th01/stage_objects.h"
+#include "th01/stage/objects.h"
 
 #include "core/config.h"
 #include "core/io/file.h"
@@ -108,12 +108,13 @@ static bool M_Tick(const void *const input)
     const bool running = g_GameDesc.tick(input);
     if (!m_InGameplay && (*g_Th01Scene) == TH01_SCENE_GAMEPLAY) {
         m_InGameplay = true;
-        m_StartStage = g_Session.stage_id;
-        m_Lives = g_Session.lives;
+        m_StartStage = g_Session->stage_id;
+        m_Lives = g_Session->lives;
     }
     if (m_InGameplay) {
-        m_Setbacks += g_Session.lives < m_Lives ? m_Lives - g_Session.lives : 0;
-        m_Lives = g_Session.lives;
+        m_Setbacks +=
+            g_Session->lives < m_Lives ? m_Lives - g_Session->lives : 0;
+        m_Lives = g_Session->lives;
     }
     return running;
 }
@@ -131,7 +132,7 @@ static RECORDER_SCORE M_Score(void)
     if (!m_InGameplay) {
         return score;
     }
-    if (g_Stage.boss != BOSS_NONE && (*g_Boss) != nullptr) {
+    if (g_Stage->boss != BOSS_NONE && (*g_Boss) != nullptr) {
         score.values[0] = (*g_Boss)->phase;
         score.values[1] = -(*g_Boss)->hp;
     } else {
@@ -140,8 +141,8 @@ static RECORDER_SCORE M_Score(void)
                 g_StageObjects->cards[i].flag == STAGE_CARD_REMOVED;
         }
     }
-    score.values[2] = g_Session.score;
-    score.values[3] = g_Session.bombs;
+    score.values[2] = g_Session->score;
+    score.values[3] = g_Session->bombs;
     return score;
 }
 
@@ -151,7 +152,7 @@ static bool M_HasEnded(void)
 {
     return m_InGameplay
         && ((*g_Th01Scene) != TH01_SCENE_GAMEPLAY
-            || g_Session.stage_id != m_StartStage);
+            || g_Session->stage_id != m_StartStage);
 }
 
 static uint32_t M_Buttons(const uint8_t *const input)

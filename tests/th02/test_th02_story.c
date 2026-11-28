@@ -1,7 +1,8 @@
 #include "tests/test.h"
 #include "tests/th02/th02_clip_fixture.h"
 #include "tests/th02/th02_palette_fixture.h"
-#include "th02/ending/story.c"
+#include "th02/ending/images.h"
+#include "th02/ending/private_story.h"
 
 #include "core/base/memory.h"
 
@@ -64,7 +65,7 @@ static void M_Init(FIXTURE *const f, const TH02_SESSION *const session)
         }
     }
     Story_Begin(&f->assets, session, M_RecordMusic, f);
-    CHECK(m_Story.assets == &f->assets);
+    CHECK(p_Story->assets == &f->assets);
 }
 
 TEST(both_stories_cover_all_shot_branches_with_counter_wrap_and_fast_forward)
@@ -90,18 +91,18 @@ TEST(both_stories_cover_all_shot_branches_with_counter_wrap_and_fast_forward)
                     accepted++;
                     done = Story_Update(&input, fast != 0, UINT16_MAX);
                     if (!done) {
-                        const STORY saved = m_Story;
+                        const STORY saved = *p_Story;
                         CHECK(!Story_Update(&input, fast != 0, UINT16_MAX));
-                        CHECK(memcmp(&saved, &m_Story, sizeof(saved)) == 0);
+                        CHECK(memcmp(&saved, p_Story, sizeof(saved)) == 0);
                     }
                 }
                 CHECK(done);
                 elapsed[fast] = accepted;
                 CHECK_EQ_INT(g_VSync.count2, (uint16_t)(65530 + accepted));
                 CHECK(memcmp(&session, &before, sizeof(session)) == 0);
-                CHECK_EQ_INT(m_Story.line, last[route][shot]);
-                CHECK_EQ_INT(m_Story.scroll, route == 0 ? 100 : 0);
-                CHECK_EQ_INT(m_Story.left, 36);
+                CHECK_EQ_INT(p_Story->line, last[route][shot]);
+                CHECK_EQ_INT(p_Story->scroll, route == 0 ? 100 : 0);
+                CHECK_EQ_INT(p_Story->left, 36);
                 CHECK_EQ_INT(f.song_count, 2);
                 CHECK_EQ_INT(f.songs[0], STORY_MUSIC_INTRO);
                 CHECK_EQ_INT(f.songs[1], STORY_MUSIC_CREDITS);

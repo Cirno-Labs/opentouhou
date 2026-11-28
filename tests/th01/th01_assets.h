@@ -1,6 +1,6 @@
 #pragma once
 
-#include "th01/gameplay_assets.h"
+#include "th01/gameplay/assets.h"
 
 // Shared backing for the synthetic assets of each boss.
 typedef struct {

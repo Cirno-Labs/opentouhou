@@ -2,7 +2,7 @@
 #include "tests/th02/th02_clip_fixture.h"
 #include "tests/th02/th02_palette_fixture.h"
 #include "tests/th02/th02_tram_fixture.h"
-#include "th02/title.c"
+#include "th02/title_private.h"
 
 #include "core/base/arena.h"
 
@@ -53,12 +53,12 @@ TEST(flash_emits_audio_before_drawing_and_finishes_after_eighteen_waits)
             CHECK_EQ_INT(g_Video.first_address, 20);
             CHECK_EQ_INT(g_Video.second_address, 70);
         }
-        CHECK(m_Flash.active);
+        CHECK(p_TitleFlash->active);
         events = TitleFlash_Advance();
         CHECK_EQ_INT(events.force_effect, SOUND_EFFECT_NONE);
         CHECK(events.release_images && events.complete);
-        CHECK(!m_Flash.active);
-        CHECK(m_Flash.images == nullptr);
+        CHECK(!p_TitleFlash->active);
+        CHECK(p_TitleFlash->images == nullptr);
         CHECK_EQ_INT(g_Video.visible_page, 0);
         CHECK_EQ_INT(p_Palette->tone, 100);
         const VIDEO complete = g_Video;
@@ -81,7 +81,7 @@ TEST(title_sequence_preserves_demo_branches_and_distinct_waits)
         memset(g_Video.pages[0], 6, VIDEO_PAGE_SIZE);
         memset(g_Video.pages[1], 9, VIDEO_PAGE_SIZE);
 
-        memset(&m_Tram, 0x39, sizeof(m_Tram));
+        memset(p_Tram, 0x39, sizeof(*p_Tram));
         TestClip_Set(0, 0, 639, 399);
 
         Grcg_Init();
@@ -127,7 +127,7 @@ TEST(title_sequence_preserves_demo_branches_and_distinct_waits)
                     break;
                 case TITLE_LOAD_MENU_SONG:
                     CHECK_EQ_INT(
-                        request.midi, m_Title.midi_possible && loads == 0);
+                        request.midi, p_Title->midi_possible && loads == 0);
                     loads++;
                     break;
                 case TITLE_FORCE_EFFECT:
@@ -139,7 +139,7 @@ TEST(title_sequence_preserves_demo_branches_and_distinct_waits)
                     break;
                 case TITLE_PLAY_SONG:
                     CHECK_EQ_INT(
-                        request.midi, initial_midi && m_Title.midi_possible);
+                        request.midi, initial_midi && p_Title->midi_possible);
                     plays++;
                     break;
                 }
@@ -154,9 +154,10 @@ TEST(title_sequence_preserves_demo_branches_and_distinct_waits)
                             const bool open = door_frames >= 39
                                 || (x >= 39 - door_frames
                                     && x <= 40 + door_frames);
-                            CHECK_EQ_INT(m_Tram.codes[y * 80 + x], ' ');
+                            CHECK_EQ_INT(p_Tram->codes[y * 80 + x], ' ');
                             CHECK_EQ_INT(
-                                m_Tram.attributes[y * 80 + x], open ? 0xe1 : 5);
+                                p_Tram->attributes[y * 80 + x],
+                                open ? 0xe1 : 5);
                         }
                     }
                     door_frames++;
@@ -175,13 +176,13 @@ TEST(title_sequence_preserves_demo_branches_and_distinct_waits)
         CHECK_EQ_INT(vsync_waits, 103);
         CHECK_EQ_INT(effects, 1);
         CHECK_EQ_INT(forced, 1);
-        CHECK_EQ_INT(loads, cold ? m_Title.midi_possible ? 2 : 1 : 0);
+        CHECK_EQ_INT(loads, cold ? p_Title->midi_possible ? 2 : 1 : 0);
         CHECK_EQ_INT(plays, cold ? 1 : 0);
         CHECK_EQ_INT(releases, 31);
-        CHECK_EQ_INT(m_Title.demo_num, 0);
+        CHECK_EQ_INT(p_Title->demo_num, 0);
         CHECK_EQ_INT(
-            m_Title.midi_active,
-            cold ? initial_midi && m_Title.midi_possible : initial_midi);
+            p_Title->midi_active,
+            cold ? initial_midi && p_Title->midi_possible : initial_midi);
         CHECK_EQ_INT(g_Video.visible_page, 0);
         CHECK_EQ_INT(g_Video.drawing_page, 0);
         CHECK_EQ_INT(p_Palette->tone, 100);
@@ -200,10 +201,10 @@ TEST(title_sequence_preserves_demo_branches_and_distinct_waits)
             CHECK_EQ_INT(g_Video.pages[1][i], 9);
         }
         for (size_t i = 2000; i < TRAM_PLANE_CELLS; i++) {
-            CHECK_EQ_INT(m_Tram.codes[i], 0x3939);
-            CHECK_EQ_INT(m_Tram.attributes[i], 0x3939);
+            CHECK_EQ_INT(p_Tram->codes[i], 0x3939);
+            CHECK_EQ_INT(p_Tram->attributes[i], 0x3939);
         }
-        m_Title.assets = nullptr;
+        p_Title->assets = nullptr;
         const TITLE_EVENTS done = Title_Step();
         CHECK_EQ_INT(done.wait, TITLE_COMPLETE);
         CHECK_EQ_INT(done.audio_count, 0);

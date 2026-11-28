@@ -1,32 +1,16 @@
-#include "th02/main_menu/logic.h"
+#include "th02/main_menu/private.h"
 
 #include <string.h>
 
-typedef struct {
-    MENU_NAV nav;
-    TH02_SESSION *session;
-    TH02_SETTINGS *settings;
-    const TITLE_ASSETS *assets;
-    const OPTIONS_MENU_TEXT *option_text;
-    OPTIONS_MENU_SOUND *sound;
-    TRAM_CONSOLE *console;
-    uint8_t clear_attribute;
-    uint16_t idle_frame;
-    uint8_t demo;
-    bool initialized;
-    bool input_allowed;
-    bool quit;
-    bool suspended;
-    MAIN_MENU_ACTION pending;
-} MAIN_MENU;
-
 static MAIN_MENU m_Menu;
+MAIN_MENU *const p_MainMenu = &m_Menu;
 static OPTIONS_MENU_CONTEXT m_OptionsContext;
+static const MAIN_MENU_RENDER *m_Render;
 
 static void M_Put(const int8_t selection, const uint16_t attribute)
 {
     if (m_Menu.assets != nullptr) {
-        MainMenuRender_Put(
+        m_Render->put(
             m_Menu.settings, m_Menu.nav.extra_unlocked, selection, attribute);
     }
 }
@@ -84,9 +68,10 @@ MAIN_MENU_SAMPLE MainMenu_Sample(void)
     };
 }
 
-void MainMenu_Init(void)
+void MainMenu_Init(const MAIN_MENU_RENDER *const render)
 {
     memset(&m_Menu, 0, sizeof(m_Menu));
+    m_Render = render;
     OptionsMenu_Init();
 }
 
@@ -134,7 +119,7 @@ MAIN_MENU_EVENTS MainMenu_Update(const uint16_t keys)
         m_Menu.input_allowed = false;
         m_Menu.initialized = true;
         if (m_Menu.assets != nullptr) {
-            MainMenuRender_Init(
+            m_Render->init(
                 m_Menu.assets, m_Menu.settings, m_Menu.console,
                 m_Menu.clear_attribute);
         }
@@ -165,7 +150,7 @@ MAIN_MENU_EVENTS MainMenu_Update(const uint16_t keys)
                 return M_Suspend(MAIN_MENU_EXTRA);
             case 2:
                 if (m_Menu.assets != nullptr) {
-                    Menu_Clear(m_Menu.console, m_Menu.clear_attribute);
+                    m_Render->clear(m_Menu.console, m_Menu.clear_attribute);
                 }
                 return M_Suspend(MAIN_MENU_SCORES);
             case 3:
@@ -176,7 +161,7 @@ MAIN_MENU_EVENTS MainMenu_Update(const uint16_t keys)
                 break;
             case 4:
                 if (m_Menu.assets != nullptr) {
-                    Menu_Clear(m_Menu.console, m_Menu.clear_attribute);
+                    m_Render->clear(m_Menu.console, m_Menu.clear_attribute);
                 }
                 return M_Suspend(MAIN_MENU_MUSIC);
             case 5:
@@ -199,7 +184,7 @@ MAIN_MENU_EVENTS MainMenu_Resume(const uint16_t keys)
     m_Menu.pending = MAIN_MENU_NONE;
     if (pending == MAIN_MENU_SCORES) {
         if (m_Menu.assets != nullptr) {
-            MainMenuRender_Restore(m_Menu.assets);
+            m_Render->restore(m_Menu.assets);
         }
         m_Menu.initialized = false;
     } else if (pending == MAIN_MENU_MUSIC) {
