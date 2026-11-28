@@ -4,8 +4,7 @@
 #include "th01/pellets/private.h"
 #include "th01/player_private.h"
 #include "th01/rng.h"
-#include "th01/shots.c"
-#include "th01/shots.h"
+#include "th01/shots_private.h"
 
 #include "core/base/memory.h"
 #include "pc98/zun/master_rng.h"
@@ -140,14 +139,14 @@ TEST(shot_hit_then_clip_decrements_twice_and_updates_shots_once)
     FIXTURE f;
     M_Init(&f);
     M_Add(&f, 100, 399);
-    m_Shots.slots[0] = (SHOT) { .left = 100, .top = 399, .moving = true };
-    m_Shots.slots[1] = (SHOT) { .left = 200, .top = 200, .moving = true };
+    p_Shots->slots[0] = (SHOT) { .left = 100, .top = 399, .moving = true };
+    p_Shots->slots[1] = (SHOT) { .left = 200, .top = 200, .moving = true };
     Pellets_Update(&f.assets, &f.stage);
     CHECK(!p_Pellets->slots[0].moving);
     CHECK_EQ_INT(p_Pellets->alive_count_excluding_clouds_after_reset, -1);
-    CHECK(!m_Shots.slots[0].moving);
-    CHECK_EQ_INT(m_Shots.slots[0].decay_frame, 2);
-    CHECK_EQ_INT(m_Shots.slots[1].top, 188);
+    CHECK(!p_Shots->slots[0].moving);
+    CHECK_EQ_INT(p_Shots->slots[0].decay_frame, 2);
+    CHECK_EQ_INT(p_Shots->slots[1].top, 188);
     M_Free(&f);
 }
 
@@ -172,14 +171,14 @@ TEST(stale_idle_shot_can_suppress_orb_and_deflection)
     FIXTURE f;
     M_Init(&f);
     M_Add(&f, 100, 100);
-    m_Shots.slots[0] = (SHOT) { .left = 115, .top = 101 };
+    p_Shots->slots[0] = (SHOT) { .left = 115, .top = 101 };
     p_Orb->left = 100;
     p_Orb->top = 101;
     Pellets_Update(&f.assets, &f.stage);
     CHECK(p_Pellets->slots[0].not_rendered);
     CHECK_EQ_INT(p_Pellets->slots[0].decay_frame, 0);
     CHECK_EQ_INT(p_Pellets->destroy_score_delta, 0);
-    m_Shots.slots[0].top = 0;
+    p_Shots->slots[0].top = 0;
     p_Pellets->slots[0].velocity = (MATH16_VECTOR) { -3, -3 };
     Pellets_Update(&f.assets, &f.stage);
     CHECK_EQ_INT(p_Pellets->slots[0].decay_frame, 2);

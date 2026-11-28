@@ -1,5 +1,4 @@
-#include "th01/shots.h"
-
+#include "th01/shots_private.h"
 #include "th01/sound.h"
 #include "th01/sprite.h"
 
@@ -8,6 +7,7 @@
 #include <string.h>
 
 static SHOTS m_Shots;
+SHOTS *const p_Shots = &m_Shots;
 const SHOTS *const g_Shots = &m_Shots;
 
 void Shots_Init(void)

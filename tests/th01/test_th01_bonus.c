@@ -12,8 +12,7 @@
 #include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/session_private.h"
-#include "th01/shots.c"
-#include "th01/shots.h"
+#include "th01/shots_private.h"
 #include "th01/stage/private.h"
 #include "th01/vsync_irq_private.h"
 
@@ -262,8 +261,8 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     p_Player->remaining_bombs = 3;
     p_GameInput->bomb_frame = 123;
     p_Session->continues_total = 65539;
-    m_Shots.slots[0] = (SHOT) { .moving = true, .left = 100, .top = 100 };
-    m_Shots.slots[1] = (SHOT) { .decay_frame = 2, .left = 200, .top = 100 };
+    p_Shots->slots[0] = (SHOT) { .moving = true, .left = 100, .top = 100 };
+    p_Shots->slots[1] = (SHOT) { .decay_frame = 2, .left = 200, .top = 100 };
     p_Pellets->slots[0] = (PELLET) { .moving = true, .not_rendered = true };
     p_Pellets->slots[1] = (PELLET) { .cloud_frame = 5 };
     memset(g_Video->pages[0], 5, VIDEO_PAGE_SIZE);
@@ -271,8 +270,8 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     VSyncIrq_Reset();
     TH01_INPUT raw = {};
     CHECK(!Bonus_BeginTotal(&f.assets, 5, &raw, 0));
-    CHECK(!m_Shots.slots[0].moving);
-    CHECK_EQ_INT(m_Shots.slots[1].decay_frame, 0);
+    CHECK(!p_Shots->slots[0].moving);
+    CHECK_EQ_INT(p_Shots->slots[1].decay_frame, 0);
     CHECK(!p_Pellets->slots[0].moving);
     CHECK_EQ_INT(p_Pellets->slots[1].cloud_frame, 5);
     CHECK_EQ_INT(m_Total.phase, BONUS_TOTAL_INITIAL_WAIT);
