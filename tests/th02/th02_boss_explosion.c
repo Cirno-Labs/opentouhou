@@ -2,7 +2,8 @@
 
 static TEST_BOSS_DOTS *m_Dots;
 
-static void M_ObservedDot(int16_t left, int16_t top, uint8_t size)
+static void M_ObservedDot(
+    const int16_t left, const int16_t top, const uint8_t size)
 {
     if (m_Dots != nullptr) {
         m_Dots->count++;
@@ -12,11 +13,10 @@ static void M_ObservedDot(int16_t left, int16_t top, uint8_t size)
     Draw_Dot(left, top, size);
 }
 
-#define Draw_Dot M_ObservedDot
-#include "th02/boss/explosion.c"
-#undef Draw_Dot
+static const BOSS_EXPLOSION_DOT m_TestDot = { .dot = M_ObservedDot };
 
-void TestBossExplosion_Observe(TEST_BOSS_DOTS *dots)
+void TestBossExplosion_Observe(TEST_BOSS_DOTS *const dots)
 {
     m_Dots = dots;
+    BossExplosion_Init(&m_TestDot);
 }
