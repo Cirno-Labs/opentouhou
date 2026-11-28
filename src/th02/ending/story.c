@@ -1,6 +1,7 @@
 #include "th02/ending/story.h"
 
 #include "th02/ending/images.h"
+#include "th02/ending/private_story.h"
 #include "th02/ending/render.h"
 #include "th02/ending/text.h"
 #include "th02/wait.h"
@@ -8,42 +9,6 @@
 #include "core/base/assert.h"
 
 #include <string.h>
-
-typedef enum {
-    STORY_BEGIN,
-    STORY_INTRO_HOLD,
-    STORY_INTRO_PICTURE,
-    STORY_INTRO_BLACK_OUT,
-    STORY_BEFORE_LINE,
-    STORY_LINE_BEGIN,
-    STORY_LINE,
-    STORY_AFTER_LINE,
-    STORY_CHANGE_PICTURE,
-    STORY_SCROLL,
-    STORY_WHITE_OUT,
-    STORY_CREDITS_MUSIC,
-    STORY_MEASURE_BEGIN,
-    STORY_MEASURE,
-    STORY_SHIFT,
-    STORY_DELAY,
-    STORY_FADE,
-    STORY_DONE,
-} STORY_PHASE;
-
-typedef struct {
-    const ENDING_ASSETS *assets;
-    STORY_AUDIO music;
-    void *music_context;
-    WAIT wait;
-    ENDING_TEXT text;
-    STORY_PHASE phase;
-    STORY_PHASE after_wait;
-    ENDING_STORY route;
-    int16_t left;
-    uint8_t shot;
-    uint8_t line;
-    uint8_t scroll;
-} STORY;
 
 static const uint8_t m_BadColors[51] = {
     [6] = 6,  [10] = 6, [14] = 6, [15] = 6, [18] = 6, [19] = 6, [20] = 6,
@@ -67,6 +32,7 @@ static const uint8_t m_LastLine[ENDING_STORY_COUNT][3] = {
 };
 
 static STORY m_Story;
+STORY *const p_Story = &m_Story;
 
 static void M_Delay(const uint16_t frames, const STORY_PHASE next)
 {
