@@ -5,6 +5,7 @@
 // Converts wall-clock time into a whole number of fixed-length ticks.
 // Time is kept in nanoseconds multiplied by the tick rate, so a rate that
 // does not divide one second, such as 60 Hz, accumulates no rounding error.
+
 typedef struct {
     uint64_t rate;
     int max_ticks;

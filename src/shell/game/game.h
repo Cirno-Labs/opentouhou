@@ -5,6 +5,10 @@
 #include "core/input.h"
 #include "core/patch/stack.h"
 
+// Describes a game to the shell and runs its main loop: window, config,
+// input and patches set up once, then ticks and draws delegated to the
+// game's own callbacks.
+
 #define SHELL_TICK_RATE 60
 
 typedef struct {

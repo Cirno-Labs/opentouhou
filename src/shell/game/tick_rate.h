@@ -4,6 +4,7 @@
 
 // Measures how many ticks run per second of wall time, over periods of at
 // least half a second, as the original games measure their frame rate.
+
 typedef struct {
     uint64_t start_ns;
     int32_t ticks;
