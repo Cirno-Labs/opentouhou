@@ -1,5 +1,6 @@
 #include "tests/test.h"
-#include "tests/th02/th02_menu.c"
+#include "tests/th02/th02_menu.h"
+#include "th02/main_menu/private.h"
 
 typedef struct {
     OPTIONS_MENU_SOUND_EVENT events[16];
@@ -21,7 +22,7 @@ static void M_Begin(
 {
     MainMenu_Begin(
         session, settings, nullptr, nullptr, sound, nullptr, false, 1);
-    m_Menu.nav.in_option = true;
+    p_MainMenu->nav.in_option = true;
 }
 
 TEST(option_gate_requires_release_and_does_not_reset_idle)
@@ -30,19 +31,19 @@ TEST(option_gate_requires_release_and_does_not_reset_idle)
     TH02_SETTINGS settings = { 1, 1, 3, 2, false, true };
     OPTIONS_MENU_SOUND sound = {};
     M_Begin(&session, &settings, &sound);
-    m_Menu.idle_frame = 65535;
+    p_MainMenu->idle_frame = 65535;
     OPTIONS_MENU_EVENTS events = OptionsMenu_Update(GAME_KEY_RIGHT);
     CHECK(events.wait_frame && !events.return_main);
     CHECK_EQ_INT(settings.difficulty, 1);
-    CHECK_EQ_INT(m_Menu.idle_frame, 0);
+    CHECK_EQ_INT(p_MainMenu->idle_frame, 0);
     OptionsMenu_Update(GAME_KEY_CANCEL);
-    CHECK(m_Menu.nav.in_option);
+    CHECK(p_MainMenu->nav.in_option);
     OptionsMenu_Update(0);
     OptionsMenu_Update(GAME_KEY_RIGHT | GAME_KEY_LEFT);
     CHECK_EQ_INT(settings.difficulty, 1);
-    CHECK_EQ_INT(m_Menu.idle_frame, 3);
+    CHECK_EQ_INT(p_MainMenu->idle_frame, 3);
     CHECK_EQ_INT(session.frame, 4);
-    CHECK(!OptionsMenu_Sample().input && !m_Menu.input_allowed);
+    CHECK(!OptionsMenu_Sample().input && !p_MainMenu->input_allowed);
 }
 
 TEST(music_changes_preserve_probe_latch_and_both_direction_requests)
@@ -59,7 +60,7 @@ TEST(music_changes_preserve_probe_latch_and_both_direction_requests)
     };
     M_Begin(&session, &settings, &sound);
     OptionsMenu_Update(0);
-    m_Menu.nav.selection = 1;
+    p_MainMenu->nav.selection = 1;
     OptionsMenu_Update(GAME_KEY_RIGHT | GAME_KEY_LEFT);
     CHECK_EQ_INT(settings.music, TH02_MUSIC_FM);
     CHECK_EQ_INT(trace.count, 6);
@@ -100,7 +101,7 @@ TEST(reset_restores_defaults_and_the_resident_reset_marker)
     };
     M_Begin(&session, &settings, &sound);
     OptionsMenu_Update(0);
-    m_Menu.nav.selection = 5;
+    p_MainMenu->nav.selection = 5;
     OptionsMenu_Update(GAME_KEY_SHOT);
     CHECK_EQ_INT(settings.difficulty, 1);
     CHECK_EQ_INT(settings.music, 1);
@@ -125,12 +126,14 @@ TEST(cancel_returns_to_main_after_the_frame_and_requires_release_again)
     OptionsMenu_Update(0);
     const OPTIONS_MENU_EVENTS events = OptionsMenu_Update(GAME_KEY_CANCEL);
     CHECK(events.wait_frame && events.return_main);
-    CHECK(!m_Menu.nav.in_option && !m_Menu.quit && !OptionsMenu_Sample().ready);
-    CHECK_EQ_INT(m_Menu.nav.selection, 3);
+    CHECK(
+        !p_MainMenu->nav.in_option && !p_MainMenu->quit
+        && !OptionsMenu_Sample().ready);
+    CHECK_EQ_INT(p_MainMenu->nav.selection, 3);
     CHECK_EQ_INT(session.frame, 2);
     CHECK(!OptionsMenu_Update(GAME_KEY_CANCEL).wait_frame);
     const MAIN_MENU_EVENTS back = MainMenu_Update(GAME_KEY_CANCEL);
     CHECK(back.wait_frame && !back.quit);
-    CHECK_EQ_INT(m_Menu.idle_frame, 1);
+    CHECK_EQ_INT(p_MainMenu->idle_frame, 1);
     CHECK_EQ_INT(session.frame, 3);
 }

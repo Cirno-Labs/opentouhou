@@ -1,25 +1,8 @@
 #include "tests/th02/th02_menu.h"
 
+#include "th02/main_menu/private.h"
+
 static TEST_MENU_TRACE *m_Trace;
-
-static void M_InitDraw(
-    const TITLE_ASSETS *assets, const TH02_SETTINGS *settings,
-    TRAM_CONSOLE *console, uint8_t attribute);
-static void M_PutDraw(
-    const TH02_SETTINGS *settings, bool unlocked, int8_t selection,
-    uint16_t attribute);
-static void M_ClearDraw(TRAM_CONSOLE *console, uint8_t attribute);
-static void M_RestoreDraw(const TITLE_ASSETS *assets);
-
-#define MainMenuRender_Init M_InitDraw
-#define MainMenuRender_Put M_PutDraw
-#define Menu_Clear M_ClearDraw
-#define MainMenuRender_Restore M_RestoreDraw
-#include "th02/main_menu/logic.c"
-#undef MainMenuRender_Init
-#undef MainMenuRender_Put
-#undef Menu_Clear
-#undef MainMenuRender_Restore
 
 static void M_InitDraw(
     const TITLE_ASSETS *const assets, const TH02_SETTINGS *const settings,
@@ -29,7 +12,7 @@ static void M_InitDraw(
         m_Trace->init++;
         return;
     }
-    MainMenuRender_Init(assets, settings, console, attribute);
+    g_MainMenuRender.init(assets, settings, console, attribute);
 }
 
 static void M_PutDraw(
@@ -43,7 +26,7 @@ static void M_PutDraw(
         }
         return;
     }
-    MainMenuRender_Put(settings, unlocked, selection, attribute);
+    g_MainMenuRender.put(settings, unlocked, selection, attribute);
 }
 
 static void M_ClearDraw(TRAM_CONSOLE *const console, const uint8_t attribute)
@@ -52,7 +35,7 @@ static void M_ClearDraw(TRAM_CONSOLE *const console, const uint8_t attribute)
         m_Trace->clear++;
         return;
     }
-    Menu_Clear(console, attribute);
+    g_MainMenuRender.clear(console, attribute);
 }
 
 static void M_RestoreDraw(const TITLE_ASSETS *const assets)
@@ -61,8 +44,15 @@ static void M_RestoreDraw(const TITLE_ASSETS *const assets)
         m_Trace->restore++;
         return;
     }
-    MainMenuRender_Restore(assets);
+    g_MainMenuRender.restore(assets);
 }
+
+static const MAIN_MENU_RENDER m_TestRender = {
+    .init = M_InitDraw,
+    .put = M_PutDraw,
+    .restore = M_RestoreDraw,
+    .clear = M_ClearDraw,
+};
 
 void TestMenu_Begin(
     TH02_SESSION *const session, TEST_MENU_TRACE *const trace,
@@ -71,6 +61,7 @@ void TestMenu_Begin(
     static const TITLE_ASSETS assets;
     static TH02_SETTINGS settings;
     m_Trace = trace;
+    MainMenu_Init(&m_TestRender);
     MainMenu_Begin(
         session, &settings, trace != nullptr ? &assets : nullptr, nullptr,
         nullptr, nullptr, unlocked, demo);

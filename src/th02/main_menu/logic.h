@@ -38,7 +38,10 @@ typedef struct {
 // Returns the menu counters and input gates.
 MAIN_MENU_SAMPLE MainMenu_Sample(void);
 
-void MainMenu_Init(void);
+// render draws the screen: the real functions in production, a fake
+// observer in tests. MainMenu_Begin keeps the render set by the last
+// MainMenu_Init.
+void MainMenu_Init(const MAIN_MENU_RENDER *render);
 
 void MainMenu_Begin(
     TH02_SESSION *session, TH02_SETTINGS *settings, const TITLE_ASSETS *assets,

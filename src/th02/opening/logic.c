@@ -52,6 +52,7 @@ typedef struct {
     const MUSIC_ROOM_RENDER *music_room_render;
     const HIGH_SCORE_VIEW_RENDER *high_score_view_render;
     const SHOT_SELECT_RENDER *shot_select_render;
+    const MAIN_MENU_RENDER *main_menu_render;
 } OPENING;
 
 static OPENING m_Opening;
@@ -356,15 +357,17 @@ void Opening_Begin(
     const OPENING_AUDIO *const audio, const uint8_t next_demo,
     const MUSIC_ROOM_RENDER *const music_room_render,
     const HIGH_SCORE_VIEW_RENDER *const high_score_view_render,
-    const SHOT_SELECT_RENDER *const shot_select_render)
+    const SHOT_SELECT_RENDER *const shot_select_render,
+    const MAIN_MENU_RENDER *const main_menu_render)
 {
     memset(&m_Opening, 0, sizeof(m_Opening));
     m_Opening.music_room_render = music_room_render;
     m_Opening.high_score_view_render = high_score_view_render;
     m_Opening.shot_select_render = shot_select_render;
+    m_Opening.main_menu_render = main_menu_render;
     Title_Init();
     Session_CancelStart();
-    MainMenu_Init();
+    MainMenu_Init(main_menu_render);
     ShotSelect_Init(shot_select_render);
     HighScoreView_Init(high_score_view_render);
     MusicRoom_Init(music_room_render);
@@ -394,7 +397,7 @@ void Opening_BeginProgram(void)
 {
     memset(&m_Opening.program, 0, sizeof(m_Opening.program));
     Session_CancelStart();
-    MainMenu_Init();
+    MainMenu_Init(m_Opening.main_menu_render);
     ShotSelect_Init(m_Opening.shot_select_render);
     HighScoreView_Init(m_Opening.high_score_view_render);
     MusicRoom_Reset();
@@ -444,7 +447,7 @@ void Opening_Shutdown(void)
     memset(&m_Opening, 0, sizeof(m_Opening));
     Title_Init();
     Session_CancelStart();
-    MainMenu_Init();
+    MainMenu_Init(&g_MainMenuRender);
     ShotSelect_Init(&g_ShotSelectRender);
     HighScoreView_Init(&g_HighScoreViewRender);
     MusicRoom_Init(&g_MusicRoomRender);

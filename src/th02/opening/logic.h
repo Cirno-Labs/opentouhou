@@ -38,7 +38,8 @@ void Opening_Begin(
     const OPENING_AUDIO *audio, uint8_t next_demo,
     const MUSIC_ROOM_RENDER *music_room_render,
     const HIGH_SCORE_VIEW_RENDER *high_score_view_render,
-    const SHOT_SELECT_RENDER *shot_select_render);
+    const SHOT_SELECT_RENDER *shot_select_render,
+    const MAIN_MENU_RENDER *main_menu_render);
 
 // Reenters OP without the logo, keeping the music room's state and
 // rechecking whether Extra is open.

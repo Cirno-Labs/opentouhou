@@ -190,6 +190,7 @@ foreach part : ['menu', 'options']
     executable(
       'test_th02_' + part,
       'test_th02_' + part + '.c',
+      'th02_menu.c',
       implicit_include_directories: false,
       link_with: [th02_lib, core_base_lib],
       dependencies: [sdl3],

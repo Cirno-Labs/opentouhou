@@ -117,7 +117,7 @@ RESULT Program_Init(void)
         &p_Program->assets.opening, &p_Program->scenes.session, &g_Th02Settings,
         &p_Program->scenes.scores, &p_Program->audio.sound,
         &p_Program->display.console, &opening_audio, 1, &g_MusicRoomRender,
-        &g_HighScoreViewRender, &g_ShotSelectRender);
+        &g_HighScoreViewRender, &g_ShotSelectRender, &g_MainMenuRender);
     MUST(Presenter_Init());
     p_Program->initialized = true;
     return OK;
