@@ -4,7 +4,7 @@
 #include "th02/boss/fight.h"
 #include "th02/demo.h"
 #include "th02/gameplay/assets.h"
-#include "th02/music/wait.h"
+#include "th02/music.h"
 #include "th02/stage/assets.h"
 
 typedef enum {

@@ -1,7 +1,7 @@
 #include "tests/test.h"
 #include "tests/test_allocator.h"
 #include "tests/test_dir.h"
-#include "th02/music/assets.h"
+#include "th02/music.h"
 
 #include "core/base/arena.h"
 #include "core/base/memory.h"
