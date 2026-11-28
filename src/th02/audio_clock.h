@@ -5,7 +5,7 @@
 
 #include "th02/audio.h"
 #include "th02/clock.h"
-#include "th02/music/wait.h"
+#include "th02/music.h"
 
 // Binds the driver, output and fade wait until the next Init; output may
 // be null.

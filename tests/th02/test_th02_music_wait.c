@@ -1,5 +1,5 @@
 #include "tests/test.h"
-#include "th02/music/wait.h"
+#include "th02/music.h"
 
 #include "core/base/arena.h"
 #include "core/io/reader.h"
