@@ -16,8 +16,7 @@
 #include "th01/orb.h"
 #include "th01/pellets.h"
 #include "th01/pellets/pellets.c"
-#include "th01/player.c"
-#include "th01/player.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/scene.c"
 #include "th01/score.h"
@@ -147,15 +146,15 @@ TEST(ordinary_loop_consumes_real_input_and_suspends_after_motion)
     CHECK_EQ_INT(p_Session->frame_rand, 1);
     CHECK_EQ_INT(g_Stage->frame, 1);
     CHECK_EQ_INT(m_Orb.force_frame, 1);
-    CHECK_EQ_INT(m_Player.left, 308);
+    CHECK_EQ_INT(p_Player->left, 308);
     CHECK_EQ_INT(m_Orb.left, 596);
     CHECK(M_InLife(GP_LIFE_ORB));
     CHECK(M_StageOrbWaiting());
-    const PLAYER player = m_Player;
+    const PLAYER player = *p_Player;
     const ORB orb = m_Orb;
     const uint32_t rng = g_Rng;
     Gameplay_Tick(&raw, false, 2);
-    CHECK_EQ_INT(memcmp(&player, &m_Player, sizeof(player)), 0);
+    CHECK_EQ_INT(memcmp(&player, p_Player, sizeof(player)), 0);
     CHECK_EQ_INT(memcmp(&orb, &m_Orb, sizeof(orb)), 0);
     CHECK_EQ_INT(g_Rng, rng);
     Gameplay_Tick(&raw, true, 3);
@@ -176,22 +175,22 @@ TEST(hurry_wait_freezes_the_remaining_iteration_prefix)
 
     p_Session->frame_rand = 3;
     p_Stage->time = 2;
-    m_Player.invincibility_time = 2;
+    p_Player->invincibility_time = 2;
     TH01_INPUT raw = {};
     Gameplay_Tick(&raw, false, 1);
     CHECK(M_InLife(GP_LIFE_TIMER));
     CHECK_EQ_INT(m_Timer.phase, TIMER_WAIT_HURRY);
     CHECK_EQ_INT(g_Stage->frame, 1);
-    CHECK_EQ_INT(m_Player.invincibility_time, 1);
+    CHECK_EQ_INT(p_Player->invincibility_time, 1);
     CHECK_EQ_INT(m_Orb.left, 600);
     const uint32_t rng = g_Rng;
-    const PLAYER player = m_Player;
+    const PLAYER player = *p_Player;
     for (uint64_t i = 2; i < 12; i++) {
         Gameplay_Tick(&raw, false, i);
         CHECK_EQ_INT(g_Stage->frame, 1);
         CHECK_EQ_INT(p_Session->frame_rand, 4);
         CHECK_EQ_INT(g_Rng, rng);
-        CHECK_EQ_INT(memcmp(&player, &m_Player, sizeof(player)), 0);
+        CHECK_EQ_INT(memcmp(&player, p_Player, sizeof(player)), 0);
     }
     Arena_Free(&f.arena);
 }
@@ -209,7 +208,7 @@ TEST(real_shot_boundary_advances_player_before_timer_and_rng_seed)
     TH01_INPUT raw = { .shot = true, .left = true };
     Gameplay_Tick(&raw, false, 1);
     CHECK(M_InLife(GP_LIFE_WAIT_SHOT_DELAY));
-    CHECK_EQ_INT(m_Player.left, 300);
+    CHECK_EQ_INT(p_Player->left, 300);
     CHECK(!g_Stage->timer_initialized);
     CHECK_EQ_INT(p_Session->frame_rand, 42);
     Gameplay_Tick(&raw, true, 2);
@@ -217,7 +216,7 @@ TEST(real_shot_boundary_advances_player_before_timer_and_rng_seed)
     CHECK(!g_Gameplay->wait_for_shot);
     CHECK_EQ_INT(g_Stage->frame, 1);
     CHECK_EQ_INT(p_Session->frame_rand, 43);
-    CHECK_EQ_INT(m_Player.bomb_frame, 2);
+    CHECK_EQ_INT(p_Player->bomb_frame, 2);
     Arena_Free(&f.arena);
 }
 
@@ -229,7 +228,7 @@ TEST(stage_clear_beats_miss_and_starts_real_bonus)
     BONUS_STAGE_ASSETS stage = {};
     f.assets->bonus = &stage;
     M_EnterLife(GP_LIFE_FRAME_BEGIN);
-    m_Player.is_hit = true;
+    p_Player->is_hit = true;
     p_Stage->cleared = true;
     p_Session->lives = 0;
     p_Stage->time = 500;
@@ -240,7 +239,7 @@ TEST(stage_clear_beats_miss_and_starts_real_bonus)
     CHECK(M_InEnd(GP_END_STAGE_BONUS));
     CHECK_EQ_INT(p_Session->stage_id, 1);
     CHECK_EQ_INT(p_Session->lives, 0);
-    CHECK(!m_Player.is_hit);
+    CHECK(!p_Player->is_hit);
     CHECK_EQ_INT(m_Miss.phase, MISS_DONE);
     Arena_Free(&f.arena);
 }
@@ -292,7 +291,7 @@ TEST(miss_clears_debug_damage_without_losing_active_boss_state)
     const BOSS_STATE state = *boss;
     M_EnterExit(GP_EXIT_WAIT);
     VSyncIrq_BeginWait(&p_Gameplay->wait);
-    m_Player.is_hit = true;
+    p_Player->is_hit = true;
     m_TestDamage = true;
     const TH01_INPUT raw = {};
     CHECK_EQ_INT(Gameplay_Tick(&raw, true, 1), GAMEPLAY_REQUEST_NONE);
@@ -327,7 +326,7 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
             Stage_UpdateCards(&f.assets->stage, &f.assets->hud_font);
         }
         CHECK(g_Stage->cleared);
-        CHECK(m_Player.is_hit);
+        CHECK(p_Player->is_hit);
         bool entered_bonus = false;
         for (int32_t i = 0; i < 1000; i++) {
             raw.shot = i % 20 < 10;
@@ -358,7 +357,7 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     f.arena.capacity = f.arena.used;
     const TH01_INPUT raw = {};
     uint64_t tick = 0;
-    m_Player.is_hit = true;
+    p_Player->is_hit = true;
     bool entered_miss = false;
     for (int32_t i = 0; i < 1000; i++) {
         Gameplay_Tick(&raw, true, ++tick);
@@ -369,10 +368,10 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     }
     CHECK(entered_miss);
     CHECK_EQ_INT(p_Session->lives, 3);
-    CHECK(m_Player.invincible);
-    CHECK(!m_Player.is_hit);
+    CHECK(p_Player->invincible);
+    CHECK(!p_Player->is_hit);
     p_Session->lives = 0;
-    m_Player.is_hit = true;
+    p_Player->is_hit = true;
     M_EnterLife(GP_LIFE_FRAME_BEGIN);
     for (int32_t i = 0; i < 200; i++) {
         if (Gameplay_Tick(&raw, true, ++tick) == GAMEPLAY_REQUEST_SCORE) {
@@ -476,7 +475,7 @@ TEST(gameover_redraws_orb_before_copying_the_miss_frame)
 
     f.arena.capacity = f.arena.used;
     memset(f.assets->stage.pixels + ORB_FIRST_IMAGE * 1024, 6, 1024);
-    m_Player.is_hit = true;
+    p_Player->is_hit = true;
     p_Session->lives = 0;
     Gameplay_Tick(&(TH01_INPUT) {}, false, 1);
     Gameplay_Tick(&(TH01_INPUT) {}, true, 2);
@@ -498,7 +497,7 @@ TEST(real_gameover_score_registration_precedes_continue)
         p_Session->high_score = 4000;
         p_Session->highest_score = 5000;
         p_Stage->score = 2345;
-        m_Player.is_hit = true;
+        p_Player->is_hit = true;
         uint64_t tick = 0;
         while (tick < 1000 && g_Gameplay->request != GAMEPLAY_REQUEST_SCORE) {
             Gameplay_Tick(&(TH01_INPUT) {}, true, ++tick);
@@ -745,7 +744,7 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK((*g_Boss) == nullptr);
     CHECK_EQ_INT(g_Stage->boss, BOSS_NONE);
     CHECK_EQ_INT(g_VSync->edge, 0);
-    CHECK_EQ_INT(m_Player.left, 304);
+    CHECK_EQ_INT(p_Player->left, 304);
     CHECK_EQ_INT(m_Hud.score_previous, 0);
     CHECK(m_Hud.numbers == numbers);
     CHECK(m_Health.backgrounds == backgrounds);

@@ -9,8 +9,7 @@
 #include "th01/orb.h"
 #include "th01/pellets.h"
 #include "th01/pellets/pellets.c"
-#include "th01/player.c"
-#include "th01/player.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/scene.c"
 #include "th01/session_private.h"
@@ -182,8 +181,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
     p_Session->lives = 3;
     g_Rng = 0xb15a0000;
-    m_Player.invincible = true;
-    m_Player.left = 300;
+    p_Player->invincible = true;
+    p_Player->left = 300;
     m_Orb.top = 64;
     m_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
@@ -302,21 +301,21 @@ TEST(safety_circle_delays_hit_and_preserves_later_source_effects)
     m_B15M.pattern_state = 2;
     m_B15M.safety_circle = (B15M_CIRCLE) { 64, 1 };
     m_B15M.safety_left = 200;
-    m_Player.left = 400;
-    m_Player.invincible = false;
+    p_Player->left = 400;
+    p_Player->invincible = false;
     VSyncIrq_Reset();
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 100));
     CHECK_EQ_INT(m_B15M.wait.kind, WAIT_TICKS);
     CHECK_EQ_INT(m_B15M.safety_circle.frame, 2);
-    CHECK(!m_Player.is_hit);
+    CHECK(!p_Player->is_hit);
     const B15M frozen = m_B15M;
     const uint32_t rng = g_Rng;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 105));
     CHECK(memcmp(&m_B15M, &frozen, sizeof(m_B15M)) == 0);
     CHECK_EQ_INT(g_Rng, rng);
-    CHECK(!m_Player.is_hit);
+    CHECK(!p_Player->is_hit);
     CHECK(M_BossUpdate(&f.assets, &f.miko, 106));
-    CHECK(m_Player.is_hit);
+    CHECK(p_Player->is_hit);
     CHECK_EQ_INT(m_B15M.safety_circle.frame, 200);
     CHECK_EQ_INT(m_B15M.status.frame, 141);
     CHECK(m_Pellets.slots[0].moving);
@@ -403,7 +402,7 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         CHECK_EQ_INT(m_B15M.status.hp, 0);
         CHECK_EQ_INT(g_Stage->score, 98000);
         CHECK(g_Stage->cleared);
-        CHECK(m_Player.is_hit);
+        CHECK(p_Player->is_hit);
         CHECK(m_Scene.active == &f.assets.next_scene);
         CHECK_EQ_INT(m_Scene.active->id, 5);
         CHECK_EQ_INT(arena.used, used);
@@ -432,8 +431,8 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     m_B15M.pattern_state = 2;
     m_B15M.safety_circle = (B15M_CIRCLE) { 64, 1 };
     m_B15M.safety_left = 200;
-    m_Player.left = 400;
-    m_Player.invincible = false;
+    p_Player->left = 400;
+    p_Player->invincible = false;
     m_Orb.previous_left = m_B15M.girl.left + 48;
     m_Orb.previous_top = m_B15M.girl.top + 24;
     m_Missiles.slots[0] = (MISSILE) { .left = 200 * 16,
@@ -450,15 +449,15 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     const size_t used = arena.used;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 100));
     CHECK_EQ_INT(m_B15M.wait.kind, WAIT_TICKS);
-    CHECK(!m_Player.is_hit);
+    CHECK(!p_Player->is_hit);
     CHECK(!g_Stage->cleared);
     CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 105));
-    CHECK(!m_Player.is_hit);
+    CHECK(!p_Player->is_hit);
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 106));
     CHECK(m_B15M.defeating);
     CHECK_EQ_INT(m_B15M.status.hp, 0);
-    CHECK(m_Player.is_hit);
+    CHECK(p_Player->is_hit);
     CHECK(!g_Stage->cleared);
     CHECK(m_Scene.active == nullptr);
     CHECK_EQ_INT(g_Stage->score, 7000);

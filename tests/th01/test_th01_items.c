@@ -7,8 +7,7 @@
 #include "th01/items.h"
 #include "th01/orb.h"
 #include "th01/pellets.h"
-#include "th01/player.c"
-#include "th01/player.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/session_private.h"
 #include "th01/shots.h"
@@ -79,8 +78,8 @@ TEST(strict_collision_and_immediate_popup_with_bomb_cap)
 {
     CASE c;
     M_Init(&c);
-    m_Player.left = 100;
-    m_Player.remaining_bombs = 4;
+    p_Player->left = 100;
+    p_Player->remaining_bombs = 4;
     m_Items.bombs[0] = (ITEM) { .left = 76, .top = 345, .flag = ITEM_FALL };
     m_Items.bombs[1] = (ITEM) { .left = 100, .top = 344, .flag = ITEM_FALL };
     m_Items.bombs[2] = (ITEM) { .left = 123, .top = 1000, .flag = ITEM_FALL };
@@ -92,7 +91,7 @@ TEST(strict_collision_and_immediate_popup_with_bomb_cap)
     CHECK_EQ_INT(m_Items.bombs[2].top, 366);
     CHECK_EQ_INT(m_Items.bombs[2].radius_or_time, 15);
     CHECK_EQ_INT(m_Items.bombs[3].flag, ITEM_COLLECTED_OVER_CAP);
-    CHECK_EQ_INT(m_Player.remaining_bombs, 5);
+    CHECK_EQ_INT(p_Player->remaining_bombs, 5);
     CHECK_EQ_INT(g_Stage->score, 10000);
     CHECK_EQ_INT(m_Hud.score_previous, 10000);
     for (int32_t i = 0; i < 15; i++) {

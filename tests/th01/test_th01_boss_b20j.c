@@ -8,8 +8,7 @@
 #include "th01/orb.h"
 #include "th01/pellets.h"
 #include "th01/pellets/pellets.c"
-#include "th01/player.c"
-#include "th01/player.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/session_private.h"
 #include "th01/shootout_lasers.c"
@@ -159,8 +158,8 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     CHECK(Result_Ignore(GameText_LoadGlyphs(glyphs, 10, a, &f->font)));
     f->stage = (PTN) { .count = 4, .pixels = Allocator_Alloc(a, 4096) };
     memset(f->stage.pixels, PTN_TRANSPARENT, 4096);
-    m_Player.left = 300;
-    m_Player.invincible = true;
+    p_Player->left = 300;
+    p_Player->invincible = true;
     p_Session->lives = 3;
     m_Orb.top = 64;
     m_Orb.previous_top = 64;

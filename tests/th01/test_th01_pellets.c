@@ -4,8 +4,7 @@
 #include "th01/orb.h"
 #include "th01/pellets.h"
 #include "th01/pellets/pellets.c"
-#include "th01/player.c"
-#include "th01/player.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/shots.c"
 #include "th01/shots.h"
@@ -31,7 +30,7 @@ static void M_Init(FIXTURE *const f)
     m_Orb.left = 500;
     m_Orb.top = 100;
     m_Orb.in_portal = true;
-    m_Player.left = 300;
+    p_Player->left = 300;
     g_Rng = 1;
     f->stage = (PTN) { .count = 2, .pixels = f->stage_pixels };
 }
@@ -48,8 +47,8 @@ static void M_Add(FIXTURE *const f, const int16_t left, const int16_t top)
 
 TEST(all_groups_have_source_counts_angles_and_rng)
 {
-    memset(&m_Player, 0, sizeof(m_Player));
-    m_Player.left = 300;
+    memset(p_Player, 0, sizeof(*p_Player));
+    p_Player->left = 300;
     for (int32_t group = 1; group <= 30; group++) {
         memset(&m_Pellets, 0, sizeof(m_Pellets));
         g_Rng = 1;
@@ -83,7 +82,7 @@ TEST(all_groups_have_source_counts_angles_and_rng)
 TEST(spawn_reuses_selective_fields_and_obeys_real_pool)
 {
     memset(&m_Pellets, 0, sizeof(m_Pellets));
-    memset(&m_Player, 0, sizeof(m_Player));
+    memset(p_Player, 0, sizeof(*p_Player));
     g_Rng = 1;
     m_Pellets.slots[0].angle = 96;
     m_Pellets.slots[0].sling_direction = 2;
@@ -162,7 +161,7 @@ TEST(interlace_skips_orb_but_not_movement_age_or_lethal_hits)
     m_Orb.left = 310;
     m_Orb.top = 369;
     Pellets_Update(&f.assets, &f.stage);
-    CHECK(m_Player.is_hit);
+    CHECK(p_Player->is_hit);
     CHECK(!m_Pellets.slots[0].moving);
     CHECK_EQ_INT(m_Pellets.slots[0].age, 1);
     CHECK_EQ_INT(m_Pellets.destroy_score_delta, 0);
@@ -195,7 +194,7 @@ TEST(deflection_is_invisible_and_decay_ends_after_frame_21)
     FIXTURE f;
     M_Init(&f);
     M_Add(&f, 299, 350);
-    m_Player.deflecting = true;
+    p_Player->deflecting = true;
     Pellets_Update(&f.assets, &f.stage);
     CHECK(m_Pellets.slots[0].not_rendered);
     CHECK_EQ_INT(m_Pellets.slots[0].velocity.x, -128);

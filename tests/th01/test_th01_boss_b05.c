@@ -9,8 +9,7 @@
 #include "th01/particles.c"
 #include "th01/pellets.h"
 #include "th01/pellets/pellets.c"
-#include "th01/player.c"
-#include "th01/player.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/scene.c"
 #include "th01/session_private.h"
@@ -117,8 +116,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     p_Session->route = 1;
     p_Session->lives = 3;
     g_Rng = 0xb0500000;
-    m_Player.invincible = true;
-    m_Player.left = 300;
+    p_Player->invincible = true;
+    p_Player->left = 300;
     m_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     f->route_assets = (ROUTE_SELECT_ASSETS) {
@@ -236,7 +235,7 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         m_VSync.count1 = (uint16_t)reuse;
         m_VSync.count2 = g_VSync->count2;
         const TH01_INPUT raw = {};
-        const PLAYER player = m_Player;
+        const PLAYER player = *p_Player;
         const ORB orb = m_Orb;
         const uint32_t rng = g_Rng;
         CHECK(!M_BossUpdate(&f.miko, &f.route_assets, &raw));
@@ -257,7 +256,7 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         CHECK_EQ_INT(m_B05.status.frame, 0);
         CHECK_EQ_INT(m_B05.hit.frame, 0);
         CHECK(!m_B05.hp_bar_filled);
-        CHECK(memcmp(&m_Player, &player, sizeof(player)) == 0);
+        CHECK(memcmp(p_Player, &player, sizeof(player)) == 0);
         CHECK(memcmp(&m_Orb, &orb, sizeof(orb)) == 0);
         CHECK_EQ_INT(g_Rng, rng);
         CHECK(
@@ -312,7 +311,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK(!m_Pellets.slots[1].moving);
         CHECK_EQ_INT(m_Pellets.slots[1].cloud_frame, 7);
         CHECK_EQ_INT(m_Scene.active->id, 0);
-        CHECK(!g_Stage->cleared && !m_Player.is_hit);
+        CHECK(!g_Stage->cleared && !p_Player->is_hit);
         const B05 frozen = m_B05;
         CHECK(!M_BossUpdate(&f.miko, &f.route_assets, &raw));
         CHECK(memcmp(&m_B05, &frozen, sizeof(m_B05)) == 0);
@@ -327,7 +326,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK_EQ_INT(m_B05.pending, B05_FINISHED);
         CHECK_EQ_INT(p_Session->route, rank % 2);
         CHECK(m_Scene.active == &f.cache[1 + rank % 2]);
-        CHECK(g_Stage->cleared && m_Player.is_hit);
+        CHECK(g_Stage->cleared && p_Player->is_hit);
         CHECK_EQ_INT(g_Rng, rng);
         CHECK_EQ_INT(p_Session->frame_rand, frame_rand);
         CHECK_EQ_INT(arena.used, used);

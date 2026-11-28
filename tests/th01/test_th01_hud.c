@@ -6,8 +6,7 @@
 #include "th01/hud/hud.c"
 #include "th01/orb.h"
 #include "th01/pellets.h"
-#include "th01/player.c"
-#include "th01/player.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/session_private.h"
 #include "th01/shots.h"
@@ -75,7 +74,7 @@ TEST(resources_snap_before_selection_and_restore_opaque_color15)
     memset(g_Video->pages[0], 15, VIDEO_PAGE_SIZE);
     memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
     p_Session->lives = 2;
-    m_Player.remaining_bombs = 1;
+    p_Player->remaining_bombs = 1;
     Hud_SnapResources();
     CHECK_EQ_INT(Th01Test_Pixel(1, 128, 0), 3);
     CHECK_EQ_INT(Th01Test_Pixel(1, 129, 0), 15);
@@ -88,7 +87,7 @@ TEST(resources_snap_before_selection_and_restore_opaque_color15)
     Hud_LivesPut(1);
     CHECK_EQ_INT(m_Hud.lives[256], 15);
     CHECK_EQ_INT(g_Video->drawing_page, 0);
-    m_Player.remaining_bombs = 0;
+    p_Player->remaining_bombs = 0;
     Hud_BombsPut(1);
     CHECK_EQ_INT(Th01Test_Pixel(0, 128, 16), 15);
     Arena_Free(&f.arena);

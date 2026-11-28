@@ -8,8 +8,7 @@
 #include "th01/orb.h"
 #include "th01/pellets.h"
 #include "th01/pellets/pellets.c"
-#include "th01/player.c"
-#include "th01/player.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/scene.c"
 #include "th01/session_private.h"
@@ -103,8 +102,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
     p_Session->lives = 3;
     g_Rng = 0xb10b0000;
-    m_Player.invincible = true;
-    m_Player.left = 300;
+    p_Player->invincible = true;
+    p_Player->left = 300;
     m_Orb.top = 64;
     m_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
@@ -346,7 +345,7 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
     }
     CHECK(m_B10J.finished);
     CHECK(g_Stage->cleared);
-    CHECK(m_Player.is_hit);
+    CHECK(p_Player->is_hit);
     CHECK(m_Scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(m_Scene.active->id, 4);
     const B10J finished = m_B10J;

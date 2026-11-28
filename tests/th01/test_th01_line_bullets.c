@@ -1,7 +1,7 @@
 #include "tests/test.h"
 #include "tests/th01/th01_video.h"
 #include "th01/line_bullets.h"
-#include "th01/player.c"
+#include "th01/player_private.h"
 
 #include "core/base/memory.h"
 
@@ -14,25 +14,25 @@ TEST(endpoint_hit_test_uses_supplied_unclipped_coordinates)
     const int16_t ys[] = { 384, 385, 400, 900 };
     for (int32_t x = 0; x < 4; x++) {
         for (int32_t y = 0; y < 4; y++) {
-            memset(&m_Player, 0, sizeof(m_Player));
-            m_Player.left = 300;
-            m_Player.sliding = true;
+            memset(p_Player, 0, sizeof(*p_Player));
+            p_Player->left = 300;
+            p_Player->sliding = true;
             LineBullets_PutPatternedAndHitTest(100, 100, xs[x], ys[y], 7, 0);
-            CHECK(m_Player.is_hit == (x > 0 && x < 3 && y > 0));
-            m_Player.is_hit = false;
-            m_Player.invincible = true;
+            CHECK(p_Player->is_hit == (x > 0 && x < 3 && y > 0));
+            p_Player->is_hit = false;
+            p_Player->invincible = true;
             LineBullets_PutAndHitTest(100, 100, xs[x], ys[y], 7);
-            CHECK(!m_Player.is_hit);
+            CHECK(!p_Player->is_hit);
         }
     }
-    memset(&m_Player, 0, sizeof(m_Player));
-    m_Player.left = 300;
+    memset(p_Player, 0, sizeof(*p_Player));
+    p_Player->left = 300;
     LineBullets_PutAndHitTest(310, 390, 500, 390, 7);
-    CHECK(!m_Player.is_hit);
+    CHECK(!p_Player->is_hit);
     LineBullets_PutAndHitTest(310, 390, 310, 100, 7);
-    CHECK(!m_Player.is_hit);
+    CHECK(!p_Player->is_hit);
     LineBullets_Erase(100, 100, 310, 400);
-    CHECK(!m_Player.is_hit);
+    CHECK(!p_Player->is_hit);
     Mem_Free(g_Video->pages[0]);
 }
 

@@ -10,8 +10,7 @@
 #include "th01/orb.h"
 #include "th01/pellets.h"
 #include "th01/pellets/pellets.c"
-#include "th01/player.c"
-#include "th01/player.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/session_private.h"
 #include "th01/shots.c"
@@ -135,7 +134,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     p_Stage->maximum_combo = 3;
     p_Stage->time = 100;
     p_Session->lives = 1;
-    m_Player.remaining_bombs = 3;
+    p_Player->remaining_bombs = 3;
     m_GameInput.bomb_frame = 97;
     memset(g_Video->pages[0], 5, VIDEO_PAGE_SIZE);
     memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
@@ -261,7 +260,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     p_Stage->maximum_combo = 7;
     p_Stage->score = 390000;
     p_Session->lives = 2;
-    m_Player.remaining_bombs = 3;
+    p_Player->remaining_bombs = 3;
     m_GameInput.bomb_frame = 123;
     p_Session->continues_total = 65539;
     m_Shots.slots[0] = (SHOT) { .moving = true, .left = 100, .top = 100 };

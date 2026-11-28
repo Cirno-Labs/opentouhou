@@ -1,7 +1,6 @@
-#include "th01/player.h"
-
 #include "th01/hud.h"
 #include "th01/pellets.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/shots.h"
 #include "th01/sound.h"
@@ -12,6 +11,7 @@
 #include <string.h>
 
 static PLAYER m_Player;
+PLAYER *const p_Player = &m_Player;
 const PLAYER *const g_Player = &m_Player;
 
 void Player_Init(void)

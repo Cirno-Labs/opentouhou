@@ -8,8 +8,7 @@
 #include "th01/orb.c"
 #include "th01/orb.h"
 #include "th01/pellets.h"
-#include "th01/player.c"
-#include "th01/player.h"
+#include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/session_private.h"
 #include "th01/shots.c"
@@ -33,14 +32,14 @@ static void M_Init(CASE *const state, const int16_t left, const int16_t bombs)
 {
     *state = (CASE) {};
     Th01Test_ResetWorld();
-    memset(&m_Player, 0, sizeof(m_Player));
-    m_Player.left = left;
-    m_Player.remaining_bombs = bombs;
-    m_Player.mode = PLAYER_MODE_SPECIAL_FIRST;
-    m_Player.is_hit = true;
-    m_Player.invincible = true;
-    m_Player.invincibility_time = 71;
-    m_Player.bomb_frame = 941;
+    memset(p_Player, 0, sizeof(*p_Player));
+    p_Player->left = left;
+    p_Player->remaining_bombs = bombs;
+    p_Player->mode = PLAYER_MODE_SPECIAL_FIRST;
+    p_Player->is_hit = true;
+    p_Player->invincible = true;
+    p_Player->invincibility_time = 71;
+    p_Player->bomb_frame = 941;
     memset(&m_Orb, 0, sizeof(m_Orb));
     m_Orb.left = 100;
     m_Orb.top = 100;
@@ -86,7 +85,7 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
     CHECK_EQ_INT(Th01Test_Pixel(0, 100, 100), 4);
     CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
     CHECK_EQ_INT(g_Stage->time, 0);
-    CHECK_EQ_INT(m_Player.mode, PLAYER_MODE_SPECIAL_FIRST);
+    CHECK_EQ_INT(p_Player->mode, PLAYER_MODE_SPECIAL_FIRST);
     VSyncIrq_Edge();
     CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
     CHECK_EQ_INT(m_Miss.phase, MISS_SHAKE_DELAY);
@@ -143,20 +142,20 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 const int16_t right =
                     starts[x] + 160 >= 608 ? 608 : starts[x] + 160;
                 const int16_t left = starts[x] < 160 ? 0 : starts[x] - 160;
-                CHECK_EQ_INT(m_Player.left, right + 20 * ((304 - right) / 20));
+                CHECK_EQ_INT(p_Player->left, right + 20 * ((304 - right) / 20));
                 CHECK_EQ_INT(
                     m_Miss.effect_left, left + 20 * ((304 - left) / 20));
-                CHECK(m_Player.is_hit);
-                CHECK(m_Player.invincible);
-                CHECK_EQ_INT(m_Player.invincibility_time, 71);
-                CHECK_EQ_INT(m_Player.bomb_frame, 941);
+                CHECK(p_Player->is_hit);
+                CHECK(p_Player->invincible);
+                CHECK_EQ_INT(p_Player->invincibility_time, 71);
+                CHECK_EQ_INT(p_Player->bomb_frame, 941);
                 CHECK(!g_GameInput->bomb);
                 CHECK(g_GameInput->shot);
                 CHECK(g_GameInput->strike);
                 const int8_t deflection[] = { 15, 12, 10, 8 };
-                CHECK_EQ_INT(m_Player.deflect_duration, deflection[rank]);
+                CHECK_EQ_INT(p_Player->deflect_duration, deflection[rank]);
                 CHECK_EQ_INT(g_Video->scroll_top, 0);
-                CHECK_EQ_INT(m_Player.remaining_bombs, variant == 0 ? 2 : 5);
+                CHECK_EQ_INT(p_Player->remaining_bombs, variant == 0 ? 2 : 5);
                 CHECK_EQ_INT(g_Stage->time, 1000);
                 CHECK_EQ_INT(g_Pellets->speed, -2);
                 CHECK_EQ_INT(g_VSync->count1, 0);

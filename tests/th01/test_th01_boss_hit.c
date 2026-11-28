@@ -5,7 +5,7 @@
 #include "th01/boss/boss.c"
 #include "th01/boss/private.h"
 #include "th01/orb.c"
-#include "th01/player.c"
+#include "th01/player_private.h"
 #include "th01/session_private.h"
 #include "th01/shots.c"
 #include "th01/stage/private.h"
@@ -96,7 +96,7 @@ TEST(bomb_damage_ignores_invincibility_on_its_real_cadence)
     M_Init(&f);
     const uint8_t colors[] = { 2 };
     p_Session->lives = 0;
-    m_Player.bomb_damaging = true;
+    p_Player->bomb_damaging = true;
     f.hit.invincible = true;
     p_Session->frame_rand = 49;
     BossHit_UpdateAndRender(
