@@ -177,6 +177,7 @@ foreach part : ['pause_menu', 'pause_menu_render']
     executable(
       'test_th02_' + part,
       'test_th02_' + part + '.c',
+      'th02_pause_menu.c',
       implicit_include_directories: false,
       link_with: [th02_lib, core_base_lib],
       dependencies: [sdl3],

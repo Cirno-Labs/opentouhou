@@ -16,3 +16,6 @@ typedef struct {
 } TEST_PAUSE_REQUESTS;
 
 void TestPause_Observe(TEST_PAUSE_REQUESTS *requests);
+
+// PauseMenu_Init with the test render hook.
+void TestPause_Init(void);

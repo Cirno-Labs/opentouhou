@@ -18,8 +18,9 @@ typedef struct {
     uint16_t keys;
 } PAUSE_MENU_EVENT;
 
-// Clears the pause state, once per MAIN run.
-void PauseMenu_Init(void);
+// Clears the pause state, once per MAIN run. render draws the screen:
+// the real functions in production, a fake observer in tests.
+void PauseMenu_Init(const PAUSE_MENU_RENDER *render);
 
 // Opens the pause menu, keeping the selection and color bytes; null assets
 // draw nothing.
