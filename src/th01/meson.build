@@ -59,7 +59,7 @@ th01_lib = static_library(
   'ending/result.c',
   'ending/load.c',
   'invincibility.c',
-  'gameplay_assets.c',
+  'gameplay/assets.c',
   'gameplay/end.c',
   'gameplay/exit.c',
   'gameplay/gameplay.c',
