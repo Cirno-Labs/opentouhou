@@ -5,6 +5,7 @@
 // A step is one part of a command: a section of a run, or --list or
 // --remove. Its run returns whether the step ended well; a failed step
 // has printed why.
+
 typedef struct {
     bool (*run)(APP_CONTEXT *context);
 } APP_STEP;

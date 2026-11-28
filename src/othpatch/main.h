@@ -6,6 +6,7 @@
 // place with '\r'; elsewhere they print only their last state. An ANSI
 // terminal also shows the files that download under the bar of their
 // patch, and redraws them with escape sequences.
+
 typedef enum {
     MAIN_OUTPUT_FILE,
     MAIN_OUTPUT_TERMINAL,
