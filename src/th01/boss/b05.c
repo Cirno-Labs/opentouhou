@@ -1,4 +1,4 @@
-#include "th01/boss/private.h"
+#include "th01/boss/private_b05.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"
 #include "th01/rng.h"
@@ -14,57 +14,8 @@
 
 #include <string.h>
 
-typedef struct {
-    BOS sphere;
-    BOS flash;
-    BOS person;
-    PI_IMAGE background;
-    PALETTE palette;
-} B05_ASSETS;
-
-typedef enum {
-    B05_IDLE,
-    B05_ENTRANCE,
-    B05_ENTRANCE_DELAY,
-    B05_DEFEAT,
-    B05_ROUTE,
-    B05_FINISHED,
-} B05_PENDING;
-
-typedef enum {
-    B05_PHASE_START = 0,
-    B05_PHASE_SPHERE = 1,
-    B05_PHASE_TRANSFORMS = 2,
-    B05_PHASE_DEFEATED = 8,
-} B05_PHASE;
-
-typedef struct {
-    BOSS_ENTITY sphere;
-    BOSS_ENTITY flash;
-    BOSS_ENTITY person;
-    BOSS_HIT hit;
-    PALETTE boss_palette;
-    PALETTE post_defeat;
-    BOSS_DEFEAT defeat;
-    BOSS_STATE status;
-    int16_t pattern;
-    int16_t pattern_state;
-    int16_t velocity_x;
-    int16_t velocity_y;
-    int16_t rotation_interval;
-    uint8_t angle;
-    int8_t direction;
-    bool hp_bar_filled;
-    B05_PENDING pending;
-} B05;
-
-typedef enum {
-    B05_FIRE_NONE,
-    B05_FIRE_DOWN,
-    B05_FIRE_SLING,
-} B05_FIRE;
-
 static B05 m_B05;
+B05 *const p_B05 = &m_B05;
 
 static const BOSS_DEFEAT_PARAMS m_Defeat = {
     .shift = 48,
@@ -378,7 +329,7 @@ static bool M_Death(
     return true;
 }
 
-static RESULT M_ValidateAssets(const B05_ASSETS *const assets)
+RESULT B05_ValidateAssets(const B05_ASSETS *const assets)
 {
     const BOS *const banks[] = { &assets->sphere, &assets->flash,
                                  &assets->person };
@@ -410,7 +361,7 @@ static RESULT M_LoadAssets(
     MUST(BossAssets_LoadBos(vfs, "BOSS1_3.BOS", allocator, &loaded.person));
     MUST(BossAssets_LoadBackground(
         vfs, "BOSS1.GRP", allocator, &loaded.background));
-    MUST(M_ValidateAssets(&loaded));
+    MUST(B05_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;
     return OK;
@@ -427,7 +378,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     const B05_ASSETS *const assets = data;
     Boss_Select(&m_B05.status);
     ASSERT(m_B05.pending == B05_IDLE || m_B05.pending == B05_FINISHED);
-    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(B05_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B05.sphere, 0, &assets->sphere)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B05.flash, 1, &assets->flash)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B05.person, 2, &assets->person)));

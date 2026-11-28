@@ -1,5 +1,5 @@
 #include "tests/th01/th01_assets.h"
-#include "th01/boss/b05.c"
+#include "th01/boss/private_b05.h"
 
 const void *Th01TestAssets_Singyoku(
     const ALLOCATOR *const a, const TH01_TEST_BOSS_BACKING *const backing)
