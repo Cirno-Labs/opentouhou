@@ -372,8 +372,8 @@ void Score_Begin(
     Video_Clear(0);
     Palette_ShowSolid(0, 0, 0);
     const PI_IMAGE *const image = &assets->gameover;
-    memcpy(g_Video.pages[1], image->pixels, VIDEO_PAGE_SIZE);
-    memcpy(g_Video.pages[0], image->pixels, VIDEO_PAGE_SIZE);
+    memcpy(g_Video->pages[1], image->pixels, VIDEO_PAGE_SIZE);
+    memcpy(g_Video->pages[0], image->pixels, VIDEO_PAGE_SIZE);
     Palette_Init(&m_Registration.palette);
     Palette_Import(&m_Registration.palette.saved, image->palette);
     Palette_BeginFade(

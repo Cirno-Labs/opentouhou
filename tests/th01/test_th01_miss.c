@@ -52,8 +52,8 @@ static void M_Init(CASE *const state, const int16_t left, const int16_t bombs)
     m_GameInput.strike = true;
     Arena_Init(&state->arena, "miss", 1024 * 1024);
     Video_Init(Arena_Allocator(&state->arena));
-    memset(g_Video.pages[0], 6, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 2, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 2, VIDEO_PAGE_SIZE);
     state->miko =
         (PTN) { .count = 24, .pixels = Arena_Alloc(&state->arena, 24 * 1024) };
     state->stage =
@@ -90,7 +90,7 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
     VSyncIrq_Edge();
     CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
     CHECK_EQ_INT(m_Miss.phase, MISS_SHAKE_DELAY);
-    CHECK_EQ_INT(g_Video.scroll_top, 0);
+    CHECK_EQ_INT(g_Video->scroll_top, 0);
     CHECK_EQ_INT(g_VSync->count1, 1);
     VSyncIrq_Edge();
     CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
@@ -99,7 +99,7 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
     CHECK_EQ_INT(g_VSync->count1, 0);
     VSyncIrq_Edge();
     CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
-    CHECK_EQ_INT(g_Video.scroll_top, 392);
+    CHECK_EQ_INT(g_Video->scroll_top, 392);
     Arena_Free(&state.arena);
 }
 
@@ -155,7 +155,7 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 CHECK(g_GameInput->strike);
                 const int8_t deflection[] = { 15, 12, 10, 8 };
                 CHECK_EQ_INT(m_Player.deflect_duration, deflection[rank]);
-                CHECK_EQ_INT(g_Video.scroll_top, 0);
+                CHECK_EQ_INT(g_Video->scroll_top, 0);
                 CHECK_EQ_INT(m_Player.remaining_bombs, variant == 0 ? 2 : 5);
                 CHECK_EQ_INT(g_Stage->time, 1000);
                 CHECK_EQ_INT(g_Pellets->speed, -2);

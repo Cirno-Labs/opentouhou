@@ -333,8 +333,8 @@ static void M_Grc(
                     for (int32_t bit = 0; bit < 8; bit++) {
                         if (address >= 0 && address < 32000
                             && pixels[y * 32 + byte * 8 + bit] != 0) {
-                            g_Video.pages[g_Video.drawing_page]
-                                         [address * 8 + bit] = color & 15;
+                            g_Video->pages[g_Video->drawing_page]
+                                          [address * 8 + bit] = color & 15;
                         }
                     }
                 }
@@ -358,7 +358,7 @@ static void M_Star8(
             const int32_t offset = (top + y) * 640 + left + x;
             if (offset < VIDEO_PAGE_SIZE
                 && (assets->star[y] & (0x80u >> x)) != 0) {
-                g_Video.pages[g_Video.drawing_page][offset] = 2;
+                g_Video->pages[g_Video->drawing_page][offset] = 2;
             }
         }
     }

@@ -57,7 +57,7 @@ TEST(gameover_fades_before_input_and_preserves_shared_counters)
     CHECK_EQ_INT(m_Registration.phase, SCORE_FADE_WAIT);
     CHECK_EQ_INT(g_VSync->count1, 100);
     CHECK(!M_Tick(&f, (TH01_INPUT) { .shot = true }));
-    CHECK_EQ_INT(g_Video.palette[0].red, 17);
+    CHECK_EQ_INT(g_Video->palette[0].red, 17);
     for (int32_t i = 0; i < 15; i++) {
         M_Tick(&f, (TH01_INPUT) {});
     }
@@ -68,8 +68,8 @@ TEST(gameover_fades_before_input_and_preserves_shared_counters)
     CHECK_EQ_INT(m_Registration.place, 0);
     CHECK_EQ_STR(m_Saves.tables[1].entries[0].route, "魔");
     CHECK_EQ_INT(m_Saves.tables[1].entries[0].stage, 13);
-    CHECK_EQ_INT(g_Video.pages[0][399 * 640 + 639], 1);
-    CHECK_EQ_INT(g_Video.palette[7].red, 255);
+    CHECK_EQ_INT(g_Video->pages[0][399 * 640 + 639], 1);
+    CHECK_EQ_INT(g_Video->palette[7].red, 255);
     CHECK(!m_Saves.pending[1]);
     CHECK(M_Tick(&f, (TH01_INPUT) { .ok = true }));
     CHECK(m_Saves.pending[1]);
@@ -215,15 +215,15 @@ TEST(results_retain_background_palette_and_have_no_input_timeout)
 {
     FIXTURE f;
     M_Init(&f);
-    memset(g_Video.pages[0], 4, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 4, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
     Video_SetDac(7, 2, 4, 6);
     M_Begin(&f, SCORE_ENDING, 9000);
-    CHECK_EQ_INT(g_Video.pages[0][399 * 640 + 639], 4);
-    CHECK_EQ_INT(g_Video.pages[1][399 * 640 + 639], 6);
-    CHECK_EQ_INT(g_Video.pages[1][0], 0);
-    CHECK_EQ_INT(g_Video.palette[7].red, 34);
-    CHECK_EQ_INT(g_Video.palette[7].green, 68);
+    CHECK_EQ_INT(g_Video->pages[0][399 * 640 + 639], 4);
+    CHECK_EQ_INT(g_Video->pages[1][399 * 640 + 639], 6);
+    CHECK_EQ_INT(g_Video->pages[1][0], 0);
+    CHECK_EQ_INT(g_Video->palette[7].red, 34);
+    CHECK_EQ_INT(g_Video->palette[7].green, 68);
     m_Registration.inputs = 1001;
     CHECK(!M_Tick(&f, (TH01_INPUT) {}));
     CHECK_EQ_INT(m_Registration.phase, SCORE_ENTRY_INPUT);

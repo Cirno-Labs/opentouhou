@@ -57,7 +57,7 @@ static void M_KujiPut(
             const bool same_row = offset / 80 == row / 80;
             if (((left >= 0 && same_row) || (left < 0 && !same_row))
                 && offset < 32000 && coverage[y * sprites->width + x] != 0) {
-                g_Video.pages[g_Video.drawing_page][offset * 8 + x % 8] = 7;
+                g_Video->pages[g_Video->drawing_page][offset * 8 + x % 8] = 7;
             }
         }
     }

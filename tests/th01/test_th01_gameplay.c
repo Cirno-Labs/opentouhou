@@ -382,11 +382,11 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     CHECK_EQ_INT(g_Gameplay->request, GAMEPLAY_REQUEST_SCORE);
     CHECK_EQ_INT(g_Gameplay->sequence, GAMEPLAY_SEQUENCE_TERMINAL);
     uint8_t before[VIDEO_PAGE_SIZE];
-    memcpy(before, g_Video.pages[0], sizeof(before));
+    memcpy(before, g_Video->pages[0], sizeof(before));
     for (int32_t i = 0; i < 5; i++) {
         CHECK_EQ_INT(Gameplay_Tick(&raw, true, ++tick), GAMEPLAY_REQUEST_SCORE);
     }
-    CHECK_EQ_INT(memcmp(before, g_Video.pages[0], sizeof(before)), 0);
+    CHECK_EQ_INT(memcmp(before, g_Video->pages[0], sizeof(before)), 0);
     Gameplay_ResumeAfterScore(&raw, tick);
     CHECK(M_InEnd(GP_END_CONTINUE_DELAY));
     CHECK_EQ_INT(g_Session.continues_total, 1);
@@ -446,8 +446,8 @@ TEST(gameover_restores_defined_adjacent_array_values)
         M_Init(&f);
 
         f.arena.capacity = f.arena.used;
-        memset(g_Video.pages[0], 9, VIDEO_PAGE_SIZE);
-        memset(g_Video.pages[1], 3, VIDEO_PAGE_SIZE);
+        memset(g_Video->pages[0], 9, VIDEO_PAGE_SIZE);
+        memset(g_Video->pages[1], 3, VIDEO_PAGE_SIZE);
         const int16_t frame = frames[test];
         const int16_t left = lefts[test];
         p_Gameplay->gameover_left[0] = p_Gameplay->gameover_left[1] =
@@ -464,7 +464,7 @@ TEST(gameover_restores_defined_adjacent_array_values)
         VSyncIrq_BeginWait(&p_Gameplay->wait);
         Gameplay_Tick(&(TH01_INPUT) {}, true, 1);
         CHECK_EQ_INT(
-            g_Video.pages[0][PLAYER_TOP * VIDEO_WIDTH + left + frame * 8], 3);
+            g_Video->pages[0][PLAYER_TOP * VIDEO_WIDTH + left + frame * 8], 3);
         Arena_Free(&f.arena);
     }
 }
@@ -481,7 +481,7 @@ TEST(gameover_redraws_orb_before_copying_the_miss_frame)
     Gameplay_Tick(&(TH01_INPUT) {}, false, 1);
     Gameplay_Tick(&(TH01_INPUT) {}, true, 2);
     CHECK(M_InEnd(GP_END_GAMEOVER));
-    CHECK_EQ_INT(g_Video.pages[1][m_Orb.top * VIDEO_WIDTH + m_Orb.left], 6);
+    CHECK_EQ_INT(g_Video->pages[1][m_Orb.top * VIDEO_WIDTH + m_Orb.left], 6);
     Arena_Free(&f.arena);
 }
 
@@ -601,7 +601,7 @@ TEST(ending_seed_is_saved_after_the_life_exit_scroll_wait)
     Gameplay_Tick(&(TH01_INPUT) {}, true, 2);
     CHECK_EQ_INT(g_Session.exit_rand, 1234567);
     CHECK(M_InEnd(GP_END_GAMEOVER));
-    CHECK_EQ_INT(g_Video.scroll_top, 0);
+    CHECK_EQ_INT(g_Video->scroll_top, 0);
     Arena_Free(&f.arena);
 }
 

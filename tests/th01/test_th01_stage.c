@@ -198,7 +198,7 @@ TEST(score_popups_render_before_card_animation_and_clear_at_28)
         card->flag = STAGE_CARD_ALIVE;
         card->score = scores[i];
         card->flip_frame = 15;
-        memset(g_Video.pages[0], 4, VIDEO_PAGE_SIZE);
+        memset(g_Video->pages[0], 4, VIDEO_PAGE_SIZE);
         Stage_UpdateCards(&state.sprites, &state.font);
         const int16_t x = card->left
             + (scores[i] > 10000      ? -8
@@ -208,7 +208,7 @@ TEST(score_popups_render_before_card_animation_and_clear_at_28)
         card->flip_frame = 28;
         Stage_UpdateCards(&state.sprites, &state.font);
         CHECK_EQ_INT(card->score, 0);
-        CHECK_EQ_INT(g_Video.drawing_page, 0);
+        CHECK_EQ_INT(g_Video->drawing_page, 0);
     }
     Arena_Free(&state.arena);
 }
@@ -244,6 +244,6 @@ TEST(card_animation_overwrites_the_preceding_popup)
     Stage_UpdateCards(&state.sprites, &state.font);
     CHECK_EQ_INT(Th01Test_Pixel(0, 104, 136), 3);
     CHECK_EQ_INT(Th01Test_Pixel(1, 104, 136), 3);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     Arena_Free(&state.arena);
 }

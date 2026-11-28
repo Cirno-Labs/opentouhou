@@ -50,7 +50,7 @@ static void M_Init(CASE *const state)
         memset(state->assets.kuji[i].coverage, 1, count * 1024);
     }
     for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
-        g_Video.pages[1][i] = (uint8_t)(i % 16);
+        g_Video->pages[1][i] = (uint8_t)(i % 16);
     }
 }
 
@@ -74,16 +74,17 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
         CHECK_EQ_INT(g_VSync->edge, edge);
         if (must_wait) {
             waits++;
-            const uint8_t before = g_Video.pages[0][184 * 640 + 304];
-            const int16_t scroll = g_Video.scroll_top;
+            const uint8_t before = g_Video->pages[0][184 * 640 + 304];
+            const int16_t scroll = g_Video->scroll_top;
             CHECK_EQ_INT(Bomb_ResumeUpdate(), BOMB_UPDATE_WAIT);
-            CHECK_EQ_INT(g_Video.pages[0][184 * 640 + 304], before);
-            CHECK_EQ_INT(g_Video.scroll_top, scroll);
+            CHECK_EQ_INT(g_Video->pages[0][184 * 640 + 304], before);
+            CHECK_EQ_INT(g_Video->scroll_top, scroll);
             VSyncIrq_Edge();
             result = Bomb_ResumeUpdate();
             const int16_t offsets[] = { 392, 0, 384, 0 };
             CHECK_EQ_INT(
-                g_Video.scroll_top, frame == 140 ? 0 : offsets[frame % 16 / 4]);
+                g_Video->scroll_top,
+                frame == 140 ? 0 : offsets[frame % 16 / 4]);
             CHECK(VSyncIrq_DelayReady(1));
         }
         CHECK_EQ_INT(
@@ -104,7 +105,7 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
     CHECK_EQ_INT(state.arena.used, used);
     CHECK_EQ_INT(m_Pellets.slots[0].decay_frame, 1);
     CHECK_EQ_INT(m_Player.invincibility_time, 100);
-    CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
+    CHECK(memcmp(g_Video->pages[0], g_Video->pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK(memcmp(&g_Palette->saved, &state.stage, sizeof(PALETTE)) == 0);
     const int16_t previous_x = m_Bomb.left[0];
     const int16_t previous_y = m_Bomb.top[0];
@@ -132,7 +133,7 @@ TEST(square_inversion_rejects_edges_and_toggles_only_one_plane)
 {
     CASE state;
     M_Init(&state);
-    memset(g_Video.pages[0], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 6, VIDEO_PAGE_SIZE);
     CHECK(!Video_Invert32(-1, 0, 1));
     CHECK(!Video_Invert32(0, -1, 1));
     CHECK(!Video_Invert32(608, 0, 1));
@@ -145,9 +146,9 @@ TEST(square_inversion_rejects_edges_and_toggles_only_one_plane)
     CHECK_EQ_INT(Th01Test_Pixel(0, 600, 367), 5);
     CHECK_EQ_INT(Th01Test_Pixel(1, 600, 367), (367 * 640 + 600) % 16);
     Video_SetScroll(400);
-    CHECK_EQ_INT(g_Video.scroll_top, 0);
+    CHECK_EQ_INT(g_Video->scroll_top, 0);
     Video_SetScroll(-8);
-    CHECK_EQ_INT(g_Video.scroll_top, 392);
+    CHECK_EQ_INT(g_Video->scroll_top, 392);
     CHECK_EQ_INT(Th01Test_Pixel(0, 600, 367), 5);
     Arena_Free(&state.arena);
 }

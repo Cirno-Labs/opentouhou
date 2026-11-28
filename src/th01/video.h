@@ -17,7 +17,7 @@ typedef struct {
     int16_t scroll_top;
 } VIDEO;
 
-extern VIDEO g_Video;
+extern const VIDEO *const g_Video;
 
 // Views row-major indices 0 through 15, with optional per-pixel coverage
 // (zero skips) and a transparent key index (-1 for none).
@@ -44,6 +44,9 @@ typedef struct {
 void Video_Init(const ALLOCATOR *allocator);
 void Video_SelectDrawingPage(int32_t page);
 void Video_SelectVisiblePage(int32_t page);
+
+// Zeroes g_Video, e.g. on program shutdown.
+void Video_Close(void);
 
 // Draws on the drawing page with color masked to four bits, clipped to the
 // screen. Line and box endpoints are inclusive and may be reversed.
@@ -94,7 +97,7 @@ void Video_Read(int32_t page, GFX_RECT source, uint8_t *pixels, int32_t stride);
 void Video_SetDac(int32_t index, int32_t red, int32_t green, int32_t blue);
 
 // Sets the DAC from the upper four bits of each channel, ignoring alpha.
-// palette may alias g_Video.palette.
+// palette may alias g_Video->palette.
 void Video_SetPalette(const GFX_COLOR palette[16]);
 
 // Sets the display row origin modulo 400: presentation shows row

@@ -87,7 +87,7 @@ static void M_StageBackground(void)
         : &a->backgrounds[Session_Scene()];
     Video_SelectDrawingPage(0);
     if (g_Stage->first_stage) {
-        memcpy(g_Video.pages[0], background->pixels, VIDEO_PAGE_SIZE);
+        memcpy(g_Video->pages[0], background->pixels, VIDEO_PAGE_SIZE);
         Palette_ImportStage(background->palette);
         Palette_SetGlobal(g_StagePalette);
         Gameplay_CopyPage(0, 1);

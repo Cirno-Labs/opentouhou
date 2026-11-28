@@ -27,7 +27,7 @@ void Shape_EllipseArcPut(
         if (offset != cached) {
             if (x >= 0 && x < VIDEO_WIDTH && cached >= 0 && cached < 32000) {
                 uint8_t *const row =
-                    g_Video.pages[g_Video.drawing_page] + cached * 8;
+                    g_Video->pages[g_Video->drawing_page] + cached * 8;
                 for (int32_t i = 0; i < 8; i++) {
                     if ((dots & (0x80u >> i)) != 0) {
                         row[i] = color & 15;

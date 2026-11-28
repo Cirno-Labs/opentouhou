@@ -281,7 +281,7 @@ TEST(raw_scroll_wait_freezes_then_runs_only_the_remaining_call)
     CHECK_EQ_INT(m_B15M.hit.frame, 17);
     CHECK_EQ_INT(g_VSync->count1, 13);
     CHECK_EQ_INT(g_VSync->count2, 26);
-    CHECK_EQ_INT(g_Video.scroll_top, 0);
+    CHECK_EQ_INT(g_Video->scroll_top, 0);
     Arena_Free(&arena);
 }
 

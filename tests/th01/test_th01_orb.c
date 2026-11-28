@@ -295,8 +295,8 @@ TEST(render_restores_current_sprite_mask_at_quantized_previous_position)
     Video_SelectVisiblePage(1);
     PTN sprites = { .count = ORB_FIRST_IMAGE + ORB_IMAGE_COUNT,
                     .pixels = pixels };
-    memset(g_Video.pages[0], 6, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 9, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 9, VIDEO_PAGE_SIZE);
     memset(pixels, PTN_TRANSPARENT, sizeof(pixels));
     pixels[(ORB_FIRST_IMAGE + 1) * PTN_WIDTH * PTN_HEIGHT] = 2;
     pixels[(ORB_FIRST_IMAGE + 1) * PTN_WIDTH * PTN_HEIGHT + 31] = 0;
@@ -304,14 +304,14 @@ TEST(render_restores_current_sprite_mask_at_quantized_previous_position)
     CHECK_EQ_INT(Th01Test_Pixel(0, 16, 70), 9);
     CHECK_EQ_INT(Th01Test_Pixel(0, 47, 70), 9);
     CHECK_EQ_INT(Th01Test_Pixel(0, 17, 70), 6);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
-    CHECK_EQ_INT(g_Video.visible_page, 1);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
+    CHECK_EQ_INT(g_Video->visible_page, 1);
     Orb_Put(&sprites, 19, 70, 1);
     CHECK_EQ_INT(Th01Test_Pixel(0, 16, 70), 2);
     CHECK_EQ_INT(Th01Test_Pixel(0, 47, 70), 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 17, 70), 6);
     CHECK_EQ_INT(Th01Test_Pixel(1, 16, 70), 9);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }
 
 TEST(render_wall_overshoot_wraps_rows_within_visible_page)
@@ -321,8 +321,8 @@ TEST(render_wall_overshoot_wraps_rows_within_visible_page)
     Video_Init(&g_HeapAllocator);
     PTN sprites = { .count = ORB_FIRST_IMAGE + ORB_IMAGE_COUNT,
                     .pixels = pixels };
-    memset(g_Video.pages[0], 6, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 9, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 9, VIDEO_PAGE_SIZE);
     memset(pixels, PTN_TRANSPARENT, sizeof(pixels));
     pixels[ORB_FIRST_IMAGE * PTN_WIDTH * PTN_HEIGHT] = 2;
     pixels[ORB_FIRST_IMAGE * PTN_WIDTH * PTN_HEIGHT + 31] = 3;
@@ -341,5 +341,5 @@ TEST(render_wall_overshoot_wraps_rows_within_visible_page)
     Orb_Put(&sprites, -8, 0, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 23, 0), 3);
     CHECK_EQ_INT(Th01Test_Pixel(0, 632, 399), 6);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }

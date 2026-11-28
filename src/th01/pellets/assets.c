@@ -17,9 +17,9 @@ static void M_Row(
         for (int32_t bit = 0; bit < 8; bit++) {
             if ((mask[byte] & (0x80u >> bit)) != 0) {
                 const uint32_t pixel = address * 8 + bit;
-                g_Video.pages[g_Video.drawing_page][pixel] = restore
-                    ? (g_Video.pages[g_Video.drawing_page][pixel]
-                       | (g_Video.pages[1][pixel]
+                g_Video->pages[g_Video->drawing_page][pixel] = restore
+                    ? (g_Video->pages[g_Video->drawing_page][pixel]
+                       | (g_Video->pages[1][pixel]
                           & (offset + byte >= 0x10000      ? 4
                                  : offset + byte >= 0x8000 ? 6
                                                            : 15)))

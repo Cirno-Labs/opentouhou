@@ -103,7 +103,7 @@ bool Gameplay_BossCall(
 
 void Gameplay_CopyPage(const int32_t from, const int32_t to)
 {
-    memcpy(g_Video.pages[to], g_Video.pages[from], VIDEO_PAGE_SIZE);
+    memcpy(g_Video->pages[to], g_Video->pages[from], VIDEO_PAGE_SIZE);
 }
 
 void Gameplay_Sense(const TH01_INPUT *const raw)

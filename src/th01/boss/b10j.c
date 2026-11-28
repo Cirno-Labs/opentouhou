@@ -612,7 +612,8 @@ static void M_Pillar(
             }
             for (int32_t bit = 0; bit < 8; bit++) {
                 if ((mask[byte] & (0x80u >> bit)) != 0) {
-                    g_Video.pages[g_Video.drawing_page][address * 8 + bit] = 10;
+                    g_Video->pages[g_Video->drawing_page][address * 8 + bit] =
+                        10;
                 }
             }
         }

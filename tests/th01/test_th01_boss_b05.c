@@ -150,8 +150,8 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     Arena_Init(&arena, "b05", 2 * 1024 * 1024);
     FIXTURE f;
     M_InitFixture(&f, &arena);
-    memset(g_Video.pages[0], 3, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 3, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 5, VIDEO_PAGE_SIZE);
     const size_t used = arena.used;
     g_BossSingyoku.init();
     m_B05.status.frame = 77;
@@ -198,9 +198,9 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     CHECK_EQ_INT(m_Particles.velocity_base[0], 9);
     CHECK(memcmp(&m_B05.boss_palette, &f.assets.palette, sizeof(PALETTE)) == 0);
     CHECK(memcmp(p_StagePalette, &m_B05.post_defeat, sizeof(PALETTE)) == 0);
-    CHECK_EQ_INT(g_Video.pages[0][0], 3);
-    CHECK_EQ_INT(g_Video.pages[1][0], 5);
-    CHECK_EQ_INT(g_Video.palette[5].red, 5 * 17);
+    CHECK_EQ_INT(g_Video->pages[0][0], 3);
+    CHECK_EQ_INT(g_Video->pages[1][0], 5);
+    CHECK_EQ_INT(g_Video->palette[5].red, 5 * 17);
     Arena_Free(&arena);
 }
 

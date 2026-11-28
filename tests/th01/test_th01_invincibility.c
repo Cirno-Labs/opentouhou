@@ -34,16 +34,16 @@ TEST(mask_spills_across_rows_and_keeps_rejected_selector)
     assets.masks[0][0] = 0xff;
     Video_SelectDrawingPage(1);
     Invincibility_Put(&assets, -1, 100, 0);
-    CHECK_EQ_INT(g_Video.drawing_page, 1);
+    CHECK_EQ_INT(g_Video->drawing_page, 1);
     Invincibility_Put(&assets, 639, 100, 4);
-    CHECK_EQ_INT(g_Video.drawing_page, 1);
+    CHECK_EQ_INT(g_Video->drawing_page, 1);
     Invincibility_Put(&assets, 639, 100, 0);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
-    CHECK_EQ_INT(g_Video.pages[0][100 * 640 + 639], 10);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
+    CHECK_EQ_INT(g_Video->pages[0][100 * 640 + 639], 10);
     for (int32_t x = 0; x < 7; x++) {
-        CHECK_EQ_INT(g_Video.pages[0][101 * 640 + x], 10);
+        CHECK_EQ_INT(g_Video->pages[0][101 * 640 + x], 10);
     }
-    CHECK_EQ_INT(g_Video.pages[0][101 * 640 + 7], 0);
+    CHECK_EQ_INT(g_Video->pages[0][101 * 640 + 7], 0);
     Arena_Free(&arena);
 }
 
@@ -89,7 +89,7 @@ TEST(rect_restore_keeps_the_original_word_width)
     ARENA arena;
     Arena_Init(&arena, "invincibility", 1024 * 1024);
     Video_Init(Arena_Allocator(&arena));
-    memset(g_Video.pages[1], 7, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 7, VIDEO_PAGE_SIZE);
     INVINCIBILITY state = {};
     INVINCIBILITY_ASSETS assets = {};
     memset(&m_Player, 0, sizeof(m_Player));
@@ -99,8 +99,8 @@ TEST(rect_restore_keeps_the_original_word_width)
         state.top[i] = 100;
     }
     Invincibility_UpdateAndRender(&state, &assets);
-    CHECK_EQ_INT(g_Video.pages[0][100 * 640 + 31], 7);
-    CHECK_EQ_INT(g_Video.pages[0][100 * 640 + 32], 0);
+    CHECK_EQ_INT(g_Video->pages[0][100 * 640 + 31], 7);
+    CHECK_EQ_INT(g_Video->pages[0][100 * 640 + 32], 0);
     CHECK_EQ_INT(g_Rng, 1);
     Arena_Free(&arena);
 }

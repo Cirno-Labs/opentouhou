@@ -87,7 +87,7 @@ TEST(update_tests_orb_before_top_clip_and_skips_portals)
     CHECK_EQ_INT(m_Orb.left, 300);
     CHECK_EQ_INT(m_Orb.top, 64);
     CHECK(!m_Shots.slots[0].moving);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }
 
 TEST(pellet_margins_are_inclusive_and_first_hit_wins)
@@ -107,7 +107,7 @@ TEST(pellet_margins_are_inclusive_and_first_hit_wins)
             }
         }
     }
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }
 
 TEST(boss_inclusive_hit_and_decay_image_sequence)
@@ -130,7 +130,7 @@ TEST(boss_inclusive_hit_and_decay_image_sequence)
     }
     CHECK_EQ_INT(m_Shots.slots[0].decay_frame, 0);
     CHECK(!m_Shots.slots[0].moving);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }
 
 TEST(reset_erases_moving_and_decaying_in_slot_order)
@@ -145,5 +145,5 @@ TEST(reset_erases_moving_and_decaying_in_slot_order)
         CHECK(!m_Shots.slots[i].moving);
         CHECK_EQ_INT(m_Shots.slots[i].decay_frame, 0);
     }
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }

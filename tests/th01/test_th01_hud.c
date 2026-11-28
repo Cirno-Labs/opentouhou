@@ -56,15 +56,15 @@ TEST(mask_covers_playfield_overlap_and_preserves_clear_dots)
 {
     FIXTURE f;
     M_Init(&f);
-    memset(g_Video.pages[0], 2, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 2, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 5, VIDEO_PAGE_SIZE);
     f.mask.coverage[65 * 640 + 639] = 1;
     Hud_PutMask();
     CHECK_EQ_INT(Th01Test_Pixel(0, 639, 65), 10);
     CHECK_EQ_INT(Th01Test_Pixel(1, 639, 65), 10);
     CHECK_EQ_INT(Th01Test_Pixel(0, 638, 65), 2);
     CHECK_EQ_INT(Th01Test_Pixel(1, 639, 66), 5);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     Arena_Free(&f.arena);
 }
 
@@ -72,8 +72,8 @@ TEST(resources_snap_before_selection_and_restore_opaque_color15)
 {
     FIXTURE f;
     M_Init(&f);
-    memset(g_Video.pages[0], 15, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 15, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
     g_Session.lives = 2;
     m_Player.remaining_bombs = 1;
     Hud_SnapResources();
@@ -87,7 +87,7 @@ TEST(resources_snap_before_selection_and_restore_opaque_color15)
     g_Session.lives = 2;
     Hud_LivesPut(1);
     CHECK_EQ_INT(m_Hud.lives[256], 15);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     m_Player.remaining_bombs = 0;
     Hud_BombsPut(1);
     CHECK_EQ_INT(Th01Test_Pixel(0, 128, 16), 15);
@@ -100,7 +100,7 @@ TEST(timer_preserves_duplicate_snapshot_zero_spaces_and_red_threshold)
     M_Init(&f);
     for (int32_t y = 0; y < 16; y++) {
         for (int32_t x = 512; x < 544; x++) {
-            g_Video.pages[0][y * 640 + x] = x < 528 ? 2 : 3;
+            g_Video->pages[0][y * 640 + x] = x < 528 ? 2 : 3;
         }
     }
     Hud_SnapTimer(1000);
@@ -148,7 +148,7 @@ TEST(negative_unchanged_combo_keeps_glyphs_and_background)
     M_Init(&f);
     Hud_SnapNumbers(true);
     for (int32_t page = 0; page < 2; page++) {
-        memset(g_Video.pages[page] + 17 * 640 + 400, 7, 32);
+        memset(g_Video->pages[page] + 17 * 640 + 400, 7, 32);
     }
     p_Stage->combo = -1;
     m_Hud.combo_previous = -1;

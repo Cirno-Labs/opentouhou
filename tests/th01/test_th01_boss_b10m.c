@@ -134,8 +134,8 @@ TEST(setup_shares_eye_assets_and_retains_static_history)
         m_Missiles.slots[i].flag = MISSILE_MOVING;
         m_Missiles.slots[i].previous_top = (int16_t)(i * 9);
     }
-    memset(g_Video.pages[0], 3, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 3, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 5, VIDEO_PAGE_SIZE);
     const size_t used = arena.used;
     M_BossSetup(&f.assets, &f.miko);
     CHECK((*g_Boss) == &m_B10M.status);
@@ -167,8 +167,8 @@ TEST(setup_shares_eye_assets_and_retains_static_history)
         CHECK_EQ_INT(m_Missiles.slots[i].flag, MISSILE_FREE);
         CHECK_EQ_INT(m_Missiles.slots[i].previous_top, i * 9);
     }
-    CHECK_EQ_INT(g_Video.pages[0][0], 3);
-    CHECK_EQ_INT(g_Video.pages[1][0], 5);
+    CHECK_EQ_INT(g_Video->pages[0][0], 3);
+    CHECK_EQ_INT(g_Video->pages[1][0], 5);
     Arena_Free(&arena);
 }
 

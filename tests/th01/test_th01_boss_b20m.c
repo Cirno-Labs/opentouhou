@@ -221,8 +221,8 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     }
     CHECK(!m_B20M.entrance_active);
     CHECK_EQ_INT(g_Rng, g_Session.frame_rand);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
-    CHECK_EQ_INT(g_Video.scroll_top, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
+    CHECK_EQ_INT(g_Video->scroll_top, 0);
     CHECK_EQ_INT(arena.used, used);
     CHECK(memcmp(p_StagePalette, &m_B20M.stage_palette, sizeof(PALETTE)) == 0);
     Arena_Free(&arena);
@@ -393,7 +393,7 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     CHECK(m_B20M.finished);
     CHECK_EQ_INT(g_Stage->score, 60000);
     CHECK_EQ_INT(m_B20M.status.frame, 231);
-    CHECK_EQ_INT(g_Video.scroll_top, 0);
+    CHECK_EQ_INT(g_Video->scroll_top, 0);
     CHECK_EQ_INT(arena.used, used);
     const B20M done = m_B20M;
     CHECK(M_BossUpdate(&f.assets, tick));

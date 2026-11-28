@@ -15,7 +15,7 @@ static HUD_HP m_Health;
 static void M_SnapPoint(const int16_t point)
 {
     Video_Read(
-        g_Video.drawing_page, (GFX_RECT) { 128 + point * 16, 48, 16, 16 },
+        g_Video->drawing_page, (GFX_RECT) { 128 + point * 16, 48, 16, 16 },
         m_Health.backgrounds + point * 256, 16);
 }
 

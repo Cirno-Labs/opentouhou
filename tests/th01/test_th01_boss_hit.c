@@ -65,7 +65,7 @@ TEST(real_hud_health_and_flash_follow_hit_order)
     CHECK_EQ_INT(f.hp, 7);
     CHECK_EQ_INT(Th01Test_Pixel(0, 184, 48), 0);
     CHECK_EQ_INT(g_Palette->saved.colors[2][0], 1);
-    CHECK_EQ_INT(g_Video.palette[2].red, 17);
+    CHECK_EQ_INT(g_Video->palette[2].red, 17);
     Arena_Free(&f.arena);
 }
 

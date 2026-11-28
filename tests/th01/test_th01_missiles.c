@@ -55,7 +55,7 @@ TEST(interlace_motion_and_explosion_lifetime)
     CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_HIT_LAST);
     Missiles_UpdateAndRender(0, &sprites);
     CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }
 
 TEST(lethal_current_coordinates_ignore_field_and_sliding)
@@ -87,7 +87,7 @@ TEST(lethal_current_coordinates_ignore_field_and_sliding)
             CHECK(!m_Player.is_hit);
         }
     }
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }
 
 TEST(unaligned_quarters_and_word_rounded_restore)
@@ -115,10 +115,10 @@ TEST(unaligned_quarters_and_word_rounded_restore)
     CHECK_EQ_INT(Th01Test_Pixel(0, 34, 100), 5);
     CHECK_EQ_INT(Th01Test_Pixel(0, 16, 100), 0);
     m_Missiles.slots[0].flag = MISSILE_HIT;
-    memset(g_Video.pages[1], 9, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 9, VIDEO_PAGE_SIZE);
     Missiles_UpdateAndRender(0, &sprites);
     CHECK_EQ_INT(Th01Test_Pixel(0, 16, 100), 9);
     CHECK_EQ_INT(Th01Test_Pixel(0, 63, 115), 9);
     CHECK_EQ_INT(Th01Test_Pixel(0, 64, 115), 0);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }

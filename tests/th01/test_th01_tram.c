@@ -253,7 +253,7 @@ TEST(overlay_drawing_leaves_graphics_pages_selectors_and_dac_unchanged)
     Video_Clear(7);
     Video_SelectVisiblePage(1);
     Video_SetDac(2, 5, 6, 7);
-    const VIDEO saved = g_Video;
+    const VIDEO saved = *g_Video;
     const size_t used = arena.used;
     const GAME_TEXT_GLYPH glyph = { .codepoint = 0x6771,
                                     .rows = { 0xffff },
@@ -262,12 +262,13 @@ TEST(overlay_drawing_leaves_graphics_pages_selectors_and_dac_unchanged)
     Tram_SetVisible(false);
     Tram_Clear();
     CHECK_EQ_INT(arena.used, used);
-    CHECK_EQ_INT(g_Video.drawing_page, saved.drawing_page);
-    CHECK_EQ_INT(g_Video.visible_page, saved.visible_page);
-    CHECK(memcmp(g_Video.palette, saved.palette, sizeof(g_Video.palette)) == 0);
+    CHECK_EQ_INT(g_Video->drawing_page, saved.drawing_page);
+    CHECK_EQ_INT(g_Video->visible_page, saved.visible_page);
+    CHECK(
+        memcmp(g_Video->palette, saved.palette, sizeof(g_Video->palette)) == 0);
     for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
-        CHECK_EQ_INT(g_Video.pages[0][i], 10);
-        CHECK_EQ_INT(g_Video.pages[1][i], 7);
+        CHECK_EQ_INT(g_Video->pages[0][i], 10);
+        CHECK_EQ_INT(g_Video->pages[1][i], 7);
     }
     Video_SetDac(2, 0, 0, 0);
     CHECK_EQ_INT(g_TramPalette[3].red, 255);

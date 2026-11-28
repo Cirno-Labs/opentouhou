@@ -18,7 +18,7 @@ TEST(arc_cache_boundaries_and_defined_first_restore)
     CHECK_EQ_INT(Th01Test_Pixel(0, 100, 116), 0);
     Shape_EllipseArcPut(-8, 20, 8, 8, 7, 128, 0, 128);
     CHECK_EQ_INT(Th01Test_Pixel(0, 0, 20), 0);
-    memset(g_Video.pages[1], 3, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 3, VIDEO_PAGE_SIZE);
     Shape_EllipseArcErase(103, 100, 0, 0, 8, 0, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 96, 100), 3);
     CHECK_EQ_INT(Th01Test_Pixel(0, 111, 100), 3);

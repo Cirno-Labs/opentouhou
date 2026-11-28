@@ -57,7 +57,7 @@ static void M_Snapshot(
             const int32_t at = offset + y * VIDEO_WIDTH + x;
             if (at >= 0 && at < VIDEO_PAGE_SIZE) {
                 m_StageObjects.backgrounds[slot * 1024 + y * 32 + x] =
-                    g_Video.pages[1][at];
+                    g_Video->pages[1][at];
             }
         }
     }
@@ -71,7 +71,7 @@ static void M_CopySquare(const int16_t left, const int16_t top)
         for (int32_t x = 0; x < 32; x++) {
             const int32_t at = offset + y * VIDEO_WIDTH + x;
             if (at >= 0 && at < VIDEO_PAGE_SIZE) {
-                g_Video.pages[1][at] = g_Video.pages[0][at];
+                g_Video->pages[1][at] = g_Video->pages[0][at];
             }
         }
     }
@@ -268,7 +268,8 @@ void StageObjects_PutBackgroundAndObject(
                 const uint8_t fg = image == STAGE_OBJECT_NONE
                     ? PTN_TRANSPARENT
                     : sprites->pixels[image * 1024 + pixel];
-                g_Video.pages[g_Video.drawing_page][at] = fg == PTN_TRANSPARENT
+                g_Video->pages[g_Video->drawing_page][at] =
+                    fg == PTN_TRANSPARENT
                     ? m_StageObjects.backgrounds[slot * 1024 + pixel]
                     : fg;
             }

@@ -32,8 +32,8 @@ TEST(rowshift_preserves_pixel_order_and_source)
     Video_Init(Arena_Allocator(&arena));
     for (int32_t y = 0; y < 2; y++) {
         for (int32_t x = 0; x < VIDEO_WIDTH; x++) {
-            g_Video.pages[0][y * VIDEO_WIDTH + x] = (uint8_t)(x % 15);
-            g_Video.pages[1][y * VIDEO_WIDTH + x] = (uint8_t)(x / 32 % 16);
+            g_Video->pages[0][y * VIDEO_WIDTH + x] = (uint8_t)(x % 15);
+            g_Video->pages[1][y * VIDEO_WIDTH + x] = (uint8_t)(x / 32 % 16);
         }
     }
     for (uint16_t step = 0; step < 20; step++) {
@@ -52,7 +52,7 @@ TEST(rowshift_preserves_pixel_order_and_source)
             }
         }
     }
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     Arena_Free(&arena);
 }
 
@@ -62,8 +62,8 @@ TEST(row_transition_empty_scan_fades_and_final_delay)
     Arena_Init(&arena, "bonus", 2 * 1024 * 1024);
     const ALLOCATOR *const a = Arena_Allocator(&arena);
     Video_Init(a);
-    memset(g_Video.pages[0], 3, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 7, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 3, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 7, VIDEO_PAGE_SIZE);
     Palette_Init(p_Palette);
     PALETTE target;
     memset(&target, 15, sizeof(target));
@@ -84,9 +84,9 @@ TEST(row_transition_empty_scan_fades_and_final_delay)
         CHECK_EQ_INT(g_VSync->count1, 0);
     }
     CHECK_EQ_INT(m_Transition.done, 400);
-    CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
+    CHECK(memcmp(g_Video->pages[0], g_Video->pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK_EQ_INT(g_Palette->saved.colors[0][0], 15);
-    CHECK_EQ_INT(g_Video.palette[0].red, 255);
+    CHECK_EQ_INT(g_Video->palette[0].red, 255);
     CHECK(Bonus_ResumeRowTransition(&target));
     Arena_Free(&arena);
 }
@@ -137,8 +137,8 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     g_Session.lives = 1;
     m_Player.remaining_bombs = 3;
     m_GameInput.bomb_frame = 97;
-    memset(g_Video.pages[0], 5, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 5, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
     memset(p_StagePalette, 11, sizeof(*p_StagePalette));
     Video_SelectDrawingPage(1);
     VSyncIrq_Reset();
@@ -147,7 +147,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 180), 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 32, 180), 5);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 179), 6);
-    CHECK_EQ_INT(g_Video.drawing_page, 1);
+    CHECK_EQ_INT(g_Video->drawing_page, 1);
     CHECK_EQ_INT(g_Palette->saved.colors[0][0], 11);
     for (int32_t delay = 0; delay < 24; delay++) {
         const BONUS frozen = m_Bonus;
@@ -268,8 +268,8 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     m_Shots.slots[1] = (SHOT) { .decay_frame = 2, .left = 200, .top = 100 };
     m_Pellets.slots[0] = (PELLET) { .moving = true, .not_rendered = true };
     m_Pellets.slots[1] = (PELLET) { .cloud_frame = 5 };
-    memset(g_Video.pages[0], 5, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 5, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
     VSyncIrq_Reset();
     TH01_INPUT raw = {};
     CHECK(!Bonus_BeginTotal(&f.assets, 5, &raw, 0));
@@ -340,7 +340,7 @@ TEST(total_second_loop_scrambles_then_restores_final_digit)
     Arena_Init(&arena, "bonus scramble", 2 * 1024 * 1024);
     TOTAL_FIXTURE f = {};
     M_InitTotal(&f, Arena_Allocator(&arena));
-    memset(g_Video.pages[1], 14, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 14, VIDEO_PAGE_SIZE);
     const TH01_INPUT raw = {};
     VSyncIrq_Reset();
     Bonus_InitTotal();

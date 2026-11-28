@@ -73,9 +73,9 @@ TEST(title_shares_fade_and_hold_counter_then_draws_unique_rows)
     ARENA arena;
     OPENING_ASSETS assets;
     M_Init(&arena, &assets);
-    CHECK_EQ_INT(g_Video.pages[0][0], 1);
-    CHECK_EQ_INT(g_Video.pages[1][0], 2);
-    CHECK_EQ_INT(g_Video.palette[1].red, 0);
+    CHECK_EQ_INT(g_Video->pages[0][0], 1);
+    CHECK_EQ_INT(g_Video->pages[1][0], 2);
+    CHECK_EQ_INT(g_Video->palette[1].red, 0);
     CHECK_EQ_INT(m_Menu.palette.saved.colors[1][1], 0);
     CHECK_EQ_INT(m_Menu.palette.resource.colors[1][1], 1);
     const size_t used = arena.used;
@@ -85,8 +85,8 @@ TEST(title_shares_fade_and_hold_counter_then_draws_unique_rows)
         Opening_Tick(&(TH01_INPUT) {}, false);
         if (tick == 16) {
             CHECK_EQ_INT(m_Opening.phase, OPENING_HOLD);
-            CHECK_EQ_INT(g_Video.palette[1].red, 255);
-            CHECK_EQ_INT(g_Video.palette[1].green, 0);
+            CHECK_EQ_INT(g_Video->palette[1].red, 255);
+            CHECK_EQ_INT(g_Video->palette[1].green, 0);
         }
         if (tick == 99) {
             CHECK_EQ_INT(m_Menu.line_count, 0);
@@ -122,7 +122,7 @@ TEST(title_shares_fade_and_hold_counter_then_draws_unique_rows)
         rows += m_Menu.drawn_rows[y];
     }
     CHECK_EQ_INT(rows, 200);
-    CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
+    CHECK(memcmp(g_Video->pages[0], g_Video->pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK_EQ_INT(m_Opening.frame_rand, 0);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
@@ -145,10 +145,10 @@ TEST(prompt_blinks_after_wait_and_window_keeps_saved_palette)
     CHECK_EQ_INT(m_Opening.phase, OPENING_MAIN);
     CHECK_EQ_INT(m_Opening.random, 0);
     CHECK_EQ_INT(m_Opening.frame_rand, 1);
-    CHECK_EQ_INT(g_Video.pages[0][0], 7);
-    CHECK_EQ_INT(g_Video.pages[1][0], 7);
+    CHECK_EQ_INT(g_Video->pages[0][0], 7);
+    CHECK_EQ_INT(g_Video->pages[1][0], 7);
     CHECK_EQ_INT(m_Menu.palette.resource.colors[1][1], 2);
-    CHECK_EQ_INT(g_Video.palette[1].green, 0);
+    CHECK_EQ_INT(g_Video->palette[1].green, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 269, 276), 15);
     Arena_Free(&arena);
 }
@@ -285,7 +285,7 @@ TEST(start_fades_to_black_then_emits_its_boundary)
     M_Init(&arena, &assets);
     M_Main();
     const uint32_t frame_rand = m_Opening.frame_rand;
-    CHECK_EQ_INT(g_Video.palette[1].red, 255);
+    CHECK_EQ_INT(g_Video->palette[1].red, 255);
     OPENING_EVENTS events = M_Tick((TH01_INPUT) { .ok = true, .cancel = true });
     CHECK_EQ_INT(events.action, OPENING_ACTION_NONE);
     CHECK_EQ_INT(events.audio, OPENING_AUDIO_FADE);
@@ -294,11 +294,11 @@ TEST(start_fades_to_black_then_emits_its_boundary)
     for (int32_t tick = 1; tick <= 15; tick++) {
         events = M_Tick((TH01_INPUT) { .ok = true });
         CHECK_EQ_INT(events.action, OPENING_ACTION_NONE);
-        CHECK_EQ_INT(g_Video.palette[1].red, tick < 15 ? (15 - tick) * 17 : 0);
+        CHECK_EQ_INT(g_Video->palette[1].red, tick < 15 ? (15 - tick) * 17 : 0);
     }
     events = M_Tick((TH01_INPUT) {});
     CHECK_EQ_INT(events.action, OPENING_ACTION_START);
-    CHECK_EQ_INT(g_Video.palette[1].red, 0);
+    CHECK_EQ_INT(g_Video->palette[1].red, 0);
     CHECK_EQ_INT(events.audio, OPENING_AUDIO_NONE);
     CHECK_EQ_INT(m_Opening.frame_rand, frame_rand);
     CHECK_EQ_INT(m_Opening.count1, 0);

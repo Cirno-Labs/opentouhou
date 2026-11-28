@@ -10,11 +10,11 @@ static uint8_t m_Expected[VIDEO_PAGE_SIZE];
 
 static void M_Video(void)
 {
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
     Video_Init(&g_HeapAllocator);
     for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
-        g_Video.pages[0][i] = 7;
-        g_Video.pages[1][i] = i % 16;
+        g_Video->pages[0][i] = 7;
+        g_Video->pages[1][i] = i % 16;
         m_Expected[i] = 7;
     }
 }
@@ -46,11 +46,11 @@ TEST(ptn_quarters_restore_and_row_wrapping)
                 }
             }
             Sprite_PtnPut(&sprites, 0, q, positions[p], 384);
-            CHECK(memcmp(g_Video.pages[0], m_Expected, VIDEO_PAGE_SIZE) == 0);
+            CHECK(memcmp(g_Video->pages[0], m_Expected, VIDEO_PAGE_SIZE) == 0);
             Sprite_PtnErase(&sprites, 0, q, positions[p], 384);
             for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
                 if (m_Expected[i] != 7) {
-                    CHECK_EQ_INT(g_Video.pages[0][i], g_Video.pages[1][i]);
+                    CHECK_EQ_INT(g_Video->pages[0][i], g_Video->pages[1][i]);
                 }
             }
         }
@@ -70,9 +70,9 @@ TEST(rect_restore_covers_extra_word_and_wraps_rows)
                 }
             }
         }
-        CHECK_EQ_INT(g_Video.pages[0][i], restored ? g_Video.pages[1][i] : 7);
+        CHECK_EQ_INT(g_Video->pages[0][i], restored ? g_Video->pages[1][i] : 7);
     }
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
 }
 
 TEST(player_masks_raw_color_and_retains_clipping_quirk)
@@ -85,15 +85,15 @@ TEST(player_masks_raw_color_and_retains_clipping_quirk)
     const BOS sprites = { 48, 2, 1, pixels, coverage };
     M_Video();
     Sprite_PlayerPut(&sprites, 0, -4, 1);
-    CHECK_EQ_INT(g_Video.pages[0][632], 7);
-    CHECK_EQ_INT(g_Video.pages[0][640], 7);
-    CHECK_EQ_INT(g_Video.pages[0][641], 14);
+    CHECK_EQ_INT(g_Video->pages[0][632], 7);
+    CHECK_EQ_INT(g_Video->pages[0][640], 7);
+    CHECK_EQ_INT(g_Video->pages[0][641], 14);
     Sprite_PlayerErase(&sprites, 0, -4, 1);
-    CHECK_EQ_INT(g_Video.pages[0][641], g_Video.pages[1][641]);
+    CHECK_EQ_INT(g_Video->pages[0][641], g_Video->pages[1][641]);
     M_Video();
     Sprite_PlayerPut(&sprites, 0, 636, 1);
-    CHECK_EQ_INT(g_Video.pages[0][1279], 14);
-    CHECK_EQ_INT(g_Video.pages[0][1280], 7);
+    CHECK_EQ_INT(g_Video->pages[0][1279], 14);
+    CHECK_EQ_INT(g_Video->pages[0][1280], 7);
 }
 
 TEST(player_overlap_preserves_uncovered_old_pixels_only)
@@ -111,8 +111,8 @@ TEST(player_overlap_preserves_uncovered_old_pixels_only)
         Sprite_PlayerOverlap(&sprites, 1, 0, 16 + delta, 2, 16, 2);
         for (int32_t x = 16; x < 64; x++) {
             CHECK_EQ_INT(
-                g_Video.pages[0][1280 + x],
-                x == 24 + delta ? 3 : g_Video.pages[1][1280 + x]);
+                g_Video->pages[0][1280 + x],
+                x == 24 + delta ? 3 : g_Video->pages[1][1280 + x]);
         }
     }
 }
@@ -121,12 +121,12 @@ TEST(egc_hidden_rows_and_plane_boundary_are_distinct)
 {
     M_Video();
     Sprite_Restore16(0, 400, 8, 1);
-    CHECK(memcmp(g_Video.pages[0], m_Expected, VIDEO_PAGE_SIZE) == 0);
+    CHECK(memcmp(g_Video->pages[0], m_Expected, VIDEO_PAGE_SIZE) == 0);
     Sprite_Restore16(384, 409, 8, 1);
     for (int32_t i = 0; i < 16; i++) {
-        CHECK_EQ_INT(g_Video.pages[0][i], g_Video.pages[1][i]);
+        CHECK_EQ_INT(g_Video->pages[0][i], g_Video->pages[1][i]);
     }
-    CHECK_EQ_INT(g_Video.pages[0][16], 7);
+    CHECK_EQ_INT(g_Video->pages[0][16], 7);
 }
 
 TEST(bottom_card_splash_restores_wrapped_top_row)
@@ -134,6 +134,6 @@ TEST(bottom_card_splash_restores_wrapped_top_row)
     M_Video();
     Shape_EllipseArcErase(16, 368, 44, 44, 8, 0, 255);
     // The quarter-turn sample is (16, 412), planar byte offset 32962.
-    CHECK_EQ_INT(g_Video.pages[0][1552], g_Video.pages[1][1552]);
-    CHECK_EQ_INT(g_Video.pages[0][1567], g_Video.pages[1][1567]);
+    CHECK_EQ_INT(g_Video->pages[0][1552], g_Video->pages[1][1552]);
+    CHECK_EQ_INT(g_Video->pages[0][1567], g_Video->pages[1][1567]);
 }

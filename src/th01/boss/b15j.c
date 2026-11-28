@@ -173,8 +173,8 @@ static void M_CopyLine(const int16_t y, const uint16_t mask)
     }
     for (int32_t x = 0; x < 640; x++) {
         const int32_t shift = (x & 8) + 7 - (x & 7);
-        g_Video.pages[0][y * 640 + x] =
-            (mask & (1u << shift)) != 0 ? g_Video.pages[1][y * 640 + x] : 0;
+        g_Video->pages[0][y * 640 + x] =
+            (mask & (1u << shift)) != 0 ? g_Video->pages[1][y * 640 + x] : 0;
     }
     Video_SelectDrawingPage(0);
 }

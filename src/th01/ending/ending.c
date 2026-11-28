@@ -380,7 +380,7 @@ static void M_Results(void)
 static void M_Load(const int32_t index)
 {
     const PI_IMAGE *const sheet = &m_Assets->sheets[index];
-    memcpy(g_Video.pages[1], sheet->pixels, VIDEO_PAGE_SIZE);
+    memcpy(g_Video->pages[1], sheet->pixels, VIDEO_PAGE_SIZE);
     Video_SelectDrawingPage(1);
     Palette_Import(&m_Ending.palette.resource, sheet->palette);
     Palette_ShowResource(&m_Ending.palette, true);

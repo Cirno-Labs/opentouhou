@@ -179,9 +179,9 @@ TEST(all_four_stories_preserve_source_wait_totals_and_complete)
                            : (bad != 0 ? 2910 : 5528));
             CHECK_EQ_INT(stage5_nuls, bad != 0 ? 0 : 2);
             CHECK(!Ending_Tick(&(TH01_INPUT) {}, false));
-            CHECK_EQ_INT(g_Video.pages[0][100 * 640 + 160], 1);
-            CHECK_EQ_INT(g_Video.pages[0][0], 0);
-            CHECK_EQ_INT(g_Video.drawing_page, 0);
+            CHECK_EQ_INT(g_Video->pages[0][100 * 640 + 160], 1);
+            CHECK_EQ_INT(g_Video->pages[0][0], 0);
+            CHECK_EQ_INT(g_Video->drawing_page, 0);
             CHECK_EQ_INT(f.audio[ENDING_AUDIO_IRIS], 1);
             const int32_t next = f.ending->next;
             for (int32_t i = 0; i < 100; i++) {
@@ -196,10 +196,10 @@ TEST(all_four_stories_preserve_source_wait_totals_and_complete)
             CHECK_EQ_INT(f.audio[ENDING_AUDIO_FADE], 1);
             CHECK_EQ_INT(f.audio[ENDING_AUDIO_STOP], 1);
             CHECK_EQ_INT(f.audio[ENDING_AUDIO_STAGE1], 1);
-            CHECK_EQ_INT(g_Video.palette[3].green, 255);
-            CHECK_EQ_INT(g_Video.palette[3].red, 119);
-            CHECK_EQ_INT(g_Video.palette[7].red, 255);
-            CHECK_EQ_INT(g_Video.scroll_top, 0);
+            CHECK_EQ_INT(g_Video->palette[3].green, 255);
+            CHECK_EQ_INT(g_Video->palette[3].red, 119);
+            CHECK_EQ_INT(g_Video->palette[7].red, 255);
+            CHECK_EQ_INT(g_Video->scroll_top, 0);
             CHECK_EQ_INT(g_Session.score, 0);
             Arena_Free(&f.arena);
         }

@@ -44,7 +44,7 @@ void Invincibility_Put(
                 ((uint16_t)(offset + (first + x) / 8) & 32767) * 8
                 + (first + x) % 8;
             if (at < VIDEO_PAGE_SIZE) {
-                g_Video.pages[0][at] = 10;
+                g_Video->pages[0][at] = 10;
             }
         }
         offset = (int16_t)(offset + 80);

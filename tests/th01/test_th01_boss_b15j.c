@@ -223,7 +223,7 @@ TEST(entrance_suspends_without_aging_actors_and_retains_interrupt_history)
             Video_SelectDrawingPage(page);
             for (int32_t x = 0; x < 640; x++) {
                 for (int32_t y = 0; y < 400; y++) {
-                    g_Video.pages[1][y * 640 + x] = (uint8_t)((x + y) % 16);
+                    g_Video->pages[1][y * 640 + x] = (uint8_t)((x + y) % 16);
                 }
             }
             const PALETTE saved = g_Palette->saved;
@@ -239,7 +239,7 @@ TEST(entrance_suspends_without_aging_actors_and_retains_interrupt_history)
             CHECK(!m_B15J.hit.invincible);
             CHECK_EQ_INT(g_VSync->edge, count == 0 ? 752 : 751);
             CHECK_EQ_INT(g_VSync->count2, 21 + (int32_t)g_VSync->edge);
-            CHECK_EQ_INT(g_Video.drawing_page, 0);
+            CHECK_EQ_INT(g_Video->drawing_page, 0);
             CHECK(memcmp(&g_Palette->saved, &saved, sizeof(saved)) == 0);
             CHECK(memcmp(p_StagePalette, &saved, sizeof(saved)) == 0);
             CHECK(memcmp(&m_B15J.boss_palette, &saved, sizeof(saved)) == 0);

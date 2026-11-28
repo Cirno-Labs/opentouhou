@@ -168,7 +168,7 @@ static RESULT M_Init(void)
         Music_BindOutput(m_Audio);
     }
     Ending_Init(&m_EndingAssets);
-    ZunLogo1_Init(&m_Logo, g_Video.pages);
+    ZunLogo1_Init(&m_Logo, g_Video->pages);
     M_ShowLogoPages();
     MUST(Present_Init(Arena_Allocator(&m_Assets)));
     m_Initialized = true;
@@ -280,7 +280,7 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
                 M_BeginOpening(false, raw);
             } else {
                 const bool running =
-                    ZunLogo1_Tick(&m_Logo, g_Video.pages, m_Sprites.pixels);
+                    ZunLogo1_Tick(&m_Logo, g_Video->pages, m_Sprites.pixels);
                 M_ShowLogoPages();
                 if (!running) {
                     M_BeginOpening(false, raw);
@@ -338,7 +338,7 @@ static void M_Shutdown(void)
     memset(&m_GameplayAssets, 0, sizeof(m_GameplayAssets));
     Arena_Free(&m_Assets);
     memset(&m_Sprites, 0, sizeof(m_Sprites));
-    memset(&g_Video, 0, sizeof(g_Video));
+    Video_Close();
     memset(&m_Logo, 0, sizeof(m_Logo));
     Opening_Close();
     Score_Close();

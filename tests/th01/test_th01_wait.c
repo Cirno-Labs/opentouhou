@@ -1,5 +1,6 @@
 #include "tests/test.h"
 #include "th01/video.h"
+#include "th01/video_private.h"
 #include "th01/wait.h"
 
 #include <string.h>
@@ -46,10 +47,10 @@ TEST(scroll_always_arms_and_sets_scroll_on_the_next_edge)
     CHECK(!Wait_Idle(&wait));
     CHECK(!Wait_Ready(&wait, 0));
     VSyncIrq_Edge();
-    g_Video.scroll_top = 0;
+    p_Video->scroll_top = 0;
     CHECK(Wait_Ready(&wait, 0));
     CHECK(Wait_Idle(&wait));
-    CHECK_EQ_INT(g_Video.scroll_top, 37);
+    CHECK_EQ_INT(g_Video->scroll_top, 37);
 }
 
 TEST(ticks_waits_the_given_host_ticks)

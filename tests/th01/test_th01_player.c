@@ -117,7 +117,7 @@ TEST(reset_preserves_position_hits_and_shared_counters)
         CHECK(g_GameInput->shot);
         CHECK(g_GameInput->strike);
     }
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
     Arena_Free(&state.arena);
 }
 
@@ -134,7 +134,7 @@ TEST(stationary_draw_gap_and_simultaneous_actions)
     CHECK(m_Player.deflecting);
     CHECK(m_Player.invincible_against_orb);
     CHECK(!g_Shots->slots[0].moving);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
     Arena_Free(&state.arena);
 }
 
@@ -158,7 +158,7 @@ TEST(normal_shots_spawn_on_following_updates)
     CHECK(!g_GameInput->shot);
     CHECK_EQ_INT(m_Player.submode, GAME_INPUT_BOTH);
     M_Tick(&state);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
     Arena_Free(&state.arena);
     M_Case(&state);
     m_GameInput.horizontal = GAME_INPUT_RIGHT;
@@ -171,7 +171,7 @@ TEST(normal_shots_spawn_on_following_updates)
     CHECK_EQ_INT(g_Shots->slots[0].left, 324);
     CHECK_EQ_INT(m_Player.left, 316);
     CHECK_EQ_INT(m_Player.mode, PLAYER_MODE_REGULAR);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
     Arena_Free(&state.arena);
 }
 
@@ -197,7 +197,7 @@ TEST(swing_retains_invisible_frames_and_deflection_window)
     CHECK(!g_GameInput->strike);
     M_Tick(&state);
     M_Tick(&state);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
     Arena_Free(&state.arena);
 }
 
@@ -230,7 +230,7 @@ TEST(slide_requires_release_and_strike_has_combo_priority)
     CHECK_EQ_INT(m_Orb.force_frame, 73);
     CHECK(m_Player.deflecting);
     CHECK(!m_Player.sliding);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
     Arena_Free(&state.arena);
 }
 
@@ -262,7 +262,7 @@ TEST(all_special_attacks_use_source_duration_and_movement)
         CHECK(!m_Player.invincible_against_orb);
         CHECK_EQ_INT(m_Player.submode, special);
         M_Tick(&state);
-        Mem_Free(g_Video.pages[0]);
+        Mem_Free(g_Video->pages[0]);
         Arena_Free(&state.arena);
     }
 }
@@ -287,7 +287,7 @@ TEST(shot_combo_spawns_seven_source_offsets_after_drawing)
         }
     }
     CHECK_EQ_INT(count, 7);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
     Arena_Free(&state.arena);
 }
 
@@ -317,7 +317,7 @@ TEST(combo_continuation_stops_after_third_attack)
     M_Tick(&state);
     CHECK_EQ_INT(m_Player.mode, PLAYER_MODE_REGULAR);
     CHECK_EQ_INT(m_Player.submode, 6);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
     Arena_Free(&state.arena);
 }
 
@@ -344,7 +344,7 @@ TEST(bomb_boundary_preserves_deferred_start_and_operation_order)
     }
     CHECK(!m_Player.bombing);
     CHECK_EQ_INT(m_Player.bomb_flag, PLAYER_BOMB_NONE);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
     Arena_Free(&state.arena);
 }
 
@@ -362,7 +362,7 @@ TEST(bomb_exclusion_checks_only_first_special_mode)
             m_Player.bomb_flag, mode == PLAYER_MODE_SPECIAL_FIRST ? 0 : 2);
         CHECK(g_GameInput->bomb == (mode == PLAYER_MODE_SPECIAL_FIRST));
         CHECK_EQ_INT(m_Player.dash_cycle, 1);
-        Mem_Free(g_Video.pages[0]);
+        Mem_Free(g_Video->pages[0]);
         Arena_Free(&state.arena);
     }
 }
@@ -396,6 +396,6 @@ TEST(actor_validates_required_sprites_and_wraps_counters)
     m_Player.left = 607;
     Player_MoveAndClamp(6);
     CHECK_EQ_INT(m_Player.left, 608);
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
     Arena_Free(&state.arena);
 }

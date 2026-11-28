@@ -29,8 +29,8 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     Th01Test_ResetWorld();
     GameInput_Init();
     Video_Init(Arena_Allocator(arena));
-    memset(g_Video.pages[0], 4, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 4, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
     Palette_SetGray(p_Palette, 3);
     GAME_TEXT_GLYPH glyphs[96] = {};
     for (uint32_t i = 0; i < 90; i++) {
@@ -96,8 +96,8 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     CHECK(!RouteSelect_Begin(&f.assets, &raw));
     CHECK(!g_GameInput->shot && !g_GameInput->ok && !g_GameInput->bomb);
     CHECK_EQ_INT(g_GameInput->bomb_frame, 72);
-    CHECK_EQ_INT(g_Video.pages[0][250 * VIDEO_WIDTH + 128], 7);
-    CHECK_EQ_INT(g_Video.pages[1][250 * VIDEO_WIDTH + 128], 4);
+    CHECK_EQ_INT(g_Video->pages[0][250 * VIDEO_WIDTH + 128], 7);
+    CHECK_EQ_INT(g_Video->pages[1][250 * VIDEO_WIDTH + 128], 4);
     CHECK_EQ_INT(g_Palette->saved.colors[1][0], 15);
     CHECK_EQ_INT(g_Palette->saved.colors[3][0], 9);
     CHECK_EQ_INT(g_Palette->saved.colors[4][0], 0);
@@ -133,8 +133,8 @@ TEST(dual_direction_toggles_once_and_holds_do_not_repeat)
     const TH01_INPUT both = { .up = true, .down = true };
     CHECK(!RouteSelect_Begin(&f.assets, &both));
     CHECK_EQ_INT(m_Selection.selection, 1);
-    CHECK_EQ_INT(g_Video.pages[0][250 * VIDEO_WIDTH + 128], 4);
-    CHECK_EQ_INT(g_Video.pages[0][300 * VIDEO_WIDTH + 128], 7);
+    CHECK_EQ_INT(g_Video->pages[0][250 * VIDEO_WIDTH + 128], 4);
+    CHECK_EQ_INT(g_Video->pages[0][300 * VIDEO_WIDTH + 128], 7);
     CHECK_EQ_INT(g_Palette->saved.colors[1][0], 9);
     CHECK_EQ_INT(g_Palette->saved.colors[3][0], 15);
     CHECK(!M_Poll(&f, both));
@@ -162,12 +162,13 @@ TEST(transparent_scaled_spaces_preserve_backdrop)
     for (int32_t y = 0; y < 32; y++) {
         for (int32_t x = 0; x < 32; x++) {
             CHECK_EQ_INT(
-                g_Video.pages[0][(64 + y) * VIDEO_WIDTH + 64 + x],
+                g_Video->pages[0][(64 + y) * VIDEO_WIDTH + 64 + x],
                 (r->rows[y / 2] & (0x8000u >> (x / 2))) != 0 ? 7 : 4);
-            CHECK_EQ_INT(g_Video.pages[0][(64 + y) * VIDEO_WIDTH + 224 + x], 4);
+            CHECK_EQ_INT(
+                g_Video->pages[0][(64 + y) * VIDEO_WIDTH + 224 + x], 4);
         }
     }
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     CHECK(!g_Stage->cleared && !g_Player->is_hit);
     Arena_Free(&arena);
 }

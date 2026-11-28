@@ -55,7 +55,7 @@ static void M_PutDots(
         }
         for (int32_t bit = 0; bit < 8; bit++) {
             if ((dots & (0x80u << (byte * 8) >> bit)) != 0) {
-                g_Video.pages[g_Video.drawing_page][address * 8 + bit] =
+                g_Video->pages[g_Video->drawing_page][address * 8 + bit] =
                     color & 15;
             }
         }

@@ -10,8 +10,8 @@ TEST(zero_delay_finishes_and_supports_saved_palette_alias)
     ARENA arena;
     Arena_Init(&arena, "transition", 1024 * 1024);
     Video_Init(Arena_Allocator(&arena));
-    memset(g_Video.pages[0], 9, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 9, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
     INTERLEAVE_ASSETS assets = {};
     PALETTE_STATE palette;
     Palette_Init(&palette);
@@ -21,9 +21,9 @@ TEST(zero_delay_finishes_and_supports_saved_palette_alias)
         &palette, &palette.saved, &palette.saved, &assets, 0, 123));
     CHECK(!m_Transition.active);
     CHECK_EQ_INT(m_Transition.frame, 130);
-    CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
+    CHECK(memcmp(g_Video->pages[0], g_Video->pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK_EQ_INT(palette.saved.colors[0][0], 3);
-    CHECK_EQ_INT(g_Video.palette[0].red, 51);
+    CHECK_EQ_INT(g_Video->palette[0].red, 51);
     CHECK(Transition_Advance(
         &palette, &palette.saved, &palette.saved, &assets, 123));
     Arena_Free(&arena);
@@ -34,7 +34,7 @@ TEST(fractional_delays_include_the_final_empty_frame)
     ARENA arena;
     Arena_Init(&arena, "transition", 2 * 1024 * 1024);
     Video_Init(Arena_Allocator(&arena));
-    memset(g_Video.pages[1], 7, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 7, VIDEO_PAGE_SIZE);
     INTERLEAVE_ASSETS assets = {};
     PALETTE_STATE palette;
     Palette_Init(&palette);
@@ -48,10 +48,10 @@ TEST(fractional_delays_include_the_final_empty_frame)
     CHECK_EQ_INT(current.colors[0][0], 1);
     const PAGE_TRANSITION waiting = m_Transition;
     uint8_t *const frozen = Arena_Alloc(&arena, VIDEO_PAGE_SIZE * 2);
-    memcpy(frozen, g_Video.pages[0], VIDEO_PAGE_SIZE * 2);
+    memcpy(frozen, g_Video->pages[0], VIDEO_PAGE_SIZE * 2);
     CHECK(!Transition_Advance(&palette, &current, &target, &assets, 100));
     CHECK(memcmp(&m_Transition, &waiting, sizeof(waiting)) == 0);
-    CHECK(memcmp(frozen, g_Video.pages[0], VIDEO_PAGE_SIZE * 2) == 0);
+    CHECK(memcmp(frozen, g_Video->pages[0], VIDEO_PAGE_SIZE * 2) == 0);
     CHECK(!Transition_Advance(&palette, &current, &target, &assets, 102));
     CHECK_EQ_INT(m_Transition.frame, 1);
     CHECK(!Transition_Advance(&palette, &current, &target, &assets, 103));
@@ -62,7 +62,7 @@ TEST(fractional_delays_include_the_final_empty_frame)
     CHECK_EQ_INT(m_Transition.credit, 10);
     CHECK(!Transition_Advance(&palette, &current, &target, &assets, 408));
     CHECK_EQ_INT(m_Transition.frame, 129);
-    CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
+    CHECK(memcmp(g_Video->pages[0], g_Video->pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK(!Transition_Advance(&palette, &current, &target, &assets, 410));
     CHECK_EQ_INT(m_Transition.frame, 130);
     CHECK(!Transition_Advance(&palette, &current, &target, &assets, 411));
@@ -114,8 +114,8 @@ TEST(saved_target_stays_live_when_separate_signed_current_is_clamped)
     CHECK_EQ_INT(current.colors[1][0], -12);
     CHECK_EQ_INT(palette.saved.colors[0][0], 15);
     CHECK_EQ_INT(palette.saved.colors[1][0], 0);
-    CHECK_EQ_INT(g_Video.palette[0].red, 255);
-    CHECK_EQ_INT(g_Video.palette[1].red, 0);
+    CHECK_EQ_INT(g_Video->palette[0].red, 255);
+    CHECK_EQ_INT(g_Video->palette[1].red, 0);
     Arena_Free(&arena);
 }
 

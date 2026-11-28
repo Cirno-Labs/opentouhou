@@ -209,7 +209,7 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     CHECK_EQ_INT(g_Palette->saved.colors[10][0], 13);
     CHECK_EQ_INT(m_B20J.stage_palette.colors[10][1], 7);
     CHECK_EQ_INT(arena.used, used);
-    CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
+    CHECK(memcmp(g_Video->pages[0], g_Video->pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK_EQ_INT(m_B20J.status.hp, 18);
     CHECK(memcmp(p_StagePalette, &m_B20J.stage_palette, sizeof(PALETTE)) == 0);
     Arena_Free(&arena);
@@ -282,7 +282,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     }
     CHECK(g_Stage->game_cleared && m_B20J.finished && !m_B20J.defeating);
     CHECK_EQ_INT(g_Stage->score, 49899);
-    CHECK_EQ_INT(g_Video.scroll_top, 0);
+    CHECK_EQ_INT(g_Video->scroll_top, 0);
     CHECK_EQ_INT(m_B20J.status.frame, 65);
     CHECK_EQ_INT(m_B20J.scroll_frame, 264);
     const B20J snapshot = m_B20J;
@@ -301,16 +301,16 @@ TEST(entrance_pan_copies_visible_alias_after_hidden_rows)
     Arena_Init(&arena, "Konngara pan", 2 * 1024 * 1024);
     FIXTURE f;
     M_Fixture(&f, &arena);
-    memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
     m_B20J.entrance_active = true;
     m_B20J.entrance_stage = B20J_ENTRANCE_PAN_STEP;
     m_B20J.scroll_line = 400;
     VSyncIrq_Reset();
     CHECK(!M_BossResumeEntrance(&f.assets));
-    CHECK_EQ_INT(g_Video.pages[0][0], 6);
-    CHECK_EQ_INT(g_Video.pages[0][14335], 6);
-    CHECK_EQ_INT(g_Video.pages[0][14336], 0);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->pages[0][0], 6);
+    CHECK_EQ_INT(g_Video->pages[0][14335], 6);
+    CHECK_EQ_INT(g_Video->pages[0][14336], 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     CHECK_EQ_INT(m_B20J.scroll_line, 368);
     Arena_Free(&arena);
 }
@@ -357,7 +357,7 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     m_B20J.status.hp = 1;
     m_Orb.left = 320;
     m_Orb.top = 140;
-    g_Video.pages[0][0] = 9;
+    g_Video->pages[0][0] = 9;
     VSyncIrq_Reset();
     const size_t used = arena.used;
     int32_t images = 0;
@@ -366,7 +366,7 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     while (!M_BossUpdate(&f.assets)) {
         if (m_B20J.defeat_stage == B20J_DEFEAT_KUJI
             && m_B20J.animation_frame != last_image) {
-            CHECK_EQ_INT(g_Video.pages[0][0], images);
+            CHECK_EQ_INT(g_Video->pages[0][0], images);
             last_image = m_B20J.animation_frame;
             images++;
         }
@@ -398,13 +398,13 @@ TEST(siddham_layers_use_key_fifteen_and_retain_the_resource_palette)
         f.assets.layers[i].y = 80;
     }
     f.assets.layers[3].palette[10] = (GFX_COLOR) { 51, 68, 85, 255 };
-    g_Video.pages[0][0] = 6;
+    g_Video->pages[0][0] = 6;
     m_B20J.entrance_active = true;
     m_B20J.entrance_stage = B20J_ENTRANCE_FLASH;
     VSyncIrq_Reset();
     CHECK(!M_BossResumeEntrance(&f.assets));
-    CHECK_EQ_INT(g_Video.pages[0][0], 6);
-    CHECK_EQ_INT(g_Video.pages[0][1], 9);
+    CHECK_EQ_INT(g_Video->pages[0][0], 6);
+    CHECK_EQ_INT(g_Video->pages[0][1], 9);
     CHECK_EQ_INT(g_Palette->resource.colors[10][0], 3);
     CHECK_EQ_INT(g_Palette->saved.colors[9][0], 14);
     CHECK_EQ_INT(g_Palette->saved.colors[9][1], 14);

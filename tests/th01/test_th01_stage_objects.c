@@ -8,6 +8,7 @@
 #include "th01/shots.h"
 #include "th01/stage/objects.c"
 #include "th01/stage/objects.h"
+#include "th01/video_private.h"
 #include "th01/vsync_irq.c"
 
 #include "core/base/arena.h"
@@ -40,21 +41,21 @@ static void M_Init(CASE *const state)
         state->sprites.pixels[image * 1024] = image % 15;
     }
     for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
-        g_Video.pages[0][i] = 14;
-        g_Video.pages[1][i] = i % 13;
+        g_Video->pages[0][i] = 14;
+        g_Video->pages[1][i] = i % 13;
     }
-    state->saved_video = g_Video;
+    state->saved_video = *g_Video;
 }
 
 // Switches the video and VSync module state between two cases.
 static void M_Use(CASE *const state)
 {
     if (m_Active != nullptr) {
-        m_Active->saved_video = g_Video;
+        m_Active->saved_video = *g_Video;
         m_Active->saved_vsync = *g_VSync;
         m_Active->saved_objects = m_StageObjects;
     }
-    g_Video = state->saved_video;
+    *p_Video = state->saved_video;
     m_VSync = state->saved_vsync;
     m_StageObjects = state->saved_objects;
     m_Active = state;
@@ -104,7 +105,7 @@ TEST(enumeration_snapshots_composition_and_copy_pages)
     CHECK_EQ_INT(m_StageObjects.cards[1].top, 96);
     CHECK_EQ_INT(m_StageObjects.obstacles[0].left, 32);
     CHECK_EQ_INT(m_StageObjects.obstacles[1].left, 96);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 96, 64), 11);
     CHECK_EQ_INT(Th01Test_Pixel(0, 97, 64), 14);
     for (int32_t slot = 0; slot < 4; slot++) {
@@ -128,7 +129,7 @@ TEST(enumeration_snapshots_composition_and_copy_pages)
     CHECK_EQ_INT(Th01Test_Pixel(1, 96, 64), (64 * 640 + 96) % 13);
     StageObjects_CopyToBackground();
     CHECK_EQ_INT(Th01Test_Pixel(1, 96, 64), 11);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     CHECK_EQ_INT(state.arena.used, used);
     Arena_Free(&state.arena);
 }
@@ -285,12 +286,12 @@ TEST(prepared_storage_matches_allocated_stages_without_growth)
         CHECK(StageObjects_ResumeEntrance(&prepared.sprites));
         CHECK_EQ_INT(
             memcmp(
-                allocated.saved_video.pages[0], g_Video.pages[0],
+                allocated.saved_video.pages[0], g_Video->pages[0],
                 VIDEO_PAGE_SIZE),
             0);
         CHECK_EQ_INT(
             memcmp(
-                allocated.saved_video.pages[1], g_Video.pages[1],
+                allocated.saved_video.pages[1], g_Video->pages[1],
                 VIDEO_PAGE_SIZE),
             0);
     }

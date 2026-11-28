@@ -184,7 +184,7 @@ static void M_RawOr(
             const uint32_t pixel = (address - bases[target]) * 8;
             for (int32_t bit = 0; bit < 8; bit++) {
                 if ((dots & (0x80u >> bit)) != 0) {
-                    g_Video.pages[g_Video.drawing_page][pixel + bit] |=
+                    g_Video->pages[g_Video->drawing_page][pixel + bit] |=
                         (uint8_t)(1u << target);
                 }
             }
@@ -230,8 +230,8 @@ static void M_Put(
                 if (clear_offset < 32000) {
                     for (int32_t bit = 0; bit < 8; bit++) {
                         if ((shifted_mask & (0x80u >> bit)) != 0) {
-                            g_Video.pages[g_Video.drawing_page]
-                                         [clear_offset * 8 + bit] = 0;
+                            g_Video->pages[g_Video->drawing_page]
+                                          [clear_offset * 8 + bit] = 0;
                         }
                     }
                 }

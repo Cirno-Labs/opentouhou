@@ -12,5 +12,5 @@ static inline uint8_t Th01Test_Pixel(
     if (x < 0 || x >= VIDEO_WIDTH || y < 0 || y >= VIDEO_HEIGHT) {
         return 0;
     }
-    return g_Video.pages[page][y * VIDEO_WIDTH + x];
+    return g_Video->pages[page][y * VIDEO_WIDTH + x];
 }

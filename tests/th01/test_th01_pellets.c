@@ -38,7 +38,7 @@ static void M_Init(FIXTURE *const f)
 
 static void M_Free(FIXTURE *const f)
 {
-    Mem_Free(g_Video.pages[0]);
+    Mem_Free(g_Video->pages[0]);
 }
 
 static void M_Add(FIXTURE *const f, const int16_t left, const int16_t top)

@@ -156,7 +156,8 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
             const int32_t target = f.assets.palette.colors[i][0];
             const int32_t faded = 14 - step;
             CHECK_EQ_INT(
-                g_Video.palette[i].red, (faded > target ? faded : target) * 17);
+                g_Video->palette[i].red,
+                (faded > target ? faded : target) * 17);
         }
     }
     CHECK_EQ_INT(m_B10J.still.left, 256);

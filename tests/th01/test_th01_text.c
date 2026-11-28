@@ -166,15 +166,15 @@ static int32_t M_Measure(
     const int32_t spacing)
 {
     uint8_t *const saved = Mem_Alloc(VIDEO_PAGE_SIZE);
-    memcpy(saved, g_Video.pages[0], VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[0], 0, VIDEO_WIDTH * 18);
+    memcpy(saved, g_Video->pages[0], VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 0, VIDEO_WIDTH * 18);
     const GAME_TEXT_STYLE style = { .spacing = spacing, .underline = true };
     GameText_Draw(font, text, 0, 0, 1, &style);
     int32_t width = 0;
     while (width < VIDEO_WIDTH && Th01Test_Pixel(0, width, 17) == 7) {
         width++;
     }
-    memcpy(g_Video.pages[0], saved, VIDEO_PAGE_SIZE);
+    memcpy(g_Video->pages[0], saved, VIDEO_PAGE_SIZE);
     Mem_Free(saved);
     return width;
 }
@@ -403,7 +403,7 @@ TEST(drawing_preserves_other_page_selectors_palette_and_cache)
     Video_Clear(4);
     Video_SetDac(0, 3, 7, 10);
     GFX_COLOR palette[16];
-    memcpy(palette, g_Video.palette, sizeof(palette));
+    memcpy(palette, g_Video->palette, sizeof(palette));
     const GAME_TEXT_FONT font = M_Font(Arena_Allocator(&arena));
     const GAME_TEXT_GLYPH before = *GameText_Find(&font, 'A');
     const size_t used = arena.used;
@@ -411,9 +411,9 @@ TEST(drawing_preserves_other_page_selectors_palette_and_cache)
     GameText_Draw(&font, "A", 10, 10, 5, &style);
     M_Row(1, 10, 10, 8, 0x4500, 5, 4);
     CHECK_EQ_INT(Th01Test_Pixel(0, 10, 10), 3);
-    CHECK_EQ_INT(g_Video.drawing_page, 1);
-    CHECK_EQ_INT(g_Video.visible_page, 0);
-    CHECK(memcmp(palette, g_Video.palette, sizeof(palette)) == 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 1);
+    CHECK_EQ_INT(g_Video->visible_page, 0);
+    CHECK(memcmp(palette, g_Video->palette, sizeof(palette)) == 0);
     CHECK(memcmp(&before, GameText_Find(&font, 'A'), sizeof(before)) == 0);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
@@ -433,7 +433,7 @@ TEST(empty_text_is_a_noop_with_every_background_effect)
     };
     GameText_Draw(&font, "", 10, 10, 10, &style);
     for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
-        CHECK_EQ_INT(g_Video.pages[0][i], 3);
+        CHECK_EQ_INT(g_Video->pages[0][i], 3);
     }
     Arena_Free(&arena);
 }
@@ -472,7 +472,7 @@ TEST(rom_cache_is_unique_and_survives_the_rom)
     CHECK_EQ_INT(arena.used, used);
     bool drawn = false;
     for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
-        drawn |= g_Video.pages[0][i] == 10;
+        drawn |= g_Video->pages[0][i] == 10;
     }
     CHECK(drawn);
     Arena_Free(&arena);

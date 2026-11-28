@@ -19,8 +19,8 @@ static BONUS_ROW_TRANSITION m_Transition;
 void Bonus_RowShift32(const uint16_t y, const uint16_t transferred)
 {
     ASSERT(y < VIDEO_HEIGHT && transferred <= 76 && transferred % 4 == 0);
-    uint8_t *const row = g_Video.pages[0] + (size_t)y * VIDEO_WIDTH;
-    const uint8_t *const source = g_Video.pages[1] + (size_t)y * VIDEO_WIDTH;
+    uint8_t *const row = g_Video->pages[0] + (size_t)y * VIDEO_WIDTH;
+    const uint8_t *const source = g_Video->pages[1] + (size_t)y * VIDEO_WIDTH;
     if ((y & 1) != 0) {
         memmove(row + 32, row, VIDEO_WIDTH - 32);
         memcpy(row, source + VIDEO_WIDTH - 32 - transferred * 8, 32);

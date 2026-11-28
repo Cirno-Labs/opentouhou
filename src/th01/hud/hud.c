@@ -50,7 +50,7 @@ static void M_DrawText(
 static void M_Snap(uint8_t *const pixels, const int32_t left, const int32_t top)
 {
     Video_Read(
-        g_Video.drawing_page, (GFX_RECT) { left, top, 16, 16 }, pixels, 16);
+        g_Video->drawing_page, (GFX_RECT) { left, top, 16, 16 }, pixels, 16);
 }
 
 static void M_Put(

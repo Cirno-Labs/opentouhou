@@ -46,8 +46,8 @@ static void M_Init(CASE *const state)
     g_Rng = 1;
     Arena_Init(&state->arena, "stage obstacles", 2 * 1024 * 1024);
     Video_Init(Arena_Allocator(&state->arena));
-    memset(g_Video.pages[0], 6, VIDEO_PAGE_SIZE);
-    memset(g_Video.pages[1], 2, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[0], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video->pages[1], 2, VIDEO_PAGE_SIZE);
     state->sprites =
         (PTN) { .count = 34, .pixels = Arena_Alloc(&state->arena, 34 * 1024) };
     memset(state->sprites.pixels, PTN_TRANSPARENT, 34 * 1024);
@@ -292,7 +292,7 @@ TEST(portal_reset_keeps_overlay_artifact_and_can_enter_later_portal)
     CHECK_EQ_INT(m_StageObjects.obstacles[1].frame, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 97, 128), 5);
     CHECK_EQ_INT(Th01Test_Pixel(0, 96, 128), 14);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video->drawing_page, 0);
     Arena_Free(&state.arena);
 }
 

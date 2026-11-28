@@ -423,7 +423,7 @@ static void M_Color(
 }
 static void M_CopyOther(const B20M_ASSETS *const assets)
 {
-    const int32_t page = g_Video.drawing_page;
+    const int32_t page = g_Video->drawing_page;
     Video_Copy(page, (GFX_RECT) { 0, 0, 640, 400 }, 1 - page, 0, 0);
 }
 static void M_CopyRows(
@@ -433,7 +433,7 @@ static void M_CopyRows(
         const uint16_t offset = (uint16_t)(top * 80 + i) & 0x7fff;
         if (offset < 32000) {
             memcpy(
-                g_Video.pages[0] + offset * 8, g_Video.pages[1] + offset * 8,
+                g_Video->pages[0] + offset * 8, g_Video->pages[1] + offset * 8,
                 8);
         }
     }
@@ -445,7 +445,7 @@ static void M_Snap(const B20M_ASSETS *const assets)
     for (int32_t y = 0; y < 96; y++) {
         memcpy(
             m_B20M.wand_background + y * 128,
-            g_Video.pages[1] + (m_B20M.wand.top + y) * 640 + left, 128);
+            g_Video->pages[1] + (m_B20M.wand.top + y) * 640 + left, 128);
     }
     Video_SelectDrawingPage(0);
 }
@@ -570,8 +570,8 @@ static void M_Grc(
                     for (int32_t bit = 0; bit < 8; bit++) {
                         if (address >= 0 && address < 32000
                             && pixels[y * 32 + byte * 8 + bit] != 0) {
-                            g_Video.pages[g_Video.drawing_page]
-                                         [address * 8 + bit] = color & 15;
+                            g_Video->pages[g_Video->drawing_page]
+                                          [address * 8 + bit] = color & 15;
                         }
                     }
                 }
@@ -594,7 +594,7 @@ static void M_Mask(
         for (int32_t x = 0; x < 8; x++) {
             const int32_t offset = (top + y) * 640 + left + x;
             if (offset < VIDEO_PAGE_SIZE && (mask[y] & (0x80u >> x)) != 0) {
-                g_Video.pages[g_Video.drawing_page][offset] = color & 15;
+                g_Video->pages[g_Video->drawing_page][offset] = color & 15;
             }
         }
     }
@@ -739,7 +739,7 @@ static uint8_t M_CompareByte(
     uint8_t result = 0;
     if (offset < 32000) {
         for (int32_t bit = 0; bit < 8; bit++) {
-            if (g_Video.pages[1][offset * 8 + bit] == 12) {
+            if (g_Video->pages[1][offset * 8 + bit] == 12) {
                 result |= 0x80u >> bit;
             }
         }
@@ -754,7 +754,7 @@ static void M_MaskedByte(
     if (offset < 32000) {
         for (int32_t bit = 0; bit < 8; bit++) {
             if ((mask & (0x80u >> bit)) != 0) {
-                g_Video.pages[0][offset * 8 + bit] = color & 15;
+                g_Video->pages[0][offset * 8 + bit] = color & 15;
             }
         }
     }

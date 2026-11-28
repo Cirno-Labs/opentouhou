@@ -460,8 +460,8 @@ static bool M_ResumeEntrance(
                     (uint16_t)(m_B20J.scroll_line * 80 + i) & 0x7fff;
                 if (offset < 32000) {
                     memcpy(
-                        g_Video.pages[0] + offset * 8,
-                        g_Video.pages[1] + offset * 8, 8);
+                        g_Video->pages[0] + offset * 8,
+                        g_Video->pages[1] + offset * 8, 8);
                 }
             }
             Video_SelectDrawingPage(0);
@@ -503,8 +503,8 @@ static bool M_ResumeEntrance(
         case B20J_ENTRANCE_FADE_IN:
             if (m_B20J.animation_frame >= 16) {
                 Video_Copy(
-                    g_Video.drawing_page, (GFX_RECT) { 0, 0, 640, 400 },
-                    1 - g_Video.drawing_page, 0, 0);
+                    g_Video->drawing_page, (GFX_RECT) { 0, 0, 640, 400 },
+                    1 - g_Video->drawing_page, 0, 0);
                 m_B20J.entrance_active = false;
                 Palette_SetStage(&m_B20J.stage_palette);
                 return true;
@@ -560,7 +560,7 @@ static void M_Diamond(
             const int32_t offset = (top + y) * 640 + left + x;
             if (offset < VIDEO_PAGE_SIZE
                 && (assets->diamond[y] & (0x80u >> x)) != 0) {
-                g_Video.pages[g_Video.drawing_page][offset] = color;
+                g_Video->pages[g_Video->drawing_page][offset] = color;
             }
         }
     }
