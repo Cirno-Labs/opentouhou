@@ -2,6 +2,9 @@
 
 #include "core/base/types.h"
 
+// Reproduces ZUN's fixed-point trig and vector math, as the PC-98 games'
+// code used it instead of floating point.
+
 typedef struct {
     int16_t x;
     int16_t y;

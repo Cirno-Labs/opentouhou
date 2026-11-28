@@ -1,6 +1,7 @@
 #pragma once
 
-// The types that more than one part of pc98/pmd shares.
+// The types that more than one part of pc98/pmd shares, to avoid a
+// circular include between them.
 
 typedef struct PMD PMD;
 

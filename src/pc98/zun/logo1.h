@@ -2,6 +2,9 @@
 
 #include "core/gfx/types.h"
 
+// Animates ZUN's launcher logo, as the PC-98 games open with it, from
+// nothing but circle and star positions.
+
 typedef struct {
     int32_t x;
     int32_t y;

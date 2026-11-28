@@ -3,6 +3,9 @@
 #include "pc98/pmd/part.h"
 #include "pc98/pmd_data.h"
 
+// Plays one sound effect sequence over a part, independent of and able
+// to interrupt the music tracks.
+
 typedef struct {
     PMD_PART channel;
     PMD_CHIP *chip;

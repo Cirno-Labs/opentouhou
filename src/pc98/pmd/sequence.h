@@ -7,6 +7,9 @@
 
 #include <stdint.h>
 
+// Steps PMD's music tracks through their command bytes each tick,
+// driving the FM, SSG and rhythm parts.
+
 #define MUSIC_PART_COUNT 14
 #define MUSIC_WORK_SIZE 65536
 

@@ -3,6 +3,9 @@
 #include "pc98/pmd/chip.h"
 #include "pc98/pmd_data.h"
 
+// Writes PMD's FM and SSG voice parameters to the chip's registers from
+// instrument data.
+
 typedef struct {
     uint8_t channel;
     uint8_t algorithm_feedback;

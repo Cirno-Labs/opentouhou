@@ -3,6 +3,9 @@
 #include "pc98/pmd/lfo.h"
 #include "pc98/pmd/pitch.h"
 
+// Tracks one note's gate, pitch and LFO state; FM, SSG and effect
+// channels each hold one part.
+
 typedef struct {
     uint8_t previous;
     uint8_t gate;

@@ -4,6 +4,9 @@
 #include "pc98/pmd/types.h"
 #include "pc98/pmd_data.h"
 
+// Drives PMD's six FM music channels, one part each over the shared
+// chip.
+
 typedef struct {
     PMD_PART channels[6];
     PMD_CHIP *chip;
