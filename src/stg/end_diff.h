@@ -14,5 +14,6 @@
 //
 // Returns a copy of the size bytes of data with diff applied, and sets
 // *out_size to its size. Mem_Free releases the copy.
+
 uint8_t *EndDiff_Apply(
     const uint8_t *data, size_t size, const JSON_VALUE *diff, size_t *out_size);

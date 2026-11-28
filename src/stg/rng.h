@@ -4,6 +4,7 @@
 
 // Holds the random number generator that the games share. A game
 // keeps one for gameplay and a second one for randomness outside it.
+
 typedef struct {
     uint16_t seed;
     // Counts the values generated since the seed was set.

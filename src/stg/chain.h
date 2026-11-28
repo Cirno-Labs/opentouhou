@@ -4,7 +4,11 @@
 
 #include <stdint.h>
 
+// Runs the games' per-frame update and draw callbacks in priority order,
+// letting elements add, remove or reorder themselves mid-run.
+//
 // Tells the update chain what to do after a callback.
+
 typedef enum {
     CHAIN_REMOVE = 0, // removes the element and continues
     CHAIN_CONTINUE = 1, // keeps the element and continues
