@@ -2,7 +2,8 @@
 
 #include "core/vfs/types.h"
 
-// The folders follow the rule in src/shell/folders.h.
+// Sets up the virtual filesystems a game reads its data from and writes
+// its saves to. The folders follow the rule in src/shell/folders.h.
 
 // Returns the game's data files: the data folder, which is the --data
 // argument or the program folder, read-only, at priority 0. The game

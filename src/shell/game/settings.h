@@ -6,6 +6,7 @@
 
 // Scales the screen to the window: square pixels as large as the window
 // allows, a smooth filter, or square pixels at a whole multiple.
+
 typedef enum {
     SHELL_SCALING_SHARP,
     SHELL_SCALING_SMOOTH,
