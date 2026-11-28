@@ -32,6 +32,7 @@ typedef struct {
 } MISSILES;
 
 static MISSILES m_Missiles;
+const MISSILES *const g_Missiles = &m_Missiles;
 
 static void M_Put(
     const PTN *const sprites, int16_t left, int16_t top, int16_t image,
