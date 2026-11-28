@@ -1,6 +1,5 @@
-#include "th01/miss.h"
-
 #include "th01/hud.h"
+#include "th01/miss_private.h"
 #include "th01/orb.h"
 #include "th01/pellets.h"
 #include "th01/rng.h"
@@ -14,24 +13,8 @@
 
 #include <string.h>
 
-typedef enum {
-    MISS_DONE,
-    MISS_SHAKE_WAIT,
-    MISS_SHAKE_DELAY,
-    MISS_SCROLL_RESET_WAIT,
-    MISS_EFFECT_DELAY,
-} MISS_PHASE;
-
-typedef struct {
-    MISS_PHASE phase;
-    VSYNC_WAIT wait;
-    int16_t frame;
-    int16_t effect_left;
-    int16_t target_right;
-    int16_t target_left;
-} MISS;
-
 static MISS m_Miss;
+MISS *const p_Miss = &m_Miss;
 
 static void M_Orb(const PTN *const stage)
 {

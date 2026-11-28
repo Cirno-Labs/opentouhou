@@ -10,7 +10,7 @@
 #include "th01/gameplay/stage.c"
 #include "th01/hud/hp_private.h"
 #include "th01/hud/hud_private.h"
-#include "th01/miss.c"
+#include "th01/miss_private.h"
 #include "th01/music.c"
 #include "th01/orb_private.h"
 #include "th01/pellets/private.h"
@@ -238,7 +238,7 @@ TEST(stage_clear_beats_miss_and_starts_real_bonus)
     CHECK_EQ_INT(p_Session->stage_id, 1);
     CHECK_EQ_INT(p_Session->lives, 0);
     CHECK(!p_Player->is_hit);
-    CHECK_EQ_INT(m_Miss.phase, MISS_DONE);
+    CHECK_EQ_INT(p_Miss->phase, MISS_DONE);
     Arena_Free(&f.arena);
 }
 
@@ -341,7 +341,7 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
         CHECK(g_StageObjects->obstacles == obstacles);
         CHECK_EQ_INT(g_StageObjects->card_count, 1);
         CHECK(!g_Stage->cleared);
-        CHECK_EQ_INT(m_Miss.phase, MISS_DONE);
+        CHECK_EQ_INT(p_Miss->phase, MISS_DONE);
     }
     Arena_Free(&f.arena);
 }

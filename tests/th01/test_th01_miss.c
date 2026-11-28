@@ -3,8 +3,8 @@
 #include "tests/th01/th01_world.h"
 #include "th01/hud.h"
 #include "th01/input_private.h"
-#include "th01/miss.c"
 #include "th01/miss.h"
+#include "th01/miss_private.h"
 #include "th01/orb_private.h"
 #include "th01/pellets.h"
 #include "th01/player_private.h"
@@ -69,7 +69,7 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
 {
     CASE state;
     M_Init(&state, 304, 1);
-    memset(&m_Miss, 0, sizeof(m_Miss));
+    memset(p_Miss, 0, sizeof(*p_Miss));
     VSyncIrq_Reset();
     p_Session->settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
     p_Session->lives = 2;
@@ -86,13 +86,13 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
     CHECK_EQ_INT(p_Player->mode, PLAYER_MODE_SPECIAL_FIRST);
     VSyncIrq_Edge();
     CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
-    CHECK_EQ_INT(m_Miss.phase, MISS_SHAKE_DELAY);
+    CHECK_EQ_INT(p_Miss->phase, MISS_SHAKE_DELAY);
     CHECK_EQ_INT(g_Video->scroll_top, 0);
     CHECK_EQ_INT(g_VSync->count1, 1);
     VSyncIrq_Edge();
     CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
-    CHECK_EQ_INT(m_Miss.phase, MISS_SHAKE_WAIT);
-    CHECK_EQ_INT(m_Miss.frame, 1);
+    CHECK_EQ_INT(p_Miss->phase, MISS_SHAKE_WAIT);
+    CHECK_EQ_INT(p_Miss->frame, 1);
     CHECK_EQ_INT(g_VSync->count1, 0);
     VSyncIrq_Edge();
     CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
@@ -119,16 +119,16 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 VSyncIrq_Reset();
                 p_VSync->count1 = counts[variant];
                 p_VSync->count2 = 32760;
-                memset(&m_Miss, 0, sizeof(m_Miss));
+                memset(p_Miss, 0, sizeof(*p_Miss));
                 Miss_Begin(&state.miko, &state.stage);
                 const uint32_t rng = g_Rng;
                 int32_t edges = 0;
                 while (!Miss_Resume(&state.miko, &state.stage, extra_bombs)
                        && edges < 100) {
-                    const MISS snapshot = m_Miss;
+                    const MISS snapshot = *p_Miss;
                     const VSYNC_COUNTERS timing = *g_VSync;
                     CHECK(!Miss_Resume(&state.miko, &state.stage, extra_bombs));
-                    CHECK(memcmp(&m_Miss, &snapshot, sizeof(MISS)) == 0);
+                    CHECK(memcmp(p_Miss, &snapshot, sizeof(MISS)) == 0);
                     CHECK(memcmp(g_VSync, &timing, sizeof(timing)) == 0);
                     VSyncIrq_Edge();
                     edges++;
@@ -142,7 +142,7 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 const int16_t left = starts[x] < 160 ? 0 : starts[x] - 160;
                 CHECK_EQ_INT(p_Player->left, right + 20 * ((304 - right) / 20));
                 CHECK_EQ_INT(
-                    m_Miss.effect_left, left + 20 * ((304 - left) / 20));
+                    p_Miss->effect_left, left + 20 * ((304 - left) / 20));
                 CHECK(p_Player->is_hit);
                 CHECK(p_Player->invincible);
                 CHECK_EQ_INT(p_Player->invincibility_time, 71);
