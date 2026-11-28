@@ -1,8 +1,8 @@
 #include "tests/test.h"
 #include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_video.h"
-#include "th01/opening.c"
 #include "th01/opening.h"
+#include "th01/opening/opening.c"
 
 #include "core/base/arena.h"
 #include "core/base/memory.h"

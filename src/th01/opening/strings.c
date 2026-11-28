@@ -1,4 +1,4 @@
-#include "th01/opening_strings.h"
+#include "th01/opening/strings.h"
 
 const char *const g_OpeningMainMenuItems[4] = {
     "   ＳＴＡＲＴ   ",

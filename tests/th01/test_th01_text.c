@@ -5,7 +5,7 @@
 #include "th01/bonus.h"
 #include "th01/hud.h"
 #include "th01/items.h"
-#include "th01/opening_strings.h"
+#include "th01/opening/strings.h"
 #include "th01/route_select.h"
 #include "th01/text.h"
 

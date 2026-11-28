@@ -1,5 +1,5 @@
-#include "th01/opening.h"
-#include "th01/opening_strings.h"
+#include "th01/opening/opening.h"
+#include "th01/opening/strings.h"
 
 #include "pc98/zun/pf.h"
 

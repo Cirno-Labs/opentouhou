@@ -1,6 +1,6 @@
-#include "th01/opening.h"
+#include "th01/opening/opening.h"
 
-#include "th01/opening_strings.h"
+#include "th01/opening/strings.h"
 #include "th01/palette.h"
 #include "th01/settings.h"
 
