@@ -1,5 +1,5 @@
 #include "tests/test.h"
-#include "tests/th02/th02_high_score_entry.c"
+#include "tests/th02/th02_high_score_entry.h"
 #include "th02/high_score_entry/private.h"
 
 #include <string.h>

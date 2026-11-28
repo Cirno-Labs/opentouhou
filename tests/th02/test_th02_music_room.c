@@ -1,5 +1,5 @@
 #include "tests/test.h"
-#include "tests/th02/th02_music_room.c"
+#include "tests/th02/th02_music_room.h"
 #include "th02/input.h"
 #include "th02/music_room/private.h"
 

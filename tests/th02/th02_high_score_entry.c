@@ -1,4 +1,4 @@
-#include "th02/high_score_entry/private.h"
+#include "tests/th02/th02_high_score_entry.h"
 
 static void M_Table(
     const HIGH_SCORE_SECTION *const section, const bool ending,

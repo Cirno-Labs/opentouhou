@@ -1,5 +1,5 @@
 #include "tests/test.h"
-#include "tests/th02/th02_shot_select.c"
+#include "tests/th02/th02_shot_select.h"
 #include "th02/shot_select/private.h"
 
 #include <string.h>

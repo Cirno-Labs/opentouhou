@@ -143,6 +143,7 @@ test(
   executable(
     'test_th02_high_score_entry_logic',
     'test_th02_high_score_entry_logic.c',
+    'th02_high_score_entry.c',
     implicit_include_directories: false,
     link_with: [th02_lib, core_io_lib, core_base_lib],
     dependencies: [sdl3],
@@ -154,6 +155,7 @@ test(
   executable(
     'test_th02_high_score_view',
     'test_th02_high_score_view.c',
+    'th02_high_score_view.c',
     implicit_include_directories: false,
     link_with: [th02_lib, core_base_lib],
     dependencies: [sdl3],
@@ -239,6 +241,7 @@ test(
   executable(
     'test_th02_music_room',
     'test_th02_music_room.c',
+    'th02_music_room.c',
     implicit_include_directories: false,
     link_with: [th02_lib, core_base_lib],
     dependencies: [pc98_dep, sdl3],
@@ -310,7 +313,6 @@ foreach part : [
   'pillars',
   'stage_effects',
   'enemies',
-  'shot_select',
   'shot_select_render',
   'dialogue_box',
   'dialogue_render',
@@ -318,13 +320,8 @@ foreach part : [
   'dialogue_slide',
   'boss',
   'boss_strategy',
-  'meira',
   'rika',
   'stones',
-  'marisa',
-  'mima',
-  'sigma',
-  'gameplay',
   'gameplay_memory',
   'story',
   'credits',
@@ -348,6 +345,38 @@ foreach part : [
     suite: 'unit',
   )
 endforeach
+foreach part : ['meira', 'marisa', 'mima', 'sigma', 'gameplay']
+  test(
+    'th02/' + part,
+    executable(
+      'test_th02_' + part,
+      'test_th02_' + part + '.c',
+      'th02_boss_explosion.c',
+      'th02_gameplay.c',
+      'th02_stage_flow.c',
+      implicit_include_directories: false,
+      link_with: [
+        th02_lib, core_io_lib, core_vfs_lib, core_hash_lib, core_base_lib,
+      ],
+      dependencies: [pc98_dep, sdl3],
+    ),
+    suite: 'unit',
+  )
+endforeach
+test(
+  'th02/shot_select',
+  executable(
+    'test_th02_shot_select',
+    'test_th02_shot_select.c',
+    'th02_shot_select.c',
+    implicit_include_directories: false,
+    link_with: [
+      th02_lib, core_io_lib, core_vfs_lib, core_hash_lib, core_base_lib,
+    ],
+    dependencies: [pc98_dep, sdl3],
+  ),
+  suite: 'unit',
+)
 test(
   'th02/stage_flow',
   executable(
@@ -500,6 +529,9 @@ test(
   executable(
     'test_th02_opening',
     'test_th02_opening.c',
+    'th02_high_score_view.c',
+    'th02_menu.c',
+    'th02_music_room.c',
     implicit_include_directories: false,
     link_with: [th02_lib, core_io_lib, core_vfs_lib, core_hash_lib, core_base_lib],
     dependencies: [pc98_dep, sdl3],

@@ -1,5 +1,5 @@
 #include "tests/test.h"
-#include "tests/th02/th02_high_score_view.c"
+#include "tests/th02/th02_high_score_view.h"
 #include "th02/high_score_view/private.h"
 
 #include "core/base/utils.h"

@@ -1,12 +1,12 @@
 #pragma once
 
 #include "tests/test.h"
-#include "tests/th02/th02_boss_explosion.c"
+#include "tests/th02/th02_boss_explosion.h"
 #include "tests/th02/th02_clip_fixture.h"
-#include "tests/th02/th02_gameplay.c"
+#include "tests/th02/th02_gameplay.h"
 #include "tests/th02/th02_palette_fixture.h"
 #include "tests/th02/th02_sound.h"
-#include "tests/th02/th02_stage_flow.c"
+#include "tests/th02/th02_stage_flow.h"
 #include "th02/boss/private.h"
 #include "th02/enemies.h"
 #include "th02/items.h"
