@@ -1,4 +1,4 @@
-#include "th01/boss/private.h"
+#include "th01/boss/private_b10j.h"
 #include "th01/missiles.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"
@@ -18,68 +18,8 @@
 
 #include <string.h>
 
-typedef struct {
-    uint8_t masks[2][8][4];
-} B10J_PILLARS;
-
-typedef struct {
-    BOS still;
-    BOS animation;
-    PTN missiles;
-    PI_IMAGE background;
-    PALETTE palette;
-    SCENE_DATA next_scene;
-    B10J_PILLARS pillars;
-} B10J_ASSETS;
-
-typedef struct {
-    uint8_t angle;
-    int16_t radius;
-} B10J_SQUARE;
-
-typedef enum {
-    B10J_PHASE_START,
-    B10J_PHASE_FIRST,
-    B10J_PHASE_SPREAD,
-    B10J_PHASE_SECOND,
-} B10J_PHASE;
-
-typedef struct {
-    BOSS_ENTITY still;
-    BOSS_ENTITY animation;
-    BOSS_HIT hit;
-    PALETTE boss_palette;
-    PALETTE post_defeat;
-    PALETTE_FADE setup_fade;
-    VSYNC_WAIT setup_wait;
-    BOSS_DEFEAT defeat;
-    uint8_t background[128 * 160];
-    B10J_SQUARE squares[6];
-    int16_t pillar_time[8];
-    int16_t pillar_x[8];
-    int16_t pillar_bottom[8];
-    int16_t laser_x[4];
-    int16_t laser_y[4];
-    BOSS_STATE status;
-    int16_t pattern;
-    int16_t pattern_state;
-    int16_t target_left;
-    uint8_t hop;
-    uint8_t direction;
-    uint8_t missile_angle;
-    uint8_t pellet_angle;
-    uint8_t spread_interval;
-    uint8_t spread_speed;
-    bool meteor_active;
-    bool hp_bar_filled;
-    bool setup_active;
-    bool entrance_active;
-    bool entrance_waiting;
-    bool defeating;
-    bool finished;
-} B10J;
-
 static B10J m_B10J;
+B10J *const p_B10J = &m_B10J;
 
 static const BOSS_DEFEAT_PARAMS m_Defeat = {
     .shift = 16,
@@ -104,7 +44,7 @@ static RESULT M_LoadPillars(VFS *const vfs, B10J_PILLARS *const out)
     return OK;
 }
 
-static RESULT M_ValidateAssets(const B10J_ASSETS *const a)
+RESULT B10J_ValidateAssets(const B10J_ASSETS *const a)
 {
     FAIL_IF(
         a == nullptr || a->still.pixels == nullptr
@@ -139,7 +79,7 @@ static RESULT M_LoadAssets(
     MUST(BossAssets_LoadMissiles(vfs, a, &loaded.missiles));
     MUST(Scene_Load(vfs, 4, a, &loaded.next_scene));
     MUST(M_LoadPillars(vfs, &loaded.pillars));
-    MUST(M_ValidateAssets(&loaded));
+    MUST(B10J_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;
     return OK;
@@ -159,7 +99,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     Boss_Select(&m_B10J.status);
     ASSERT(
         !m_B10J.setup_active && !m_B10J.entrance_active && !m_B10J.defeating);
-    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(B10J_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B10J.still, 0, &assets->still)));
     ASSERT(Result_Ignore(
         BossEntity_Bind(&m_B10J.animation, 1, &assets->animation)));
