@@ -6,3 +6,9 @@ MUSIC_ROOM_RENDER_STATE *TestMusicRoomRender_State(void)
 {
     return &m_Render;
 }
+
+void TestMusicRoomRender_UpdateAndRenderPolygons(
+    MUSIC_POLYGONS *const state, uint32_t *const seed)
+{
+    M_UpdateAndRenderPolygons(state, seed);
+}
