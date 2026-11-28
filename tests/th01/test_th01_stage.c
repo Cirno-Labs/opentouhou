@@ -4,8 +4,7 @@
 #include "tests/th01/th01_world.h"
 #include "th01/hud/hud.c"
 #include "th01/items.c"
-#include "th01/orb.c"
-#include "th01/orb.h"
+#include "th01/orb_private.h"
 #include "th01/pellets.h"
 #include "th01/player_private.h"
 #include "th01/rng.h"
@@ -49,9 +48,9 @@ static void M_Init(CASE *const state, const uint8_t hp)
 {
     *state = (CASE) {};
     Th01Test_ResetWorld();
-    memset(&m_Orb, 0, sizeof(m_Orb));
-    m_Orb.left = 96;
-    m_Orb.top = 128;
+    memset(p_Orb, 0, sizeof(*p_Orb));
+    p_Orb->left = 96;
+    p_Orb->top = 128;
     g_Rng = 1;
     Arena_Init(&state->arena, "stage", 1024 * 1024);
     Video_Init(Arena_Allocator(&state->arena));
@@ -91,7 +90,7 @@ TEST(card_scores_caps_widths_and_synchronous_order)
             p_Stage->combo = combos[variant];
             p_Session->stage_id = 19;
             p_Session->settings.difficulty = rank;
-            const ORB orb = m_Orb;
+            const ORB orb = *p_Orb;
             const uint32_t rng = g_Rng;
             Stage_HitTestCards();
             const uint32_t square = (uint32_t)(int32_t)Math16_Wrap(
@@ -106,7 +105,7 @@ TEST(card_scores_caps_widths_and_synchronous_order)
                 g_Stage->maximum_combo,
                 combos[variant] == 32767 ? 0 : combos[variant] + 1);
             CHECK_EQ_INT(m_StageObjects.cards[0].flag, STAGE_CARD_FLIPPING);
-            CHECK(memcmp(&orb, &m_Orb, sizeof(ORB)) == 0);
+            CHECK(memcmp(&orb, p_Orb, sizeof(ORB)) == 0);
             CHECK_EQ_INT(g_Rng, rng);
             CHECK_EQ_INT(m_Hud.score_previous, expected);
             CHECK_EQ_INT(M_Items(m_Items.points, ITEMS_POINT_COUNT), 1);
@@ -144,7 +143,7 @@ TEST(all_postfix_drop_cycles_and_bomb_short_circuit)
             M_Init(&state, 0);
             m_StageObjects.cards[0].flag = flag;
             p_Player->bomb_damaging = true;
-            m_Orb.left = 500;
+            p_Orb->left = 500;
             g_Rng = seed;
             uint32_t expected = seed;
             const bool selected = MasterRng_Next(&expected) % 4 != 0;
@@ -219,13 +218,13 @@ TEST(card_contact_bounds_and_portal_do_not_change_orb)
         for (int32_t x = 0; x < 5; x++) {
             CASE state;
             M_Init(&state, 0);
-            m_Orb.left += deltas[x];
-            m_Orb.top += deltas[y];
-            m_Orb.in_portal = true;
-            const ORB orb = m_Orb;
+            p_Orb->left += deltas[x];
+            p_Orb->top += deltas[y];
+            p_Orb->in_portal = true;
+            const ORB orb = *p_Orb;
             Stage_HitTestCards();
             CHECK_EQ_INT(g_Stage->combo, x > 0 && x < 4 && y > 0 && y < 4);
-            CHECK(memcmp(&orb, &m_Orb, sizeof(ORB)) == 0);
+            CHECK(memcmp(&orb, p_Orb, sizeof(ORB)) == 0);
             Arena_Free(&state.arena);
         }
     }

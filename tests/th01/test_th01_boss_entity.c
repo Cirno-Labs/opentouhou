@@ -1,7 +1,7 @@
 #include "tests/test.h"
 #include "th01/boss/entity.c"
 #include "th01/boss/entity.h"
-#include "th01/orb.c"
+#include "th01/orb_private.h"
 
 #include <string.h>
 
@@ -42,18 +42,18 @@ TEST(orb_hit_uses_previous_position_and_inclusive_edges)
 {
     BOSS_ENTITY entity = { .left = 100, .top = 120 };
     BossEntity_SetOrbHitbox(&entity, (BOSS_BOUNDS) { 0, 96, 0, 96 });
-    memset(&m_Orb, 0, sizeof(m_Orb));
-    m_Orb.left = 600;
-    m_Orb.top = 368;
-    m_Orb.previous_left = 92;
-    m_Orb.previous_top = 112;
+    memset(p_Orb, 0, sizeof(*p_Orb));
+    p_Orb->left = 600;
+    p_Orb->top = 368;
+    p_Orb->previous_left = 92;
+    p_Orb->previous_top = 112;
     CHECK(BossEntity_HitTestOrb(&entity));
-    m_Orb.previous_left = 172;
-    m_Orb.previous_top = 192;
+    p_Orb->previous_left = 172;
+    p_Orb->previous_top = 192;
     CHECK(BossEntity_HitTestOrb(&entity));
-    m_Orb.previous_left++;
+    p_Orb->previous_left++;
     CHECK(!BossEntity_HitTestOrb(&entity));
-    m_Orb.previous_left = 92;
+    p_Orb->previous_left = 92;
     entity.orb_inactive = true;
     CHECK(!BossEntity_HitTestOrb(&entity));
 }

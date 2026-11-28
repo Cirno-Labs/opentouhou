@@ -6,8 +6,7 @@
 #include "th01/boss/entity.c"
 #include "th01/hud/hp.c"
 #include "th01/missiles.c"
-#include "th01/orb.c"
-#include "th01/orb.h"
+#include "th01/orb_private.h"
 #include "th01/pellets.h"
 #include "th01/pellets/pellets.c"
 #include "th01/player_private.h"
@@ -96,8 +95,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Rng = 0xb10a0000;
     p_Player->invincible = true;
     p_Player->left = 300;
-    m_Orb.top = 64;
-    m_Orb.previous_top = 64;
+    p_Orb->top = 64;
+    p_Orb->previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     p_Session->settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
@@ -203,10 +202,10 @@ TEST(ordinary_entrance_preserves_world_and_rank_fire)
         M_BossSetup(&f.assets, &f.miko);
         const size_t used = arena.used;
         VSyncIrq_Reset();
-        const ORB orb = m_Orb;
+        const ORB orb = *p_Orb;
         M_Enter(&f);
         CHECK_EQ_INT(g_VSync->count1, 0);
-        CHECK(memcmp(&orb, &m_Orb, sizeof(orb)) == 0);
+        CHECK(memcmp(&orb, p_Orb, sizeof(orb)) == 0);
         CHECK(!p_Player->is_hit);
         CHECK_EQ_INT(g_Stage->score, 0);
         CHECK_EQ_INT(arena.used, used);
@@ -393,15 +392,15 @@ TEST(real_orb_hits_score_and_cross_every_hp_gate)
         m_B10M.pattern_interval = 24;
         m_B10M.eyes[0].image = 3;
         m_B10M.eyes[0].orb_inactive = false;
-        m_Orb.previous_left = 88;
-        m_Orb.previous_top = 148;
-        m_Orb.velocity_x = ORB_X_LEFT_4;
+        p_Orb->previous_left = 88;
+        p_Orb->previous_top = 148;
+        p_Orb->velocity_x = ORB_X_LEFT_4;
         VSyncIrq_Reset();
         CHECK(M_BossUpdate(&f.assets, &f.miko));
         CHECK_EQ_INT(m_B10M.status.hp, hp[i] - 1);
         CHECK_EQ_INT(m_B10M.status.phase, phases[i] + 1);
         CHECK_EQ_INT(g_Stage->score, 5000);
-        CHECK_EQ_INT(m_Orb.velocity_x, ORB_X_RIGHT_4);
+        CHECK_EQ_INT(p_Orb->velocity_x, ORB_X_RIGHT_4);
         CHECK(m_B10M.hit.invincible);
         CHECK_EQ_INT(m_B10M.status.frame, 0);
         CHECK_EQ_INT(m_B10M.hit.frame, 0);

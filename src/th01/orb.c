@@ -1,6 +1,5 @@
-#include "th01/orb.h"
-
 #include "th01/finite.h"
+#include "th01/orb_private.h"
 #include "th01/rng.h"
 #include "th01/sprite.h"
 
@@ -10,6 +9,7 @@
 #include <string.h>
 
 static ORB m_Orb;
+ORB *const p_Orb = &m_Orb;
 const ORB *const g_Orb = &m_Orb;
 
 void Orb_Init(void)

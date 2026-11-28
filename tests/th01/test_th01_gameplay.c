@@ -12,8 +12,7 @@
 #include "th01/hud/hud.c"
 #include "th01/miss.c"
 #include "th01/music.c"
-#include "th01/orb.c"
-#include "th01/orb.h"
+#include "th01/orb_private.h"
 #include "th01/pellets.h"
 #include "th01/pellets/pellets.c"
 #include "th01/player_private.h"
@@ -145,22 +144,22 @@ TEST(ordinary_loop_consumes_real_input_and_suspends_after_motion)
     CHECK_EQ_INT(Gameplay_Tick(&raw, false, 1), GAMEPLAY_REQUEST_NONE);
     CHECK_EQ_INT(p_Session->frame_rand, 1);
     CHECK_EQ_INT(g_Stage->frame, 1);
-    CHECK_EQ_INT(m_Orb.force_frame, 1);
+    CHECK_EQ_INT(p_Orb->force_frame, 1);
     CHECK_EQ_INT(p_Player->left, 308);
-    CHECK_EQ_INT(m_Orb.left, 596);
+    CHECK_EQ_INT(p_Orb->left, 596);
     CHECK(M_InLife(GP_LIFE_ORB));
     CHECK(M_StageOrbWaiting());
     const PLAYER player = *p_Player;
-    const ORB orb = m_Orb;
+    const ORB orb = *p_Orb;
     const uint32_t rng = g_Rng;
     Gameplay_Tick(&raw, false, 2);
     CHECK_EQ_INT(memcmp(&player, p_Player, sizeof(player)), 0);
-    CHECK_EQ_INT(memcmp(&orb, &m_Orb, sizeof(orb)), 0);
+    CHECK_EQ_INT(memcmp(&orb, p_Orb, sizeof(orb)), 0);
     CHECK_EQ_INT(g_Rng, rng);
     Gameplay_Tick(&raw, true, 3);
     CHECK_EQ_INT(p_Session->frame_rand, 2);
     CHECK_EQ_INT(g_Stage->frame, 2);
-    CHECK_EQ_INT(m_Orb.force_frame, 2);
+    CHECK_EQ_INT(p_Orb->force_frame, 2);
     Gameplay_Tick(&raw, true, 4);
     CHECK(g_Shots->slots[0].moving);
     CHECK(M_EffectSounds());
@@ -182,7 +181,7 @@ TEST(hurry_wait_freezes_the_remaining_iteration_prefix)
     CHECK_EQ_INT(m_Timer.phase, TIMER_WAIT_HURRY);
     CHECK_EQ_INT(g_Stage->frame, 1);
     CHECK_EQ_INT(p_Player->invincibility_time, 1);
-    CHECK_EQ_INT(m_Orb.left, 600);
+    CHECK_EQ_INT(p_Orb->left, 600);
     const uint32_t rng = g_Rng;
     const PLAYER player = *p_Player;
     for (uint64_t i = 2; i < 12; i++) {
@@ -317,8 +316,8 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
     uint64_t tick = 0;
     for (int16_t stage = 0; stage < 3; stage++) {
         CHECK_EQ_INT(p_Session->stage_id, stage);
-        m_Orb.left = g_StageObjects->cards[0].left;
-        m_Orb.top = g_StageObjects->cards[0].top;
+        p_Orb->left = g_StageObjects->cards[0].left;
+        p_Orb->top = g_StageObjects->cards[0].top;
         Stage_HitTestCards();
         CHECK_EQ_INT(g_StageObjects->cards[0].flag, STAGE_CARD_FLIPPING);
         CHECK(g_Stage->score > 0);
@@ -480,7 +479,7 @@ TEST(gameover_redraws_orb_before_copying_the_miss_frame)
     Gameplay_Tick(&(TH01_INPUT) {}, false, 1);
     Gameplay_Tick(&(TH01_INPUT) {}, true, 2);
     CHECK(M_InEnd(GP_END_GAMEOVER));
-    CHECK_EQ_INT(g_Video->pages[1][m_Orb.top * VIDEO_WIDTH + m_Orb.left], 6);
+    CHECK_EQ_INT(g_Video->pages[1][p_Orb->top * VIDEO_WIDTH + p_Orb->left], 6);
     Arena_Free(&f.arena);
 }
 

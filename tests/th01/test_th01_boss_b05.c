@@ -4,8 +4,7 @@
 #include "th01/boss/b05.c"
 #include "th01/boss/entity.c"
 #include "th01/hud/hp.c"
-#include "th01/orb.c"
-#include "th01/orb.h"
+#include "th01/orb_private.h"
 #include "th01/particles.c"
 #include "th01/pellets.h"
 #include "th01/pellets/pellets.c"
@@ -118,7 +117,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Rng = 0xb0500000;
     p_Player->invincible = true;
     p_Player->left = 300;
-    m_Orb.previous_top = 64;
+    p_Orb->previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     f->route_assets = (ROUTE_SELECT_ASSETS) {
         &f->font,
@@ -236,7 +235,7 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         m_VSync.count2 = g_VSync->count2;
         const TH01_INPUT raw = {};
         const PLAYER player = *p_Player;
-        const ORB orb = m_Orb;
+        const ORB orb = *p_Orb;
         const uint32_t rng = g_Rng;
         CHECK(!M_BossUpdate(&f.miko, &f.route_assets, &raw));
         CHECK_EQ_INT(m_B05.status.frame, 1 + reuse);
@@ -257,7 +256,7 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         CHECK_EQ_INT(m_B05.hit.frame, 0);
         CHECK(!m_B05.hp_bar_filled);
         CHECK(memcmp(p_Player, &player, sizeof(player)) == 0);
-        CHECK(memcmp(&m_Orb, &orb, sizeof(orb)) == 0);
+        CHECK(memcmp(p_Orb, &orb, sizeof(orb)) == 0);
         CHECK_EQ_INT(g_Rng, rng);
         CHECK(
             memcmp(&g_Palette->saved, &m_B05.boss_palette, sizeof(PALETTE))
@@ -287,8 +286,8 @@ TEST(real_hit_controller_reaches_both_cached_routes)
              step <= 2400 && m_B05.status.phase != B05_PHASE_DEFEATED; step++) {
             const bool hit =
                 step == 20 || step == 70 || (step >= 1620 && step % 50 == 20);
-            m_Orb.previous_left = hit ? (int16_t)(m_B05.sphere.left + 32) : 0;
-            m_Orb.previous_top = hit ? (int16_t)(m_B05.sphere.top + 32) : 64;
+            p_Orb->previous_left = hit ? (int16_t)(m_B05.sphere.left + 32) : 0;
+            p_Orb->previous_top = hit ? (int16_t)(m_B05.sphere.top + 32) : 64;
             p_Session->frame_rand = (uint32_t)step;
             CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
             phase_two |= m_B05.status.phase == B05_PHASE_TRANSFORMS;

@@ -5,8 +5,7 @@
 #include "th01/boss/entity.c"
 #include "th01/hud/hp.c"
 #include "th01/missiles.c"
-#include "th01/orb.c"
-#include "th01/orb.h"
+#include "th01/orb_private.h"
 #include "th01/pellets.h"
 #include "th01/pellets/pellets.c"
 #include "th01/player_private.h"
@@ -183,8 +182,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Rng = 0xb15a0000;
     p_Player->invincible = true;
     p_Player->left = 300;
-    m_Orb.top = 64;
-    m_Orb.previous_top = 64;
+    p_Orb->top = 64;
+    p_Orb->previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     p_Session->settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
@@ -388,8 +387,8 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
             const BOSS_ENTITY *const e =
                 m_B15M.form == B15M_FORM_GIRL ? &m_B15M.girl : &m_B15M.bat;
             const bool hit = m_B15M.status.hp > target && step % 50 == 20;
-            m_Orb.previous_left = hit ? e->left + (m_B15M.form ? 16 : 48) : 0;
-            m_Orb.previous_top = hit ? e->top + 24 : 399;
+            p_Orb->previous_left = hit ? e->left + (m_B15M.form ? 16 : 48) : 0;
+            p_Orb->previous_top = hit ? e->top + 24 : 399;
             M_Run(&f, &tick);
             VSyncIrq_Edge();
             tick++;
@@ -433,8 +432,8 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     m_B15M.safety_left = 200;
     p_Player->left = 400;
     p_Player->invincible = false;
-    m_Orb.previous_left = m_B15M.girl.left + 48;
-    m_Orb.previous_top = m_B15M.girl.top + 24;
+    p_Orb->previous_left = m_B15M.girl.left + 48;
+    p_Orb->previous_top = m_B15M.girl.top + 24;
     m_Missiles.slots[0] = (MISSILE) { .left = 200 * 16,
                                       .top = 200 * 16,
                                       .previous_left = -1,

@@ -5,8 +5,7 @@
 #include "th01/boss/boss.c"
 #include "th01/boss/entity.c"
 #include "th01/hud/hp.c"
-#include "th01/orb.c"
-#include "th01/orb.h"
+#include "th01/orb_private.h"
 #include "th01/pellets.h"
 #include "th01/pellets/pellets.c"
 #include "th01/player_private.h"
@@ -94,8 +93,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Rng = 0xb15a0000;
     p_Player->invincible = true;
     p_Player->left = 300;
-    m_Orb.top = 64;
-    m_Orb.previous_top = 64;
+    p_Orb->top = 64;
+    p_Orb->previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     p_Session->settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
@@ -309,22 +308,22 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     VSyncIrq_Reset();
     M_Enter(&f);
     const size_t used = arena.used;
-    m_Orb.left = 0;
-    m_Orb.top = 64;
-    m_Orb.previous_left = 300;
-    m_Orb.previous_top = 100;
+    p_Orb->left = 0;
+    p_Orb->top = 64;
+    p_Orb->previous_left = 300;
+    p_Orb->previous_top = 100;
     CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 14);
-    m_Orb.left = 300;
-    m_Orb.top = 132;
+    p_Orb->left = 300;
+    p_Orb->top = 132;
     CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 14);
-    m_Orb.top = -100;
-    m_Orb.previous_left = 0;
+    p_Orb->top = -100;
+    p_Orb->previous_left = 0;
     CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 13);
     CHECK_EQ_INT(g_Stage->score, 7000);
-    m_Orb.top = 64;
+    p_Orb->top = 64;
     m_Pellets.slots[0].cloud_frame = 12;
     m_Lasers.slots[4].alive = true;
     m_Lasers.slots[4].origin_left = 100 * 256;
@@ -334,7 +333,7 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
             || (m_B15J.status.phase == B15J_PHASE_TEARS && m_B15J.status.hp > 6)
             || (m_B15J.status.phase == B15J_PHASE_PATTERNS
                 && m_B15J.status.hp > 0);
-        m_Orb.left = attack ? 300 : 0;
+        p_Orb->left = attack ? 300 : 0;
         const bool completed = M_BossUpdate(&f.assets, &f.miko, &f.stage);
         if (!completed) {
             const B15J frozen = m_B15J;

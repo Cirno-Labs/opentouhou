@@ -4,8 +4,7 @@
 #include "th01/boss/b20j.c"
 #include "th01/gameplay.h"
 #include "th01/hud/hp.c"
-#include "th01/orb.c"
-#include "th01/orb.h"
+#include "th01/orb_private.h"
 #include "th01/pellets.h"
 #include "th01/pellets/pellets.c"
 #include "th01/player_private.h"
@@ -161,8 +160,8 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     p_Player->left = 300;
     p_Player->invincible = true;
     p_Session->lives = 3;
-    m_Orb.top = 64;
-    m_Orb.previous_top = 64;
+    p_Orb->top = 64;
+    p_Orb->previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     p_Session->frame_rand = 0x12345678;
     g_BossKonngara.init();
@@ -326,10 +325,10 @@ TEST(hit_tests_current_orb_at_inclusive_rectangle_edges)
         M_Fixture(&f, &arena);
         m_B20J.status.phase = B20J_PHASE_FINAL;
         m_B20J.pattern = 99;
-        m_Orb.left = points[i][0];
-        m_Orb.top = points[i][1];
-        m_Orb.previous_left = 300;
-        m_Orb.previous_top = 140;
+        p_Orb->left = points[i][0];
+        p_Orb->top = points[i][1];
+        p_Orb->previous_left = 300;
+        p_Orb->previous_top = 140;
         VSyncIrq_Reset();
         CHECK(M_BossUpdate(&f.assets));
         CHECK_EQ_INT(m_B20J.status.hp, i < 2 ? 17 : 18);
@@ -354,8 +353,8 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     m_B20J.status.phase = B20J_PHASE_FINAL;
     m_B20J.pattern = 99;
     m_B20J.status.hp = 1;
-    m_Orb.left = 320;
-    m_Orb.top = 140;
+    p_Orb->left = 320;
+    p_Orb->top = 140;
     g_Video->pages[0][0] = 9;
     VSyncIrq_Reset();
     const size_t used = arena.used;

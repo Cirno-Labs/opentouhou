@@ -5,8 +5,7 @@
 #include "th01/input.c"
 #include "th01/miss.c"
 #include "th01/miss.h"
-#include "th01/orb.c"
-#include "th01/orb.h"
+#include "th01/orb_private.h"
 #include "th01/pellets.h"
 #include "th01/player_private.h"
 #include "th01/rng.h"
@@ -40,10 +39,10 @@ static void M_Init(CASE *const state, const int16_t left, const int16_t bombs)
     p_Player->invincible = true;
     p_Player->invincibility_time = 71;
     p_Player->bomb_frame = 941;
-    memset(&m_Orb, 0, sizeof(m_Orb));
-    m_Orb.left = 100;
-    m_Orb.top = 100;
-    m_Orb.rotation_frame = 8;
+    memset(p_Orb, 0, sizeof(*p_Orb));
+    p_Orb->left = 100;
+    p_Orb->top = 100;
+    p_Orb->rotation_frame = 8;
     g_Rng = 1;
     GameInput_Init();
     m_GameInput.bomb = true;
@@ -116,7 +115,7 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                                                          : 2;
                 p_Session->settings.difficulty = rank;
                 p_Session->lives = variant;
-                const ORB orb = m_Orb;
+                const ORB orb = *p_Orb;
                 const size_t used = state.arena.used;
                 VSyncIrq_Reset();
                 m_VSync.count1 = counts[variant];
@@ -138,7 +137,7 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 CHECK_EQ_INT(edges, variant == 0 ? 82 : variant == 1 ? 81 : 83);
                 CHECK_EQ_INT(g_Rng, rng);
                 CHECK_EQ_INT(state.arena.used, used);
-                CHECK(memcmp(&m_Orb, &orb, sizeof(ORB)) == 0);
+                CHECK(memcmp(p_Orb, &orb, sizeof(ORB)) == 0);
                 const int16_t right =
                     starts[x] + 160 >= 608 ? 608 : starts[x] + 160;
                 const int16_t left = starts[x] < 160 ? 0 : starts[x] - 160;

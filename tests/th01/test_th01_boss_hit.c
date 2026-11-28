@@ -4,7 +4,7 @@
 #include "tests/th01/th01_world.h"
 #include "th01/boss/boss.c"
 #include "th01/boss/private.h"
-#include "th01/orb.c"
+#include "th01/orb_private.h"
 #include "th01/player_private.h"
 #include "th01/session_private.h"
 #include "th01/shots.c"
@@ -56,12 +56,12 @@ TEST(real_hud_health_and_flash_follow_hit_order)
     M_Init(&f);
     const uint8_t colors[] = { 2 };
     p_Stage->score = UINT32_MAX - 5;
-    m_Orb.left = 303;
+    p_Orb->left = 303;
     BossHit_UpdateAndRender(
         &f.hit, &f.hp, &f.baseline, colors, 1, 10, true, (BOSS_SHOT_HITBOX) {});
     CHECK_EQ_INT(g_Stage->score, 4);
     CHECK_EQ_INT(p_Session->high_score, 4);
-    CHECK_EQ_INT(m_Orb.velocity_x, ORB_X_RIGHT_4);
+    CHECK_EQ_INT(p_Orb->velocity_x, ORB_X_RIGHT_4);
     CHECK_EQ_INT(f.hp, 7);
     CHECK_EQ_INT(Th01Test_Pixel(0, 184, 48), 0);
     CHECK_EQ_INT(g_Palette->saved.colors[2][0], 1);

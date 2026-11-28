@@ -5,8 +5,7 @@
 #include "th01/gameplay.h"
 #include "th01/hud/hp.c"
 #include "th01/input.c"
-#include "th01/orb.c"
-#include "th01/orb.h"
+#include "th01/orb_private.h"
 #include "th01/pellets.h"
 #include "th01/player_private.h"
 #include "th01/rng.h"
@@ -175,8 +174,8 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     p_Player->left = 300;
     p_Player->invincible = true;
     p_Session->lives = 3;
-    m_Orb.top = 64;
-    m_Orb.previous_top = 64;
+    p_Orb->top = 64;
+    p_Orb->previous_top = 64;
     Hud_Load(&f->mask, &f->stage, &f->font);
     p_Session->stage_id = 19;
     p_Session->frame_rand = 0x12345678;
@@ -330,8 +329,8 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     M_Fixture(&f, &arena);
     m_B20M.status.phase = B20M_PHASE_TRANSFORM;
     m_B20M.status.hp = 0;
-    m_Orb.previous_left = 123;
-    m_Orb.previous_top = 234;
+    p_Orb->previous_left = 123;
+    p_Orb->previous_top = 234;
     p_Player->invincible = true;
     p_Player->invincibility_time = 91;
     p_Player->deflecting = true;
@@ -343,10 +342,10 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     const size_t used = arena.used;
     CHECK(!M_BossUpdate(&f.assets, tick));
     CHECK_EQ_INT(p_Player->left, 304);
-    CHECK_EQ_INT(m_Orb.left, 600);
-    CHECK_EQ_INT(m_Orb.top, 280);
-    CHECK_EQ_INT(m_Orb.previous_left, 123);
-    CHECK_EQ_INT(m_Orb.previous_top, 234);
+    CHECK_EQ_INT(p_Orb->left, 600);
+    CHECK_EQ_INT(p_Orb->top, 280);
+    CHECK_EQ_INT(p_Orb->previous_left, 123);
+    CHECK_EQ_INT(p_Orb->previous_top, 234);
     CHECK(!p_Player->deflecting);
     CHECK(!p_Player->bomb_damaging);
     CHECK(!g_GameInput->bomb);
@@ -376,8 +375,8 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     M_Fixture(&f, &arena);
     m_B20M.status.phase = B20M_PHASE_SECOND_FORM;
     m_B20M.status.hp = 1;
-    m_Orb.left = 320;
-    m_Orb.top = 120;
+    p_Orb->left = 320;
+    p_Orb->top = 120;
     VSyncIrq_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
