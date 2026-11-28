@@ -21,68 +21,10 @@
 
 #include <string.h>
 
-#define MIMA_SPHERE_COUNT 8
-
-typedef enum {
-    MIMA_APPEAR,
-    MIMA_ATTACK_ONE,
-    MIMA_CHANGE_TWO,
-    MIMA_ATTACK_TWO,
-    MIMA_CHANGE_THREE,
-    MIMA_ATTACK_THREE,
-    MIMA_CHANGE_FOUR,
-    MIMA_ATTACK_FOUR,
-    MIMA_FORM,
-    MIMA_ATTACK_FINAL,
-    MIMA_POST,
-} MIMA_PHASE;
-
-typedef struct {
-    ENTITY_POINT shot_origin;
-    ENTITY_POINT pellet_origin;
-    ENTITY_POINT lower_origin;
-    ENTITY_POINT ball_origin;
-    int16_t damage_enable;
-    int16_t phase;
-    int16_t pattern;
-    int16_t inactive_spheres;
-    int16_t pattern_cycles;
-    ENTITY_POINT sphere_position[2][MIMA_SPHERE_COUNT];
-    int16_t sphere_active[MIMA_SPHERE_COUNT];
-    uint8_t form, background_radius, disc_radius, ring_color, trail_color,
-        disc_color, flash_cycle, beam_angle, beam_spread, beam_tone,
-        orbit_burst_mode;
-    ENTITY_POINT orbit_center;
-    ENTITY_POINT aimed_velocity;
-    ENTITY_POINT twist_velocity;
-    ENTITY_POINT expand_center;
-    int16_t orbit_radius;
-    int16_t expand_radius;
-    uint8_t orbit_angle, orbit_spinning, spiral_angle, spiral_speed, fan_angle,
-        star_angle, cross_angle, expand_angle, ball_angle, cue_angle,
-        cue_radius;
-    int8_t orbit_direction;
-    int8_t star_direction;
-    int16_t damage_threshold;
-    int16_t max_patterns;
-    int16_t pattern_count;
-    int16_t min_patterns;
-    uint8_t effect_radius;
-    uint8_t disc_base_radius;
-    uint8_t disc_pulse;
-    uint8_t background_angle;
-    int16_t move_y;
-    uint8_t ring;
-    uint8_t groups[2];
-    uint8_t ball_group;
-    uint8_t angle_step;
-    bool transition_started;
-    bool ended;
-} MIMA;
-
 typedef void (*MIMA_ATTACK)(BOSS_STATE *boss, uint8_t rank);
 
 static MIMA m_Mima;
+MIMA *const p_Mima = &m_Mima;
 
 static ENTITY_POINT *M_Position(BOSS_STATE *const boss)
 {
@@ -1180,7 +1122,7 @@ void Mima_DrawBody(BOSS_STATE *const boss, const PATTERN_BANK *const patterns)
     M_DrawBody(boss, patterns);
 }
 
-static void M_BeginScene(BOSS_STATE *const boss, const uint8_t rank)
+void Mima_BeginScene(BOSS_STATE *const boss, const uint8_t rank)
 {
     Shots_FreeAll();
     Boss_BeginStage(boss);
@@ -1215,7 +1157,7 @@ static void M_BeginScene(BOSS_STATE *const boss, const uint8_t rank)
     Clip_SetPlayfield();
 }
 
-static void M_InvalidateCore(BOSS_STATE *const boss, const bool reduce_effects)
+void Mima_Invalidate(BOSS_STATE *const boss, const bool reduce_effects)
 {
     M_SphereCleanup();
     boss->position[g_Stage->scroll.back] =
@@ -1296,7 +1238,7 @@ BOSS_RESULT Mima_EndTransition(BOSS_STATE *const boss, const bool continued)
     return BOSS_RUNNING;
 }
 
-static BOSS_RESULT M_UpdateCore(
+BOSS_RESULT Mima_Update(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns,
     const uint8_t rank, const bool reduce_effects)
 {
@@ -1321,12 +1263,12 @@ static void M_Begin(
             MIMA_BANK_FIRST);
         Mima_Place(p_BossState);
     }
-    M_BeginScene(p_BossState, (uint8_t)session->rank);
+    Mima_BeginScene(p_BossState, (uint8_t)session->rank);
 }
 
 static void M_Invalidate(const bool reduce_effects)
 {
-    M_InvalidateCore(p_BossState, reduce_effects);
+    Mima_Invalidate(p_BossState, reduce_effects);
 }
 
 static BOSS_RESULT M_Update(
@@ -1334,7 +1276,7 @@ static BOSS_RESULT M_Update(
     const BOSS_MUSIC *const music, TH02_SESSION *const session,
     const TH02_INPUT *const input)
 {
-    const BOSS_RESULT result = M_UpdateCore(
+    const BOSS_RESULT result = Mima_Update(
         p_BossState, patterns, (uint8_t)session->rank, session->reduce_effects);
     if (result == BOSS_WAIT) {
         const BOSS_RESULT transition = g_BossMima.talk.transition(
