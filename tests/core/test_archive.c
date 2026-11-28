@@ -68,13 +68,13 @@ static RESULT M_ReadEntry(
     return OK;
 }
 
-static const ARCHIVE_FORMAT M_PathFormat = {
+static const ARCHIVE_FORMAT m_PathFormat = {
     .lookup = ARCHIVE_LOOKUP_PATH,
     .read_table = M_ReadTable,
     .read_entry = M_ReadEntry,
 };
 
-static const ARCHIVE_FORMAT M_LastNocaseFormat = {
+static const ARCHIVE_FORMAT m_LastNocaseFormat = {
     .lookup = ARCHIVE_LOOKUP_LAST_NOCASE,
     .read_table = M_ReadTable,
     .read_entry = M_ReadEntry,
@@ -174,7 +174,7 @@ TEST(entries_keep_their_names_sizes_modes_and_records)
     TestAllocator_Init(&test);
     ARCHIVE *archive;
     CHECK(Result_Log(
-        M_Open(&built, "test.arc", &M_PathFormat, &test.allocator, &archive),
+        M_Open(&built, "test.arc", &m_PathFormat, &test.allocator, &archive),
         LOG_LEVEL_ERROR));
 
     CHECK_EQ_INT(Archive_GetCount(archive), 3);
@@ -204,7 +204,7 @@ TEST(path_lookup_matches_the_whole_path_exactly)
     const M_ARCHIVE built = M_Build(entries, 2);
     ARCHIVE *archive;
     CHECK(Result_Log(
-        M_Open(&built, nullptr, &M_PathFormat, &g_HeapAllocator, &archive),
+        M_Open(&built, nullptr, &m_PathFormat, &g_HeapAllocator, &archive),
         LOG_LEVEL_ERROR));
     CHECK(
         Archive_Find(archive, "dir/File.txt") == Archive_GetEntry(archive, 0));
@@ -224,7 +224,7 @@ TEST(last_nocase_lookup_matches_the_last_component_in_either_case)
     ARCHIVE *archive;
     CHECK(Result_Log(
         M_Open(
-            &built, nullptr, &M_LastNocaseFormat, &g_HeapAllocator, &archive),
+            &built, nullptr, &m_LastNocaseFormat, &g_HeapAllocator, &archive),
         LOG_LEVEL_ERROR));
     const ARCHIVE_ENTRY *const entry = Archive_GetEntry(archive, 0);
     CHECK(Archive_Find(archive, "Title00.JPG") == entry);
@@ -246,7 +246,7 @@ TEST(the_later_of_two_entries_with_one_key_is_found)
     ARCHIVE *archive;
     CHECK(Result_Log(
         M_Open(
-            &built, nullptr, &M_LastNocaseFormat, &g_HeapAllocator, &archive),
+            &built, nullptr, &m_LastNocaseFormat, &g_HeapAllocator, &archive),
         LOG_LEVEL_ERROR));
     CHECK_EQ_INT(Archive_GetCount(archive), 2);
     CHECK(Archive_Find(archive, "a.txt") == Archive_GetEntry(archive, 1));
@@ -265,7 +265,7 @@ TEST(a_failed_check_names_the_archive_and_the_entry)
     TestAllocator_Init(&test);
     ARCHIVE *archive;
     CHECK(Result_Log(
-        M_Open(&built, "test.arc", &M_PathFormat, &test.allocator, &archive),
+        M_Open(&built, "test.arc", &m_PathFormat, &test.allocator, &archive),
         LOG_LEVEL_ERROR));
 
     uint8_t *data = (uint8_t *)"";
@@ -291,7 +291,7 @@ TEST(a_failed_read_of_an_unnamed_archive_names_the_entry)
     built.size -= 1;
     ARCHIVE *archive;
     CHECK(Result_Log(
-        M_Open(&built, nullptr, &M_PathFormat, &g_HeapAllocator, &archive),
+        M_Open(&built, nullptr, &m_PathFormat, &g_HeapAllocator, &archive),
         LOG_LEVEL_ERROR));
     uint8_t *data;
     const RESULT result =
@@ -319,7 +319,7 @@ TEST(a_failed_table_names_the_archive_and_closes_the_reader)
     Reader_OpenOwnedBuffer(&reader, bytes, size, &test.allocator, "test.arc");
     ARCHIVE *archive;
     const RESULT result =
-        Archive_Open(&M_PathFormat, &reader, &test.allocator, &archive);
+        Archive_Open(&m_PathFormat, &reader, &test.allocator, &archive);
     CHECK(!IS_OK(result));
     CHECK(archive == nullptr);
     CHECK_EQ_STR(result.message, "test.arc: table runs past the end");
@@ -334,7 +334,7 @@ TEST(an_unnamed_archive_fails_without_a_name)
     Reader_OpenBuffer(&reader, bytes, sizeof(bytes), nullptr);
     ARCHIVE *archive;
     const RESULT result =
-        Archive_Open(&M_PathFormat, &reader, &g_HeapAllocator, &archive);
+        Archive_Open(&m_PathFormat, &reader, &g_HeapAllocator, &archive);
     CHECK(!IS_OK(result));
     CHECK_EQ_STR(result.message, "too many entries");
     Result_Ignore(result);
@@ -361,7 +361,7 @@ TEST(a_source_opens_entries_in_readers_named_by_the_archive)
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
     VFS *const vfs =
-        M_Mount(&built, "test.arc", &M_LastNocaseFormat, &test.allocator);
+        M_Mount(&built, "test.arc", &m_LastNocaseFormat, &test.allocator);
 
     CHECK(Vfs_Exists(vfs, "data/title00.jpg"));
     CHECK(Vfs_Exists(vfs, "DATA\\TITLE00.JPG"));
@@ -386,7 +386,7 @@ TEST(a_source_of_an_unnamed_archive_names_readers_by_the_entry)
     const M_ARCHIVE built = M_Build(entries, 1);
     ARCHIVE *archive;
     CHECK(Result_Log(
-        M_Open(&built, nullptr, &M_PathFormat, &g_HeapAllocator, &archive),
+        M_Open(&built, nullptr, &m_PathFormat, &g_HeapAllocator, &archive),
         LOG_LEVEL_ERROR));
     VFS_SOURCE *const source = Archive_ToSource(archive, "");
     CHECK_EQ_STR(source->name, "archive");
@@ -408,7 +408,7 @@ TEST(a_path_source_finds_whole_paths_in_either_case_but_no_directories)
     };
     const M_ARCHIVE built = M_Build(entries, 2);
     VFS *const vfs =
-        M_Mount(&built, "test.arc", &M_PathFormat, &g_HeapAllocator);
+        M_Mount(&built, "test.arc", &m_PathFormat, &g_HeapAllocator);
     CHECK(Vfs_Exists(vfs, "dir/file.txt"));
     CHECK(Vfs_Exists(vfs, "DIR\\File.txt"));
     CHECK(!Vfs_Exists(vfs, "file.txt"));
@@ -441,7 +441,7 @@ TEST(a_source_lists_the_files_of_a_directory_folded_in_table_order)
     const M_ARCHIVE built = M_Build(entries, 3);
     ARCHIVE *archive;
     CHECK(Result_Log(
-        M_Open(&built, "test.arc", &M_PathFormat, &g_HeapAllocator, &archive),
+        M_Open(&built, "test.arc", &m_PathFormat, &g_HeapAllocator, &archive),
         LOG_LEVEL_ERROR));
     VFS_SOURCE *const source = Archive_ToSource(archive, "");
     M_VISITED visited = { .count = 0 };
@@ -465,8 +465,8 @@ TEST(a_source_over_a_root_holds_only_the_entries_below_it)
     };
     const M_ARCHIVE built = M_Build(entries, 3);
     const ARCHIVE_FORMAT *const formats[] = {
-        &M_PathFormat,
-        &M_LastNocaseFormat,
+        &m_PathFormat,
+        &m_LastNocaseFormat,
     };
     for (int32_t i = 0; i < 2; i++) {
         ARCHIVE *archive;
@@ -499,7 +499,7 @@ TEST(a_source_fails_a_missing_entry_and_a_failed_read)
     TestAllocator_Init(&test);
     ARCHIVE *archive;
     CHECK(Result_Log(
-        M_Open(&built, "test.arc", &M_PathFormat, &test.allocator, &archive),
+        M_Open(&built, "test.arc", &m_PathFormat, &test.allocator, &archive),
         LOG_LEVEL_ERROR));
     VFS_SOURCE *const source = Archive_ToSource(archive, "");
     READER reader;

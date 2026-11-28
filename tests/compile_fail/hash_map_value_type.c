@@ -11,7 +11,7 @@ typedef struct {
     int32_t id;
 } SPRITE;
 
-static int32_t Use(void)
+static int32_t M_Use(void)
 {
     HASH_MAP(int32_t, FONT) fonts;
     HashMap_Init(&fonts, &g_HeapAllocator);

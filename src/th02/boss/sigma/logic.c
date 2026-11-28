@@ -1058,17 +1058,17 @@ static void M_Rings(const bool reduce_effects)
     Grcg_Off();
 }
 
-static void Sigma_Init(void)
+static void M_Init(void)
 {
     memset(&m_Sigma, 0, sizeof(m_Sigma));
 }
 
-static bool Sigma_MidbossInvalidate(void)
+static bool M_MidbossInvalidateCore(void)
 {
     return m_Sigma.midboss_active;
 }
 
-static void Sigma_MidbossUpdate(BOSS_STATE *const boss)
+static void M_MidbossUpdateCore(BOSS_STATE *const boss)
 {
     boss->phase_frame = Math16_Wrap((int32_t)boss->phase_frame + 1);
     const int16_t frame = boss->phase_frame;
@@ -1135,7 +1135,7 @@ void Sigma_DrawBody(
     }
 }
 
-static void Sigma_Invalidate(BOSS_STATE *const boss)
+static void M_InvalidateCore(BOSS_STATE *const boss)
 {
     boss->position[g_Stage->scroll.back] =
         boss->position[g_Stage->scroll.front];
@@ -1150,7 +1150,7 @@ static void Sigma_Invalidate(BOSS_STATE *const boss)
     }
 }
 
-static BOSS_RESULT Sigma_Update(
+static BOSS_RESULT M_UpdateCore(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns,
     const bool reduce_effects)
 {
@@ -1204,7 +1204,7 @@ static void M_Begin(
 
 static void M_Invalidate(const bool reduce_effects)
 {
-    Sigma_Invalidate(p_BossState);
+    M_InvalidateCore(p_BossState);
 }
 
 static BOSS_RESULT M_Update(
@@ -1212,22 +1212,22 @@ static BOSS_RESULT M_Update(
     const BOSS_MUSIC *const music, TH02_SESSION *const session,
     const TH02_INPUT *const input)
 {
-    return Sigma_Update(p_BossState, patterns, session->reduce_effects);
+    return M_UpdateCore(p_BossState, patterns, session->reduce_effects);
 }
 
 static bool M_MidbossInvalidate(void)
 {
-    return Sigma_MidbossInvalidate();
+    return M_MidbossInvalidateCore();
 }
 
 static void M_MidbossUpdate(
     const PATTERN_BANK *const patterns, const uint8_t rank)
 {
-    Sigma_MidbossUpdate(p_BossState);
+    M_MidbossUpdateCore(p_BossState);
 }
 
 const BOSS_STRATEGY g_BossSigma = {
-    .init = Sigma_Init,
+    .init = M_Init,
     .begin = M_Begin,
     .invalidate = M_Invalidate,
     .update = M_Update,

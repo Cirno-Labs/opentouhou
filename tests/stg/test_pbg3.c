@@ -522,7 +522,7 @@ static void M_RawClose(VFS_SOURCE *const source)
     Mem_Free(raw);
 }
 
-static const VFS_SOURCE_FUNCS M_RawFuncs = {
+static const VFS_SOURCE_FUNCS m_RawFuncs = {
     .contains = M_RawContains,
     .open = M_RawOpen,
     .list = M_RawList,
@@ -552,7 +552,7 @@ TEST(an_archive_opened_through_a_vfs_names_its_entries_by_it)
     TestAllocator_Init(&test);
     VFS *const vfs = Vfs_Create(&test.allocator);
     RAW_FILE_SOURCE *const raw = Mem_AllocZ(sizeof(*raw));
-    raw->base.funcs = &M_RawFuncs;
+    raw->base.funcs = &m_RawFuncs;
     raw->base.name = "archive.dat";
     raw->data = Mem_Dup(archive, size);
     raw->size = size;

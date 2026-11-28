@@ -696,13 +696,13 @@ static bool M_Defeat(BOSS_STATE *const boss, const PATTERN_BANK *const patterns)
     return false;
 }
 
-static void Meira_Init(void)
+static void M_Init(void)
 {
     memset(&m_Meira, 0, sizeof(m_Meira));
     memset(&m_Midboss, 0, sizeof(m_Midboss));
 }
 
-static bool Meira_MidbossInvalidate(BOSS_STATE *const boss)
+static bool M_MidbossInvalidateCore(BOSS_STATE *const boss)
 {
     const uint8_t back = g_Stage->scroll.back;
     const uint8_t front = g_Stage->scroll.front;
@@ -712,7 +712,7 @@ static bool Meira_MidbossInvalidate(BOSS_STATE *const boss)
     return m_Midboss.active;
 }
 
-static void Meira_MidbossUpdate(
+static void M_MidbossUpdateCore(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns)
 {
     ENTITY_POINT *const position = &boss->position[g_Stage->scroll.back];
@@ -764,19 +764,19 @@ static void Meira_MidbossUpdate(
     Draw_SpriteRoll(M_Pattern(patterns, image), position->x, top);
 }
 
-static void Meira_Place(BOSS_STATE *const boss)
+static void M_Place(BOSS_STATE *const boss)
 {
     boss->position[0] = boss->position[1] = (ENTITY_POINT) { 192, 48 };
 }
 
-static void Meira_DrawEntrance(
+static void M_DrawEntrance(
     const BOSS_STATE *const boss, const PATTERN_BANK *const patterns)
 {
     const ENTITY_POINT position = boss->position[g_Stage->scroll.back];
     Draw_SpriteRoll(M_Pattern(patterns, boss->sprite), position.x, M_Top(48));
 }
 
-static void Meira_Begin(BOSS_STATE *const boss, const uint8_t rank)
+static void M_BeginCore(BOSS_STATE *const boss, const uint8_t rank)
 {
     Boss_ResetDamage(&boss->damage, 2400);
     boss->defeated = 0;
@@ -792,7 +792,7 @@ static void Meira_Begin(BOSS_STATE *const boss, const uint8_t rank)
         easy ? BULLET_FAN3_MEDIUM_AIMED : BULLET_FAN5_MEDIUM_AIMED;
 }
 
-static void Meira_Invalidate(BOSS_STATE *const boss)
+static void M_InvalidateCore(BOSS_STATE *const boss)
 {
     const uint8_t back = g_Stage->scroll.back;
     const uint8_t front = g_Stage->scroll.front;
@@ -820,7 +820,7 @@ static void Meira_Invalidate(BOSS_STATE *const boss)
     }
 }
 
-static BOSS_RESULT Meira_Update(
+static BOSS_RESULT M_UpdateCore(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns,
     const uint8_t rank)
 {
@@ -850,14 +850,14 @@ static void M_Begin(
     const TH02_SESSION *const session)
 {
     if (assets->stages[session->stage].boxes == nullptr) {
-        Meira_Place(p_BossState);
+        M_Place(p_BossState);
     }
-    Meira_Begin(p_BossState, (uint8_t)session->rank);
+    M_BeginCore(p_BossState, (uint8_t)session->rank);
 }
 
 static void M_Invalidate(const bool reduce_effects)
 {
-    Meira_Invalidate(p_BossState);
+    M_InvalidateCore(p_BossState);
 }
 
 static BOSS_RESULT M_Update(
@@ -865,22 +865,22 @@ static BOSS_RESULT M_Update(
     const BOSS_MUSIC *const music, TH02_SESSION *const session,
     const TH02_INPUT *const input)
 {
-    return Meira_Update(p_BossState, patterns, (uint8_t)session->rank);
+    return M_UpdateCore(p_BossState, patterns, (uint8_t)session->rank);
 }
 
 static bool M_MidbossInvalidate(void)
 {
-    return Meira_MidbossInvalidate(p_BossState);
+    return M_MidbossInvalidateCore(p_BossState);
 }
 
 static void M_MidbossUpdate(
     const PATTERN_BANK *const patterns, const uint8_t rank)
 {
-    Meira_MidbossUpdate(p_BossState, patterns);
+    M_MidbossUpdateCore(p_BossState, patterns);
 }
 
 const BOSS_STRATEGY g_BossMeira = {
-    .init = Meira_Init,
+    .init = M_Init,
     .begin = M_Begin,
     .invalidate = M_Invalidate,
     .update = M_Update,
@@ -888,6 +888,6 @@ const BOSS_STRATEGY g_BossMeira = {
     .midboss_invalidate = M_MidbossInvalidate,
     .midboss_update = M_MidbossUpdate,
     .talk = { .prepare = M_Prepare,
-              .place = Meira_Place,
-              .draw_scene = Meira_DrawEntrance },
+              .place = M_Place,
+              .draw_scene = M_DrawEntrance },
 };

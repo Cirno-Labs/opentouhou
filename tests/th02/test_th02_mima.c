@@ -73,7 +73,7 @@ TEST(
     const RANDOM_STATE before_random = m_Rng;
     memset(g_Video.pages[0], 5, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
-    Mima_BeginScene(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_BeginScene(TestBossFight_State(), (uint8_t)f.session.rank);
     for (int page = 0; page < 2; page++) {
         for (int pixel = 0; pixel < VIDEO_VISIBLE_SIZE; pixel++) {
             CHECK_EQ_INT(
@@ -127,7 +127,7 @@ static void M_MimaPatterns(FIXTURE *const f)
             f->assets.patterns.entries[id];
     }
     Mima_Place(TestBossFight_State());
-    Mima_BeginScene(TestBossFight_State(), (uint8_t)f->session.rank);
+    M_BeginScene(TestBossFight_State(), (uint8_t)f->session.rank);
 }
 
 TEST(mima_suspension_preserves_stage_progression)
@@ -178,7 +178,7 @@ TEST(mima_real_hits_consume_shots_while_shielded_and_spheres_ignore_damage)
         (ENTITY_POINT) { 200 * 16, 104 * 16 };
     shot->velocity.y = -128;
     CHECK_EQ_INT(
-        Mima_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns, (uint8_t)f.session.rank,
             f.session.reduce_effects),
         BOSS_RUNNING);
@@ -189,7 +189,7 @@ TEST(mima_real_hits_consume_shots_while_shielded_and_spheres_ignore_damage)
     m_Mima.damage_enable = 1;
     shot->age = 0;
     CHECK_EQ_INT(
-        Mima_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns, (uint8_t)f.session.rank,
             f.session.reduce_effects),
         BOSS_RUNNING);
@@ -202,7 +202,7 @@ TEST(mima_real_hits_consume_shots_while_shielded_and_spheres_ignore_damage)
     m_Mima.sphere_position[g_Stage->scroll.back][0] =
         (ENTITY_POINT) { 300, 120 };
     CHECK_EQ_INT(
-        Mima_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns, (uint8_t)f.session.rank,
             f.session.reduce_effects),
         BOSS_RUNNING);
@@ -228,7 +228,7 @@ TEST(mima_six_thousand_damage_awards_direct_score_without_ending_the_phase)
     m_Bomb.active = 1;
     p_Stage->world.frame = 0;
     CHECK_EQ_INT(
-        Mima_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns, (uint8_t)f.session.rank,
             f.session.reduce_effects),
         BOSS_RUNNING);
@@ -239,7 +239,7 @@ TEST(mima_six_thousand_damage_awards_direct_score_without_ending_the_phase)
     CHECK_EQ_INT(m_Player.invincibility, 200);
     CHECK_EQ_INT(m_Mima.phase, MIMA_ATTACK_FOUR);
     CHECK_EQ_INT(
-        Mima_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns, (uint8_t)f.session.rank,
             f.session.reduce_effects),
         BOSS_RUNNING);
@@ -263,7 +263,7 @@ TEST(mima_first_form_wraps_pattern_seven_and_suspends_at_its_real_boundary)
     m_Mima.damage_threshold = 1500;
     TestBossFight_State()->phase_frame = 160;
     CHECK_EQ_INT(
-        Mima_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns, (uint8_t)f.session.rank,
             f.session.reduce_effects),
         BOSS_RUNNING);
@@ -274,7 +274,7 @@ TEST(mima_first_form_wraps_pattern_seven_and_suspends_at_its_real_boundary)
     m_Mima.pattern_cycles = 201;
     TestBossFight_State()->phase_frame = 160;
     CHECK_EQ_INT(
-        Mima_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns, (uint8_t)f.session.rank,
             f.session.reduce_effects),
         BOSS_WAIT);
@@ -284,7 +284,7 @@ TEST(mima_first_form_wraps_pattern_seven_and_suspends_at_its_real_boundary)
     const BOSS_STATE boss = (*TestBossFight_State());
     const RANDOM_STATE before_random = m_Rng;
     CHECK_EQ_INT(
-        Mima_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns, (uint8_t)f.session.rank,
             f.session.reduce_effects),
         BOSS_WAIT);
@@ -307,14 +307,14 @@ TEST(mima_expanding_spheres_keep_the_source_birth_center_and_cleanup_guard)
     m_Mima.expand_angle = 0;
     TestBossFight_State()->phase_frame = 79;
     CHECK_EQ_INT(
-        Mima_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns, (uint8_t)f.session.rank,
             f.session.reduce_effects),
         BOSS_RUNNING);
     CHECK_EQ_INT(m_Mima.sphere_position[g_Stage->scroll.back][0].x, 18);
     CHECK_EQ_INT(m_Mima.sphere_position[g_Stage->scroll.back][0].y, 9);
     CHECK_EQ_INT(
-        Mima_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns, (uint8_t)f.session.rank,
             f.session.reduce_effects),
         BOSS_RUNNING);
@@ -327,7 +327,7 @@ TEST(mima_expanding_spheres_keep_the_source_birth_center_and_cleanup_guard)
         m_Mima.sphere_position[g_Stage->scroll.back][i] =
             (ENTITY_POINT) { 128, tops[i] };
     }
-    Mima_Invalidate(TestBossFight_State(), f.session.reduce_effects);
+    M_InvalidateCore(TestBossFight_State(), f.session.reduce_effects);
     CHECK_EQ_INT(m_Mima.sphere_active[0], 2);
     CHECK_EQ_INT(m_Mima.sphere_active[1], 0);
     CHECK_EQ_INT(m_Mima.sphere_active[2], 0);
@@ -367,7 +367,7 @@ TEST(mima_form_dialogue_resumes_once_or_aborts_before_final_score_commit)
         banks.patterns[MIMA_BANK_SECOND].next = 131;
         g->assets.bosses.mima = banks;
         Mima_Place(TestBossFight_State());
-        Mima_BeginScene(TestBossFight_State(), (uint8_t)f.session.rank);
+        M_BeginScene(TestBossFight_State(), (uint8_t)f.session.rank);
         m_Mima.phase = MIMA_FORM;
         m_Mima.form = 1;
         m_Mima.damage_enable = 0;
@@ -452,7 +452,7 @@ TEST(mima_form_dialogue_resumes_once_or_aborts_before_final_score_commit)
         const SCORE score = *g_Score;
         const MIMA mima = m_Mima;
         CHECK_EQ_INT(
-            Mima_Update(
+            M_UpdateCore(
                 TestBossFight_State(), &g->assets.patterns,
                 (uint8_t)f.session.rank, f.session.reduce_effects),
             BOSS_WAIT);
@@ -549,7 +549,7 @@ TEST(mima_hp_hook_waits_for_each_phase_setup_including_final_form)
     TEST_BOSS_HP hp;
     TestBossHp_Begin(&hp);
     BOSS_STATE *const boss = TestBossFight_State();
-    Mima_BeginScene(boss, 1);
+    M_BeginScene(boss, 1);
     CHECK_EQ_INT(hp.count, 0);
     static const int16_t phases[] = {
         MIMA_APPEAR,
@@ -562,7 +562,8 @@ TEST(mima_hp_hook_waits_for_each_phase_setup_including_final_form)
         m_Mima.phase = phases[i];
         boss->phase_frame = 100;
         CHECK_EQ_INT(
-            Mima_Update(boss, &TestGameplay_State()->assets.patterns, 1, false),
+            M_UpdateCore(
+                boss, &TestGameplay_State()->assets.patterns, 1, false),
             BOSS_RUNNING);
         CHECK_EQ_INT(hp.count, i + 1);
         CHECK_EQ_INT(boss->damage, thresholds[i] - 1);

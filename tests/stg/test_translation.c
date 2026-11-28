@@ -24,7 +24,7 @@ typedef enum {
     TEST_STRINGS(M_STRING_ID) STRING_COUNT,
 } STRING;
 
-static const char *g_Strings[STRING_COUNT] = { TEST_STRINGS(M_DEFAULT) };
+static const char *m_Strings[STRING_COUNT] = { TEST_STRINGS(M_DEFAULT) };
 static const char *const m_Defaults[STRING_COUNT] = { TEST_STRINGS(M_DEFAULT) };
 static const uint32_t m_Addresses[STRING_COUNT] = { TEST_STRINGS(M_ADDRESS) };
 static const char *const m_StringKeys[STRING_COUNT] = {
@@ -34,7 +34,7 @@ static const char *const m_StringKeys[STRING_COUNT] = {
 static const TRANSLATION_GAME m_Game = {
     .id = "game",
     .image_base = 0x400000,
-    .strings = g_Strings,
+    .strings = m_Strings,
     .defaults = m_Defaults,
     .addresses = m_Addresses,
     .string_keys = m_StringKeys,
@@ -84,9 +84,9 @@ TEST(named_patch_strings_do_not_need_a_retail_address)
         "{'game clear label': '(Clear)'}",
     };
     M_Begin("named_string", files, 2);
-    CHECK_EQ_STR(g_Strings[STRING_CLEAR_LABEL], "(Clear)");
+    CHECK_EQ_STR(m_Strings[STRING_CLEAR_LABEL], "(Clear)");
     M_End();
-    CHECK_EQ_STR(g_Strings[STRING_CLEAR_LABEL], "(C)");
+    CHECK_EQ_STR(m_Strings[STRING_CLEAR_LABEL], "(C)");
 }
 
 TEST(exe_strings_take_their_translation_by_address)
@@ -99,11 +99,11 @@ TEST(exe_strings_take_their_translation_by_address)
          "'game Bomb Name': 'Spirit Sign <b$\"Fantasy Seal\"$>'}"),
     };
     M_Begin("exe_strings", files, 4);
-    CHECK_EQ_STR(g_Strings[STRING_SONG_NAME_FORMAT], "BGM: %s");
-    CHECK_EQ_STR(g_Strings[STRING_BOMB_NAME], "Spirit Sign \"Fantasy Seal\"");
+    CHECK_EQ_STR(m_Strings[STRING_SONG_NAME_FORMAT], "BGM: %s");
+    CHECK_EQ_STR(m_Strings[STRING_BOMB_NAME], "Spirit Sign \"Fantasy Seal\"");
     M_End();
-    CHECK_EQ_STR(g_Strings[STRING_SONG_NAME_FORMAT], "@%s");
-    CHECK_EQ_STR(g_Strings[STRING_BOMB_NAME], "Bomb Name");
+    CHECK_EQ_STR(m_Strings[STRING_SONG_NAME_FORMAT], "@%s");
+    CHECK_EQ_STR(m_Strings[STRING_BOMB_NAME], "Bomb Name");
 }
 
 TEST(markup_that_drops_a_conversion_is_rejected)
@@ -115,7 +115,7 @@ TEST(markup_that_drops_a_conversion_is_rejected)
         "{song: '<s$%s$> hidden'}",
     };
     M_Begin("markup_rejected", files, 4);
-    CHECK_EQ_STR(g_Strings[STRING_SONG_NAME_FORMAT], "@%s");
+    CHECK_EQ_STR(m_Strings[STRING_SONG_NAME_FORMAT], "@%s");
     M_End();
 }
 
@@ -219,7 +219,7 @@ TEST(no_patches_translate_nothing)
     CHECK(!Translation_HasBaseTsa());
     CHECK(Translation_GetFont() == nullptr);
     CHECK_EQ_STR(Translation_GetSpellName(0, "original"), "original");
-    CHECK_EQ_STR(g_Strings[STRING_SONG_NAME_FORMAT], "@%s");
+    CHECK_EQ_STR(m_Strings[STRING_SONG_NAME_FORMAT], "@%s");
     CHECK(Translation_GetMusicComment(0, 0) == nullptr);
     Translation_Shutdown();
 }

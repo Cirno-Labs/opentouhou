@@ -1141,7 +1141,7 @@ static void M_DrawBody(
     }
 }
 
-static void Mima_Init(void)
+static void M_Init(void)
 {
     memset(&m_Mima, 0, sizeof(m_Mima));
 }
@@ -1180,7 +1180,7 @@ void Mima_DrawBody(BOSS_STATE *const boss, const PATTERN_BANK *const patterns)
     M_DrawBody(boss, patterns);
 }
 
-static void Mima_BeginScene(BOSS_STATE *const boss, const uint8_t rank)
+static void M_BeginScene(BOSS_STATE *const boss, const uint8_t rank)
 {
     Shots_FreeAll();
     Boss_BeginStage(boss);
@@ -1215,7 +1215,7 @@ static void Mima_BeginScene(BOSS_STATE *const boss, const uint8_t rank)
     Clip_SetPlayfield();
 }
 
-static void Mima_Invalidate(BOSS_STATE *const boss, const bool reduce_effects)
+static void M_InvalidateCore(BOSS_STATE *const boss, const bool reduce_effects)
 {
     M_SphereCleanup();
     boss->position[g_Stage->scroll.back] =
@@ -1296,7 +1296,7 @@ BOSS_RESULT Mima_EndTransition(BOSS_STATE *const boss, const bool continued)
     return BOSS_RUNNING;
 }
 
-static BOSS_RESULT Mima_Update(
+static BOSS_RESULT M_UpdateCore(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns,
     const uint8_t rank, const bool reduce_effects)
 {
@@ -1321,12 +1321,12 @@ static void M_Begin(
             MIMA_BANK_FIRST);
         Mima_Place(p_BossState);
     }
-    Mima_BeginScene(p_BossState, (uint8_t)session->rank);
+    M_BeginScene(p_BossState, (uint8_t)session->rank);
 }
 
 static void M_Invalidate(const bool reduce_effects)
 {
-    Mima_Invalidate(p_BossState, reduce_effects);
+    M_InvalidateCore(p_BossState, reduce_effects);
 }
 
 static BOSS_RESULT M_Update(
@@ -1334,7 +1334,7 @@ static BOSS_RESULT M_Update(
     const BOSS_MUSIC *const music, TH02_SESSION *const session,
     const TH02_INPUT *const input)
 {
-    const BOSS_RESULT result = Mima_Update(
+    const BOSS_RESULT result = M_UpdateCore(
         p_BossState, patterns, (uint8_t)session->rank, session->reduce_effects);
     if (result == BOSS_WAIT) {
         const BOSS_RESULT transition = g_BossMima.talk.transition(
@@ -1349,7 +1349,7 @@ static BOSS_RESULT M_Update(
 }
 
 const BOSS_STRATEGY g_BossMima = {
-    .init = Mima_Init,
+    .init = M_Init,
     .begin = M_Begin,
     .invalidate = M_Invalidate,
     .update = M_Update,

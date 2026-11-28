@@ -1219,7 +1219,7 @@ static void M_Wander(BOSS_STATE *const boss)
     }
 }
 
-static void Marisa_Init(void)
+static void M_Init(void)
 {
     memset(&m_Marisa, 0, sizeof(m_Marisa));
     M_DotsInit();
@@ -1228,7 +1228,7 @@ static void Marisa_Init(void)
     m_Marisa.bomb_mask = 1;
 }
 
-static bool Marisa_MidbossInvalidate(BOSS_STATE *const boss)
+static bool M_MidbossInvalidateCore(BOSS_STATE *const boss)
 {
     m_Marisa.midboss_page = g_Stage->scroll.back;
     ENTITY_POINT *const position = M_Position(boss);
@@ -1237,7 +1237,7 @@ static bool Marisa_MidbossInvalidate(BOSS_STATE *const boss)
     return m_Marisa.midboss_active;
 }
 
-static void Marisa_MidbossUpdate(
+static void M_MidbossUpdateCore(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns,
     const uint8_t rank)
 {
@@ -1331,7 +1331,7 @@ void Marisa_Place(BOSS_STATE *const boss)
     boss->sprite = 128;
 }
 
-static void Marisa_DrawBody(
+static void M_DrawBody(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns)
 {
     if (boss->hit_flash != 0) {
@@ -1348,11 +1348,11 @@ static void Marisa_DrawBody(
 void Marisa_DrawScene(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns)
 {
-    Marisa_DrawBody(boss, patterns);
+    M_DrawBody(boss, patterns);
     BossScene_DrawPlayer(patterns);
 }
 
-static void Marisa_Begin(BOSS_STATE *const boss, const uint8_t rank)
+static void M_BeginCore(BOSS_STATE *const boss, const uint8_t rank)
 {
     MARISA *const marisa = &m_Marisa;
     Background_SetMode(TILE_DISABLED);
@@ -1379,7 +1379,7 @@ static void Marisa_Begin(BOSS_STATE *const boss, const uint8_t rank)
     M_Rank(rank);
 }
 
-static void Marisa_Invalidate(BOSS_STATE *const boss, const bool reduce_effects)
+static void M_InvalidateCore(BOSS_STATE *const boss, const bool reduce_effects)
 {
     const CLIP full = { 0, 0, 639, 399 };
     Grcg_SetColor(0);
@@ -1395,7 +1395,7 @@ static void Marisa_Invalidate(BOSS_STATE *const boss, const bool reduce_effects)
     Grcg_Off();
 }
 
-static BOSS_RESULT Marisa_Update(
+static BOSS_RESULT M_UpdateCore(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns,
     const uint8_t rank, const bool reduce_effects)
 {
@@ -1494,7 +1494,7 @@ static BOSS_RESULT Marisa_Update(
             return BOSS_FINISHED;
         }
     } else {
-        Marisa_DrawBody(boss, patterns);
+        M_DrawBody(boss, patterns);
     }
     for (i = 0; i < MARISA_BIT_COUNT; i++) {
         if (marisa->bit_state[i] == 1) {
@@ -1708,12 +1708,12 @@ static void M_Begin(
             assets->marisa.combat.next != 0 ? &assets->marisa : nullptr, true);
         Marisa_Place(p_BossState);
     }
-    Marisa_Begin(p_BossState, (uint8_t)session->rank);
+    M_BeginCore(p_BossState, (uint8_t)session->rank);
 }
 
 static void M_Invalidate(const bool reduce_effects)
 {
-    Marisa_Invalidate(p_BossState, reduce_effects);
+    M_InvalidateCore(p_BossState, reduce_effects);
 }
 
 static BOSS_RESULT M_Update(
@@ -1721,23 +1721,23 @@ static BOSS_RESULT M_Update(
     const BOSS_MUSIC *const music, TH02_SESSION *const session,
     const TH02_INPUT *const input)
 {
-    return Marisa_Update(
+    return M_UpdateCore(
         p_BossState, patterns, (uint8_t)session->rank, session->reduce_effects);
 }
 
 static bool M_MidbossInvalidate(void)
 {
-    return Marisa_MidbossInvalidate(p_BossState);
+    return M_MidbossInvalidateCore(p_BossState);
 }
 
 static void M_MidbossUpdate(
     const PATTERN_BANK *const patterns, const uint8_t rank)
 {
-    Marisa_MidbossUpdate(p_BossState, patterns, rank);
+    M_MidbossUpdateCore(p_BossState, patterns, rank);
 }
 
 const BOSS_STRATEGY g_BossMarisa = {
-    .init = Marisa_Init,
+    .init = M_Init,
     .begin = M_Begin,
     .invalidate = M_Invalidate,
     .update = M_Update,

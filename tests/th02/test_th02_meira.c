@@ -14,7 +14,7 @@ static void M_MeiraStep(FIXTURE *const f, const int16_t frame)
 {
     TestBossFight_State()->phase_frame = frame;
     CHECK_EQ_INT(
-        Meira_Update(
+        M_UpdateCore(
             TestBossFight_State(), &TestGameplay_State()->assets.patterns,
             (uint8_t)f->session.rank),
         BOSS_RUNNING);
@@ -23,8 +23,8 @@ static void M_MeiraStep(FIXTURE *const f, const int16_t frame)
 static void M_MeiraDash(FIXTURE *const f, const unsigned flowers)
 {
     TestBossFight_State()->sprite = 141;
-    Meira_Place(TestBossFight_State());
-    Meira_Begin(TestBossFight_State(), (uint8_t)f->session.rank);
+    M_Place(TestBossFight_State());
+    M_BeginCore(TestBossFight_State(), (uint8_t)f->session.rank);
     m_Player.current = (ENTITY_POINT) { 0, 336 };
     M_MeiraStep(f, 90);
     M_MeiraStep(f, 19);
@@ -35,7 +35,7 @@ static void M_MeiraDash(FIXTURE *const f, const unsigned flowers)
 
 static void M_MeiraFlight(FIXTURE *const f)
 {
-    Meira_Begin(TestBossFight_State(), (uint8_t)f->session.rank);
+    M_BeginCore(TestBossFight_State(), (uint8_t)f->session.rank);
     TestBossFight_State()->damage = 701;
     M_MeiraStep(f, 90);
     TestBossFight_State()->position[g_Stage->scroll.back] =
@@ -62,7 +62,7 @@ TEST(stage_two_midboss_enters_through_modules_and_activates_lightning)
     TestBossFight_State()->position[0] = TestBossFight_State()->position[1] =
         (ENTITY_POINT) { 192, 64 };
     for (int frame = 0; frame < 13; frame++) {
-        Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
+        M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     }
     TestBossFight_State()->phase_frame = 0;
     TestBossFight_State()->position[0].y = 41;
@@ -110,17 +110,17 @@ TEST(
     shot->state = ENTITY_ACTIVE;
     shot->sprite = 50;
     shot->position[p_Stage->scroll.back] = (ENTITY_POINT) { 208 * 16, 80 * 16 };
-    Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
+    M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(BossFight_State()->damage, 71);
     CHECK_EQ_INT(m_Score.delta, 6);
     CHECK_EQ_INT(shot->age, 2);
     CHECK_EQ_INT(g_Sparks->next, 1);
-    Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
+    M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(BossFight_State()->damage, 71);
     CHECK_EQ_INT(m_Score.delta, 6);
     TestBossFight_State()->phase_frame = 319;
     shot->age = 0;
-    Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
+    M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(BossFight_State()->phase_frame, 320);
     CHECK_EQ_INT(BossFight_State()->damage, 77);
     CHECK_EQ_INT(m_Score.delta, 12);
@@ -137,7 +137,7 @@ TEST(stage_two_midboss_defeat_clears_shared_flag_after_three_sprite_bursts)
     f.session.stage = 1;
     TestBossFight_State()->position[0] = TestBossFight_State()->position[1] =
         (ENTITY_POINT) { 192, 64 };
-    Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
+    M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     TestBossFight_State()->position[0] = TestBossFight_State()->position[1] =
         (ENTITY_POINT) { 192, 64 };
     TestBossFight_State()->phase_frame = 320;
@@ -146,20 +146,20 @@ TEST(stage_two_midboss_defeat_clears_shared_flag_after_three_sprite_bursts)
     m_Bomb.active = 1;
     p_Stage->world.midboss_active = 1;
     m_Player.invincibility = 17;
-    Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
+    M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(BossFight_State()->damage, 381);
     CHECK_EQ_INT(BossFight_State()->defeated, 0);
     CHECK_EQ_INT(m_Score.delta, 1);
     p_Stage->scroll.line = 239;
-    Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
+    M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(BossFight_State()->damage, 382);
     CHECK_EQ_INT(BossFight_State()->defeated, 1);
     CHECK_EQ_INT(m_Score.delta, 20002);
     const uint16_t next = g_Sparks->next;
     unsigned expected = 0;
     for (int frame = 1; frame <= 64; frame++) {
-        CHECK(Meira_MidbossInvalidate(TestBossFight_State()));
-        Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
+        CHECK(M_MidbossInvalidateCore(TestBossFight_State()));
+        M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
         if (frame == 6 || frame == 22 || frame == 38) {
             expected += 24;
         }
@@ -192,7 +192,7 @@ TEST(stage_two_midboss_chase_bullets_read_live_performance_page_and_bomb)
     TestBossFight_State()->phase_frame = 383;
     m_Performance.value = 48;
     const RANDOM_STATE before_random = m_Rng;
-    Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
+    M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(g_Bullets->slots[0].state, ENTITY_ACTIVE);
     CHECK_EQ_INT(g_Bullets->slots[0].motion, BULLET_MOTION_CHASE);
     CHECK_EQ_INT(g_Bullets->slots[0].sprite, 84);
@@ -202,13 +202,13 @@ TEST(stage_two_midboss_chase_bullets_read_live_performance_page_and_bomb)
     TestBossFight_State()->phase_frame = 391;
     m_Performance.value = 24;
     p_Stage->scroll.back = 1;
-    Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
+    M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(g_Bullets->slots[1].state, ENTITY_ACTIVE);
     CHECK_EQ_INT(g_Bullets->slots[1].speed, 45);
     CHECK_EQ_INT(g_Bullets->slots[1].position[1].x, 220 * 16);
     TestBossFight_State()->phase_frame = 399;
     m_Bomb.active = 1;
-    Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
+    M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(g_Bullets->slots[2].state, ENTITY_FREE);
     CHECK(memcmp(&m_Rng, &before_random, sizeof(before_random)) == 0);
     Arena_Free(&f.arena);
@@ -228,14 +228,14 @@ TEST(stage_two_midboss_timeout_waits_for_no_hit_without_award_or_sound)
     p_Stage->scroll.line = 240;
     m_Bomb.active = 1;
     p_Stage->world.frame = 2;
-    Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
+    M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(BossFight_State()->defeated, 0);
     CHECK_EQ_INT(BossFight_State()->damage, 381);
     CHECK_EQ_INT(m_Score.delta, 1);
     SoundEffects_Update();
     TestSound_Check(&sound, 4);
     p_Stage->world.frame = 3;
-    Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
+    M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(BossFight_State()->defeated, 1);
     CHECK_EQ_INT(m_Score.delta, 1);
     CHECK_EQ_INT(m_Midboss.kill_frame, 0);
@@ -259,7 +259,7 @@ TEST(meira_entry_preserves_clocks_flowers_and_attack_history)
     TestBossFight_State()->defeated = 1;
     for (int frame = 0; frame < 9; frame++) {
         CHECK_EQ_INT(
-            Meira_Update(
+            M_UpdateCore(
                 TestBossFight_State(), &game->assets.patterns,
                 (uint8_t)f.session.rank),
             BOSS_RUNNING);
@@ -272,8 +272,8 @@ TEST(meira_entry_preserves_clocks_flowers_and_attack_history)
     TestBossFight_State()->damage = 999;
     TestBossFight_State()->defeated = 1;
     TestBossFight_State()->sprite = 141;
-    Meira_Place(TestBossFight_State());
-    Meira_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_Place(TestBossFight_State());
+    M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     CHECK_EQ_INT(BossFight_State()->position[0].x, 192);
     CHECK_EQ_INT(BossFight_State()->position[1].y, 48);
     CHECK_EQ_INT(g_Stage->world.frame, 900);
@@ -292,11 +292,11 @@ TEST(meira_entry_preserves_clocks_flowers_and_attack_history)
     CHECK(!m_Meira.trail_active);
     CHECK_EQ_INT(m_Meira.fan_pattern, BULLET_FAN3_WIDE);
     f.session.rank = 1;
-    Meira_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     CHECK_EQ_INT(m_Meira.fan_pattern, BULLET_FAN5_WIDE);
     CHECK_EQ_INT(m_Meira.burst_pattern, BULLET_FAN5_MEDIUM_AIMED);
     TestBossFight_State()->phase_frame = 0;
-    Meira_MidbossUpdate(TestBossFight_State(), &game->assets.patterns);
+    M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK(m_Midboss.active);
     f.stage.stage = (uint8_t)f.session.stage;
     TestGameplay_Start(&f);
@@ -314,12 +314,12 @@ TEST(meira_changes_phase_only_after_the_source_pattern_completes)
     TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     TestBossFight_State()->sprite = 141;
-    Meira_Place(TestBossFight_State());
-    Meira_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_Place(TestBossFight_State());
+    M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     TestBossFight_State()->damage = 701;
     TestBossFight_State()->phase_frame = 90;
     CHECK_EQ_INT(
-        Meira_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank),
         1);
@@ -337,7 +337,7 @@ TEST(meira_changes_phase_only_after_the_source_pattern_completes)
     TestBossFight_State()->damage = 701;
     TestBossFight_State()->phase_frame = 115;
     CHECK_EQ_INT(
-        Meira_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank),
         1);
@@ -347,13 +347,13 @@ TEST(meira_changes_phase_only_after_the_source_pattern_completes)
     TestBossFight_State()->damage = 1501;
     TestBossFight_State()->phase_frame = 118;
     CHECK_EQ_INT(
-        Meira_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank),
         1);
     CHECK_EQ_INT(m_Meira.phase, MEIRA_PRESSURE);
     CHECK_EQ_INT(
-        Meira_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank),
         1);
@@ -379,7 +379,7 @@ TEST(meira_lethal_hit_runs_flowers_and_clears_only_after_96_defeat_updates)
     m_Player.current =
         (ENTITY_POINT) { flower->position.x - 16, flower->position.y - 1 };
     CHECK_EQ_INT(
-        Meira_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank),
         1);
@@ -391,9 +391,9 @@ TEST(meira_lethal_hit_runs_flowers_and_clears_only_after_96_defeat_updates)
     CHECK_EQ_INT(flower->frames_left, 0);
     const uint32_t world_frame = g_Stage->world.frame;
     for (int frame = 1; frame < 96; frame++) {
-        Meira_Invalidate(TestBossFight_State());
+        M_InvalidateCore(TestBossFight_State());
         CHECK_EQ_INT(
-            Meira_Update(
+            M_UpdateCore(
                 TestBossFight_State(), &game->assets.patterns,
                 (uint8_t)f.session.rank),
             1);
@@ -406,7 +406,7 @@ TEST(meira_lethal_hit_runs_flowers_and_clears_only_after_96_defeat_updates)
     CHECK(remaining > 0);
     TestBossFight_State()->defeated = 1;
     CHECK_EQ_INT(
-        Meira_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank),
         2);
@@ -428,7 +428,7 @@ TEST(meira_flowers_keep_easy_parity_wrap_and_deferred_cleanup)
         while (m_Meira.flowers[0].flag == ENTITY_ACTIVE) {
             M_MeiraStep(&f, 32);
         }
-        Meira_Invalidate(TestBossFight_State());
+        M_InvalidateCore(TestBossFight_State());
     }
     CHECK_EQ_INT(m_Meira.flower_fire_i, 255);
     M_MeiraDash(&f, 2);
@@ -441,7 +441,7 @@ TEST(meira_flowers_keep_easy_parity_wrap_and_deferred_cleanup)
     const uint8_t reserved = m_Meira.flowers[0].reserved;
     TestBossFight_State()->phase_frame = 32;
     CHECK_EQ_INT(
-        Meira_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank),
         1);
@@ -458,7 +458,7 @@ TEST(meira_flowers_keep_easy_parity_wrap_and_deferred_cleanup)
     CHECK_EQ_INT(g_Bullets->slots[1].state, ENTITY_FREE);
     CHECK_EQ_INT(m_Meira.flowers[0].flag, ENTITY_REMOVE);
     CHECK_EQ_INT(m_Meira.flowers[1].flag, ENTITY_REMOVE);
-    Meira_Invalidate(TestBossFight_State());
+    M_InvalidateCore(TestBossFight_State());
     CHECK_EQ_INT(m_Meira.flowers[0].flag, ENTITY_FREE);
     CHECK_EQ_INT(m_Meira.flowers[1].flag, ENTITY_FREE);
     CHECK_EQ_INT(m_Meira.flowers[0].reserved, reserved);
@@ -470,7 +470,7 @@ TEST(meira_trail_cleanup_requires_both_coordinates_to_differ)
     FIXTURE f;
     TestGameplay_FixtureInit(&f);
     TestBossFight_State()->sprite = 141;
-    Meira_Place(TestBossFight_State());
+    M_Place(TestBossFight_State());
     M_MeiraFlight(&f);
     M_MeiraStep(&f, 49);
     const ENTITY_POINT trail[3] = { { 96, 48 }, { 192, 112 }, { 96, 112 } };
@@ -486,7 +486,7 @@ TEST(meira_trail_cleanup_requires_both_coordinates_to_differ)
     p_Stage->scroll.front = 1;
     TestBossFight_State()->position[0] = (ENTITY_POINT) { 192, 48 };
     TestBossFight_State()->position[1] = (ENTITY_POINT) { 224, 80 };
-    Meira_Invalidate(TestBossFight_State());
+    M_InvalidateCore(TestBossFight_State());
     CHECK_EQ_INT(p_Background->cache.dirty[4][3], 0);
     CHECK_EQ_INT(p_Background->cache.dirty[10][7], 0);
     CHECK_EQ_INT(p_Background->cache.dirty[4][7], 1);

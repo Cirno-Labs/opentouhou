@@ -122,7 +122,7 @@ static void M_Close(VFS_SOURCE *const base)
     Allocator_Free(source->allocator, source, sizeof(*source));
 }
 
-static const VFS_SOURCE_FUNCS M_Funcs = {
+static const VFS_SOURCE_FUNCS m_Funcs = {
     .contains = M_Contains,
     .open = M_Open,
     .list = M_List,
@@ -152,7 +152,7 @@ VFS_SOURCE *Patch_CreateSource(
     const PATCH_STACK *const stack, const ALLOCATOR *const allocator)
 {
     M_SOURCE *const source = Allocator_AllocZ(allocator, sizeof(*source));
-    source->base.funcs = &M_Funcs;
+    source->base.funcs = &m_Funcs;
     source->base.name = "patches";
     source->stack = stack;
     source->allocator = allocator;

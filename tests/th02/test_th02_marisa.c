@@ -58,18 +58,18 @@ TEST(stage_four_midboss_kill_requires_a_new_hit_inside_the_rolled_y_band)
     m_Bomb.active = 1;
     p_Stage->world.frame = 0;
     p_Stage->world.midboss_row = 944;
-    Marisa_MidbossUpdate(
+    M_MidbossUpdateCore(
         TestBossFight_State(), &game->assets.patterns, (uint8_t)f.session.rank);
     CHECK_EQ_INT(BossFight_State()->damage, 400);
     CHECK_EQ_INT(BossFight_State()->defeated, 0);
     p_Stage->scroll.line = 49;
     p_Stage->world.frame = 1;
-    Marisa_MidbossUpdate(
+    M_MidbossUpdateCore(
         TestBossFight_State(), &game->assets.patterns, (uint8_t)f.session.rank);
     CHECK_EQ_INT(BossFight_State()->defeated, 0);
     CHECK_EQ_INT(m_Score.delta, 1);
     p_Stage->world.frame = 2;
-    Marisa_MidbossUpdate(
+    M_MidbossUpdateCore(
         TestBossFight_State(), &game->assets.patterns, (uint8_t)f.session.rank);
     CHECK_EQ_INT(BossFight_State()->defeated, 1);
     CHECK_EQ_INT(BossFight_State()->damage, 401);
@@ -78,8 +78,8 @@ TEST(stage_four_midboss_kill_requires_a_new_hit_inside_the_rolled_y_band)
     CHECK_EQ_INT(BossFight_State()->hit_flash, 0);
     m_Marisa.midboss_active = true;
     for (int frame = 0; frame < 64; frame++) {
-        CHECK(Marisa_MidbossInvalidate(TestBossFight_State()));
-        Marisa_MidbossUpdate(
+        CHECK(M_MidbossInvalidateCore(TestBossFight_State()));
+        M_MidbossUpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank);
     }
@@ -90,7 +90,7 @@ TEST(stage_four_midboss_kill_requires_a_new_hit_inside_the_rolled_y_band)
     CHECK_EQ_INT(g_Stage->world.midboss_row, 1632);
     CHECK_EQ_INT(m_Shots.target.x, -1);
     CHECK_EQ_INT(m_Shots.target.y, -1);
-    CHECK(!Marisa_MidbossInvalidate(TestBossFight_State()));
+    CHECK(!M_MidbossInvalidateCore(TestBossFight_State()));
     Arena_Free(&f.arena);
 }
 
@@ -103,7 +103,7 @@ TEST(stage_four_second_midboss_enters_right_and_drops_a_life)
     m_Marisa.direction = -1;
     p_Stage->world.midboss_row = 1632;
     p_Stage->scroll.line = 0;
-    Marisa_MidbossUpdate(
+    M_MidbossUpdateCore(
         TestBossFight_State(), &game->assets.patterns, (uint8_t)f.session.rank);
     CHECK_EQ_INT(BossFight_State()->position[0].x, 312);
     CHECK_EQ_INT(BossFight_State()->sprite, 149);
@@ -114,7 +114,7 @@ TEST(stage_four_second_midboss_enters_right_and_drops_a_life)
     m_Bomb.active = 1;
     p_Stage->world.frame = 0;
     m_Score.lives = 4;
-    Marisa_MidbossUpdate(
+    M_MidbossUpdateCore(
         TestBossFight_State(), &game->assets.patterns, (uint8_t)f.session.rank);
     CHECK_EQ_INT(BossFight_State()->defeated, 1);
     CHECK_EQ_INT(g_Items->slots[0].kind, ITEM_LIFE);
@@ -138,7 +138,7 @@ TEST(stage_four_midboss_timeout_does_not_award_and_stops_before_hit_testing)
     TestBossFight_State()->damage = 500;
     m_Bomb.active = 1;
     p_Stage->world.frame = 0;
-    Marisa_MidbossUpdate(
+    M_MidbossUpdateCore(
         TestBossFight_State(), &game->assets.patterns, (uint8_t)f.session.rank);
     CHECK(!m_Marisa.midboss_active);
     CHECK_EQ_INT(m_Marisa.position.x, 0);
@@ -176,7 +176,7 @@ TEST(marisa_flash_uses_masks_and_keeps_shifted_edge_pixels)
     TestBossFight_State()->sprite = 128;
     TestBossFight_State()->hit_flash = 1;
     m_Marisa.position = (ENTITY_POINT) { 415, 15 };
-    Marisa_DrawBody(TestBossFight_State(), &game->assets.patterns);
+    M_DrawBody(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(BossFight_State()->hit_flash, 0);
     CHECK_EQ_INT(g_Video.pages[1][15 * 640 + 415], 15);
     CHECK_EQ_INT(g_Video.pages[1][16 * 640 + 414], 15);
@@ -202,7 +202,7 @@ TEST(marisa_orb_clear_ignores_x_clip_and_keeps_bytebox_row_traversal)
     M_MarisaPatterns(&f);
     GAMEPLAY *const game = TestGameplay_State();
     Marisa_Place(TestBossFight_State());
-    Marisa_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     m_Marisa.phase = 3;
     p_Stage->scroll.front = 1;
     p_Stage->scroll.back = 0;
@@ -215,7 +215,7 @@ TEST(marisa_orb_clear_ignores_x_clip_and_keeps_bytebox_row_traversal)
     memset(g_Video.pages[0], 15, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 15, VIDEO_PAGE_SIZE);
     CHECK_EQ_INT(
-        Marisa_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank, f.session.reduce_effects),
         1);
@@ -244,7 +244,7 @@ TEST(marisa_particles_spawn_move_and_retain_the_pool_across_begin)
     M_MarisaPatterns(&f);
     GAMEPLAY *const game = TestGameplay_State();
     Marisa_Place(TestBossFight_State());
-    Marisa_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     m_Marisa.phase = 3;
     p_Stage->world.frame = 1;
     p_Stage->scroll.back = 0;
@@ -252,7 +252,7 @@ TEST(marisa_particles_spawn_move_and_retain_the_pool_across_begin)
     memset(m_Rng.ring, 0, sizeof(m_Rng.ring));
     const uint8_t cursor = m_Rng.cursor;
     CHECK_EQ_INT(
-        Marisa_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank, f.session.reduce_effects),
         1);
@@ -266,7 +266,7 @@ TEST(marisa_particles_spawn_move_and_retain_the_pool_across_begin)
     CHECK_EQ_INT(dot->position[1].x, 32 * 16);
     CHECK_EQ_INT(m_Rng.cursor, (uint8_t)(cursor + 1));
     CHECK_EQ_INT(g_Video.pages[0][16 * 640 + 30], 9);
-    Marisa_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     CHECK_EQ_INT(dot->flag, ENTITY_ACTIVE);
     CHECK_EQ_INT(dot->speed, 28);
     m_Marisa.phase = 3;
@@ -274,7 +274,7 @@ TEST(marisa_particles_spawn_move_and_retain_the_pool_across_begin)
     dot->speed = 254;
     dot->angle = 0;
     CHECK_EQ_INT(
-        Marisa_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank, f.session.reduce_effects),
         1);
@@ -289,7 +289,7 @@ TEST(marisa_particle_cleanup_copies_pages_and_frees_skipped_slots)
     TestGameplay_FixtureInit(&f);
     M_MarisaPatterns(&f);
     Marisa_Place(TestBossFight_State());
-    Marisa_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     p_Stage->scroll.back = 0;
     p_Stage->scroll.front = 1;
     f.session.reduce_effects = true;
@@ -307,7 +307,7 @@ TEST(marisa_particle_cleanup_copies_pages_and_frees_skipped_slots)
     };
     memset(g_Video.pages[0], 15, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 7, VIDEO_PAGE_SIZE);
-    Marisa_Invalidate(TestBossFight_State(), f.session.reduce_effects);
+    M_InvalidateCore(TestBossFight_State(), f.session.reduce_effects);
     CHECK_EQ_INT(alive->position[0].x, 100 * 16);
     CHECK_EQ_INT(alive->position[0].y, 90 * 16);
     CHECK_EQ_INT(removed->flag, ENTITY_FREE);
@@ -328,7 +328,7 @@ TEST(marisa_particles_cull_before_drawing_and_move_skipped_slots)
     M_MarisaPatterns(&f);
     GAMEPLAY *const game = TestGameplay_State();
     Marisa_Place(TestBossFight_State());
-    Marisa_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     m_Marisa.phase = 3;
     p_Stage->world.frame = 2;
     p_Stage->scroll.back = 0;
@@ -347,7 +347,7 @@ TEST(marisa_particles_cull_before_drawing_and_move_skipped_slots)
     };
     memset(g_Video.pages[0], 15, VIDEO_PAGE_SIZE);
     CHECK_EQ_INT(
-        Marisa_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank, f.session.reduce_effects),
         1);
@@ -359,7 +359,7 @@ TEST(marisa_particles_cull_before_drawing_and_move_skipped_slots)
     CHECK_EQ_INT(m_Marisa.dots[1].position[0].x, 100 * 16 + 4);
     CHECK_EQ_INT(g_Video.pages[0][40 * 640 + 100], 15);
     CHECK_EQ_INT(g_Video.pages[0][40 * 640 + 416], 15);
-    Marisa_Invalidate(TestBossFight_State(), f.session.reduce_effects);
+    M_InvalidateCore(TestBossFight_State(), f.session.reduce_effects);
     CHECK_EQ_INT(m_Marisa.dots[0].flag, ENTITY_FREE);
     Arena_Free(&f.arena);
 }
@@ -376,7 +376,7 @@ TEST(marisa_begin_preserves_world_and_retained_orb_history)
     m_Marisa.drift_toggle = 254;
     m_Marisa.edge_direction = -1;
     Marisa_Place(TestBossFight_State());
-    Marisa_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     CHECK_EQ_INT(g_Stage->world.frame, 9216);
     CHECK_EQ_INT(BossFight_State()->position[0].x, 176);
     CHECK_EQ_INT(m_Marisa.position.y, 64);
@@ -392,7 +392,7 @@ TEST(marisa_begin_preserves_world_and_retained_orb_history)
     CHECK_EQ_INT(m_Marisa.fan, BULLET_FAN5_WIDE_AIMED);
     CHECK_EQ_INT(p_Background->cache.mode, TILE_DISABLED);
     f.session.rank = 1;
-    Marisa_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     CHECK_EQ_INT(m_Marisa.fan, BULLET_FAN5_MEDIUM_AIMED);
     CHECK_EQ_INT(m_Marisa.edge_count, 4);
     f.stage.stage = (uint8_t)f.session.stage;
@@ -415,7 +415,7 @@ TEST(marisa_orbs_count_hit_calls_and_keep_real_shot_aging)
     p_Stage->scroll.back = 0;
     p_Stage->scroll.front = 1;
     Marisa_Place(TestBossFight_State());
-    Marisa_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     m_Marisa.phase = 2;
     m_Marisa.pattern = 1;
     m_Marisa.bit_state[0] = 0;
@@ -429,7 +429,7 @@ TEST(marisa_orbs_count_hit_calls_and_keep_real_shot_aging)
     shot->position[0] = (ENTITY_POINT) { 308 * 16, 128 * 16 };
     shot->velocity.y = -128;
     CHECK_EQ_INT(
-        Marisa_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank, f.session.reduce_effects),
         1);
@@ -441,7 +441,7 @@ TEST(marisa_orbs_count_hit_calls_and_keep_real_shot_aging)
     shot->age = 0;
     const uint8_t cursor = m_Rng.cursor;
     CHECK_EQ_INT(
-        Marisa_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank, f.session.reduce_effects),
         1);
@@ -463,13 +463,13 @@ TEST(marisa_bomb_masks_and_body_multiplier_keep_distinct_damage_gates)
     GAMEPLAY *const game = TestGameplay_State();
     f.session.stage = 3;
     Marisa_Place(TestBossFight_State());
-    Marisa_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     m_Marisa.phase = 2;
     m_Marisa.pattern = 1;
     m_Bomb.active = 1;
     p_Stage->world.frame = 0;
     CHECK_EQ_INT(
-        Marisa_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank, f.session.reduce_effects),
         1);
@@ -477,7 +477,7 @@ TEST(marisa_bomb_masks_and_body_multiplier_keep_distinct_damage_gates)
     CHECK_EQ_INT(m_Score.delta, 1);
     m_Marisa.damage_enable = 1;
     CHECK_EQ_INT(
-        Marisa_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank, f.session.reduce_effects),
         1);
@@ -487,7 +487,7 @@ TEST(marisa_bomb_masks_and_body_multiplier_keep_distinct_damage_gates)
     m_Marisa.bit_position[p_Stage->scroll.back][0] =
         (ENTITY_POINT) { 300, 120 };
     CHECK_EQ_INT(
-        Marisa_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank, f.session.reduce_effects),
         1);
@@ -496,7 +496,7 @@ TEST(marisa_bomb_masks_and_body_multiplier_keep_distinct_damage_gates)
     CHECK_EQ_INT(m_Score.delta, 4);
     p_Stage->world.frame = 2;
     CHECK_EQ_INT(
-        Marisa_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank, f.session.reduce_effects),
         1);
@@ -514,7 +514,7 @@ TEST(marisa_real_lethal_hit_runs_one_hundred_defeat_updates)
     GAMEPLAY *const game = TestGameplay_State();
     f.session.stage = 3;
     Marisa_Place(TestBossFight_State());
-    Marisa_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     m_Marisa.phase = 2;
     m_Marisa.pattern = 1;
     m_Marisa.damage_enable = 1;
@@ -522,7 +522,7 @@ TEST(marisa_real_lethal_hit_runs_one_hundred_defeat_updates)
     m_Bomb.active = 1;
     p_Stage->world.frame = 0;
     CHECK_EQ_INT(
-        Marisa_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank, f.session.reduce_effects),
         1);
@@ -532,16 +532,16 @@ TEST(marisa_real_lethal_hit_runs_one_hundred_defeat_updates)
     CHECK_EQ_INT(m_Player.invincibility, 200);
     CHECK_EQ_INT(m_Marisa.defeat_frame, 1);
     for (int frame = 2; frame < 100; frame++) {
-        Marisa_Invalidate(TestBossFight_State(), f.session.reduce_effects);
+        M_InvalidateCore(TestBossFight_State(), f.session.reduce_effects);
         CHECK_EQ_INT(
-            Marisa_Update(
+            M_UpdateCore(
                 TestBossFight_State(), &game->assets.patterns,
                 (uint8_t)f.session.rank, f.session.reduce_effects),
             1);
         CHECK_EQ_INT(m_Marisa.defeat_frame, frame);
     }
     CHECK_EQ_INT(
-        Marisa_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank, f.session.reduce_effects),
         2);
@@ -563,7 +563,7 @@ TEST(marisa_edge_stars_read_random_position_before_speed)
     BulletSpawn_Init(1);
     m_Performance.value = 48;
     Marisa_Place(TestBossFight_State());
-    Marisa_Begin(TestBossFight_State(), (uint8_t)f.session.rank);
+    M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     m_Marisa.phase = 2;
     m_Marisa.pattern = 4;
     m_Marisa.edge_direction = -1;
@@ -574,7 +574,7 @@ TEST(marisa_edge_stars_read_random_position_before_speed)
         m_Rng.ring[i] = (uint8_t)i;
     }
     CHECK_EQ_INT(
-        Marisa_Update(
+        M_UpdateCore(
             TestBossFight_State(), &game->assets.patterns,
             (uint8_t)f.session.rank, f.session.reduce_effects),
         1);

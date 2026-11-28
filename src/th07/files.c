@@ -157,7 +157,7 @@ static void M_ClosePatched(VFS_SOURCE *const base)
     Mem_Free(source);
 }
 
-static const VFS_SOURCE_FUNCS M_PatchFuncs = {
+static const VFS_SOURCE_FUNCS m_PatchFuncs = {
     .contains = M_Contains,
     .open = M_Open,
     .list = M_ListPatched,
@@ -174,7 +174,7 @@ RESULT Files_VisitPatches(
 static VFS_SOURCE *M_WrapPatchSource(VFS_SOURCE *const inner)
 {
     M_PATCH_SOURCE *const source = Mem_Alloc(sizeof(*source));
-    source->base.funcs = &M_PatchFuncs;
+    source->base.funcs = &m_PatchFuncs;
     source->base.name = inner->name;
     source->inner = inner;
     return &source->base;

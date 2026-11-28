@@ -870,12 +870,12 @@ static bool M_RingClose(BOSS_STATE *const boss)
     return M_Ring(boss, 42, 41, 40);
 }
 
-static void Stones_Init(void)
+static void M_InitCore(void)
 {
     memset(&m_Stones, 0, sizeof(m_Stones));
 }
 
-static bool Stones_MidbossInvalidate(void)
+static bool M_MidbossInvalidateCore(void)
 {
     unsigned removed = 0;
     for (int i = 0; i < STONE_MIDBOSS_COUNT; i++) {
@@ -891,7 +891,7 @@ static bool Stones_MidbossInvalidate(void)
     return removed != STONE_MIDBOSS_COUNT;
 }
 
-static void Stones_MidbossUpdate(
+static void M_MidbossUpdateCore(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns,
     const uint8_t rank)
 {
@@ -948,7 +948,7 @@ static void Stones_MidbossUpdate(
     }
 }
 
-static void Stones_Begin(BOSS_STATE *const boss, const uint8_t rank)
+static void M_BeginCore(BOSS_STATE *const boss, const uint8_t rank)
 {
     STONES *const stones = &m_Stones;
     boss->phase_frame = 0;
@@ -980,7 +980,7 @@ static void Stones_Begin(BOSS_STATE *const boss, const uint8_t rank)
     Pillars_Enable();
 }
 
-static void Stones_Invalidate(void)
+static void M_InvalidateCore(void)
 {
     STONES *const stones = &m_Stones;
     int i;
@@ -997,7 +997,7 @@ static void Stones_Invalidate(void)
     }
 }
 
-static BOSS_RESULT Stones_Update(
+static BOSS_RESULT M_UpdateCore(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns,
     const uint8_t rank)
 {
@@ -1162,12 +1162,12 @@ static void M_Begin(
     PATTERN_BANK *const patterns, const BOSS_ASSETS *const assets,
     const TH02_SESSION *const session)
 {
-    Stones_Begin(p_BossState, (uint8_t)session->rank);
+    M_BeginCore(p_BossState, (uint8_t)session->rank);
 }
 
 static void M_Invalidate(const bool reduce_effects)
 {
-    Stones_Invalidate();
+    M_InvalidateCore();
 }
 
 static BOSS_RESULT M_Update(
@@ -1175,22 +1175,22 @@ static BOSS_RESULT M_Update(
     const BOSS_MUSIC *const music, TH02_SESSION *const session,
     const TH02_INPUT *const input)
 {
-    return Stones_Update(p_BossState, patterns, (uint8_t)session->rank);
+    return M_UpdateCore(p_BossState, patterns, (uint8_t)session->rank);
 }
 
 static bool M_MidbossInvalidate(void)
 {
-    return Stones_MidbossInvalidate();
+    return M_MidbossInvalidateCore();
 }
 
 static void M_MidbossUpdate(
     const PATTERN_BANK *const patterns, const uint8_t rank)
 {
-    Stones_MidbossUpdate(p_BossState, patterns, rank);
+    M_MidbossUpdateCore(p_BossState, patterns, rank);
 }
 
 const BOSS_STRATEGY g_BossStones = {
-    .init = Stones_Init,
+    .init = M_InitCore,
     .begin = M_Begin,
     .invalidate = M_Invalidate,
     .update = M_Update,
