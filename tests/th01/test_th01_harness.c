@@ -3,7 +3,7 @@
 #include "tests/test.h"
 #include "tests/test_dir.h"
 #include "th01/input.h"
-#include "th01/score_data.h"
+#include "th01/score/data.h"
 #include "th01/settings.h"
 
 #include "core/base/memory.h"

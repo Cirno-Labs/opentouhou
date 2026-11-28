@@ -1,7 +1,7 @@
 #include "tests/test.h"
 #include "th01/input.c"
-#include "th01/score.c"
 #include "th01/score.h"
+#include "th01/score/score.c"
 #include "th01/vsync_irq.c"
 
 #include "core/base/arena.h"

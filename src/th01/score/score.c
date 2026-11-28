@@ -1,4 +1,4 @@
-#include "th01/score.h"
+#include "th01/score/score.h"
 
 #include "th01/scale2x.h"
 #include "th01/session.h"

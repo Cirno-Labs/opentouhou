@@ -1,4 +1,4 @@
-#include "th01/score_data.h"
+#include "th01/score/data.h"
 
 #include "core/base/cp932.h"
 #include "core/vfs/open.h"
