@@ -309,7 +309,7 @@ void Pellets_AddSingle(
     }
 }
 
-void Pellets_UpdateAndRender(
+void Pellets_Update(
     const PELLET_ASSETS *const assets, const PTN *const stage_sprites)
 {
     m_Pellets.interlace_field = !m_Pellets.interlace_field;
@@ -347,7 +347,7 @@ void Pellets_UpdateAndRender(
             M_RestoreBehind(p, false);
         }
     }
-    Shots_UpdateAndRender(stage_sprites);
+    Shots_Update(stage_sprites);
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
         PELLET *const p = &m_Pellets.slots[i];
         if (!p->moving) {

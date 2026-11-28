@@ -124,12 +124,12 @@ TEST(cloud_reset_retains_delay_and_activation_moves_same_tick)
     CHECK_EQ_INT(m_Pellets.alive_count_excluding_clouds_after_reset, 0);
     PELLET *const p = &m_Pellets.slots[0];
     for (int32_t i = 2; i <= 8; i++) {
-        Pellets_UpdateAndRender(&f.assets, &f.stage);
+        Pellets_Update(&f.assets, &f.stage);
         CHECK_EQ_INT(p->cloud_frame, i);
         CHECK(!p->moving);
         CHECK_EQ_INT(p->age, 0);
     }
-    Pellets_UpdateAndRender(&f.assets, &f.stage);
+    Pellets_Update(&f.assets, &f.stage);
     CHECK(p->moving);
     CHECK_EQ_INT(p->cloud_frame, 0);
     CHECK_EQ_INT(p->top, 101 * 16);
@@ -144,7 +144,7 @@ TEST(shot_hit_then_clip_decrements_twice_and_updates_shots_once)
     M_Add(&f, 100, 399);
     m_Shots.slots[0] = (SHOT) { .left = 100, .top = 399, .moving = true };
     m_Shots.slots[1] = (SHOT) { .left = 200, .top = 200, .moving = true };
-    Pellets_UpdateAndRender(&f.assets, &f.stage);
+    Pellets_Update(&f.assets, &f.stage);
     CHECK(!m_Pellets.slots[0].moving);
     CHECK_EQ_INT(m_Pellets.alive_count_excluding_clouds_after_reset, -1);
     CHECK(!m_Shots.slots[0].moving);
@@ -161,7 +161,7 @@ TEST(interlace_skips_orb_but_not_movement_age_or_lethal_hits)
     M_Add(&f, 310, 368);
     m_Orb.left = 310;
     m_Orb.top = 369;
-    Pellets_UpdateAndRender(&f.assets, &f.stage);
+    Pellets_Update(&f.assets, &f.stage);
     CHECK(m_Player.is_hit);
     CHECK(!m_Pellets.slots[0].moving);
     CHECK_EQ_INT(m_Pellets.slots[0].age, 1);
@@ -177,13 +177,13 @@ TEST(stale_idle_shot_can_suppress_orb_and_deflection)
     m_Shots.slots[0] = (SHOT) { .left = 115, .top = 101 };
     m_Orb.left = 100;
     m_Orb.top = 101;
-    Pellets_UpdateAndRender(&f.assets, &f.stage);
+    Pellets_Update(&f.assets, &f.stage);
     CHECK(m_Pellets.slots[0].not_rendered);
     CHECK_EQ_INT(m_Pellets.slots[0].decay_frame, 0);
     CHECK_EQ_INT(m_Pellets.destroy_score_delta, 0);
     m_Shots.slots[0].top = 0;
     m_Pellets.slots[0].velocity = (MATH16_VECTOR) { -3, -3 };
-    Pellets_UpdateAndRender(&f.assets, &f.stage);
+    Pellets_Update(&f.assets, &f.stage);
     CHECK_EQ_INT(m_Pellets.slots[0].decay_frame, 2);
     CHECK_EQ_INT(m_Pellets.slots[0].velocity.x, -2);
     CHECK_EQ_INT(m_Pellets.destroy_score_delta, 10);
@@ -196,7 +196,7 @@ TEST(deflection_is_invisible_and_decay_ends_after_frame_21)
     M_Init(&f);
     M_Add(&f, 299, 350);
     m_Player.deflecting = true;
-    Pellets_UpdateAndRender(&f.assets, &f.stage);
+    Pellets_Update(&f.assets, &f.stage);
     CHECK(m_Pellets.slots[0].not_rendered);
     CHECK_EQ_INT(m_Pellets.slots[0].velocity.x, -128);
     CHECK_EQ_INT(m_Pellets.slots[0].velocity.y, 0);
@@ -207,11 +207,11 @@ TEST(deflection_is_invisible_and_decay_ends_after_frame_21)
     CHECK_EQ_INT(m_Pellets.slots[0].velocity.y, -4);
     CHECK_EQ_INT(m_Pellets.destroy_score_delta, 4);
     for (int32_t i = 2; i <= 21; i++) {
-        Pellets_UpdateAndRender(&f.assets, &f.stage);
+        Pellets_Update(&f.assets, &f.stage);
         CHECK(m_Pellets.slots[0].moving);
         CHECK_EQ_INT(m_Pellets.slots[0].decay_frame, i);
     }
-    Pellets_UpdateAndRender(&f.assets, &f.stage);
+    Pellets_Update(&f.assets, &f.stage);
     CHECK(!m_Pellets.slots[0].moving);
     CHECK_EQ_INT(m_Pellets.slots[0].decay_frame, 0);
     M_Free(&f);
@@ -225,13 +225,13 @@ TEST(sling_retains_direction_and_retargets_only_after_full_turn)
     PELLET *const p = &m_Pellets.slots[0];
     p->sling_direction = 2;
     p->angle = 248;
-    Pellets_UpdateAndRender(&f.assets, &f.stage);
+    Pellets_Update(&f.assets, &f.stage);
     const MATH16_VECTOR v = Math16_Vector(16, 248);
     CHECK_EQ_INT(p->velocity.x, v.y);
     CHECK_EQ_INT(p->velocity.y, v.x);
     CHECK_EQ_INT(p->angle, 256);
     CHECK_EQ_INT(p->from_group, 0);
-    Pellets_UpdateAndRender(&f.assets, &f.stage);
+    Pellets_Update(&f.assets, &f.stage);
     CHECK_EQ_INT(p->angle, 0);
     CHECK_EQ_INT(p->from_group, PELLET_GROUP_SINGLE_AIMED);
     CHECK_EQ_INT(g_Rng, 1);

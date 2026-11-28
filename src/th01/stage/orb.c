@@ -41,7 +41,7 @@ bool Stage_ResumeOrbComposite(
         p_OrbComposite.waiting = true;
         return false;
     }
-    Pellets_UpdateAndRender(pellet_assets, sprites);
+    Pellets_Update(pellet_assets, sprites);
     if (!p_OrbComposite.boss) {
         Stage_HitTestCards();
         Stage_UpdateObstacles(sprites, false);

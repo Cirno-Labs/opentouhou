@@ -115,5 +115,4 @@ void Pellets_Interlace(void);
 // Moves pellets, updates shots once, then draws pellets and tests the Orb
 // and player. Run it as the Orb composite's pellets_update, after its wait;
 // never update shots separately.
-void Pellets_UpdateAndRender(
-    const PELLET_ASSETS *assets, const PTN *stage_sprites);
+void Pellets_Update(const PELLET_ASSETS *assets, const PTN *stage_sprites);
