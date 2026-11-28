@@ -1,7 +1,7 @@
 #include "tests/test.h"
 #include "tests/test_allocator.h"
 #include "tests/th02/th02_tram_fixture.h"
-#include "th02/stage/titles.c"
+#include "th02/stage/private_titles.h"
 #include "th02/tram.h"
 
 #include "core/base/memory.h"
@@ -94,20 +94,20 @@ TEST(stage_and_music_titles_follow_separate_world_boundaries)
             p_Tram->attributes[12 * 80 + (stage == 5 ? 16 : 22)], 0xc1);
         CHECK_EQ_INT(p_Tram->codes[13 * 80 + 18], 'A' + stage);
         StageTitles_Update(159);
-        CHECK(m_Titles.banner_active);
+        CHECK(p_Titles->banner_active);
         StageTitles_UpdateMusic();
-        CHECK_EQ_INT(m_Titles.music_timer, 2);
+        CHECK_EQ_INT(p_Titles->music_timer, 2);
         CHECK_EQ_INT(p_Tram->codes[23 * 80 + 26], 'G' + stage * 2);
         for (unsigned i = 0; i < 157; i++) {
             StageTitles_UpdateMusic();
         }
-        CHECK_EQ_INT(m_Titles.music_timer, 159);
+        CHECK_EQ_INT(p_Titles->music_timer, 159);
         CHECK_EQ_INT(p_Tram->codes[23 * 80 + 26], 'G' + stage * 2);
         StageTitles_UpdateMusic();
-        CHECK_EQ_INT(m_Titles.music_timer, 0);
+        CHECK_EQ_INT(p_Titles->music_timer, 0);
         CHECK_EQ_INT(p_Tram->codes[23 * 80 + 26], ' ');
         StageTitles_Update(160);
-        CHECK(!m_Titles.banner_active);
+        CHECK(!p_Titles->banner_active);
         CHECK_EQ_INT(p_Tram->codes[13 * 80 + 18], ' ');
         p_Tram->codes[13 * 80 + 18] = 'Z';
         StageTitles_Update(160);

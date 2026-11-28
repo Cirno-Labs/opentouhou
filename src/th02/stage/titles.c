@@ -1,20 +1,11 @@
 #include "th02/stage/titles.h"
 
+#include "th02/stage/private_titles.h"
 #include "th02/tram.h"
 
 #include "core/base/assert.h"
 
 #include <string.h>
-
-// MAIN.EXE's gaiji/title tables (DGROUP), baked in verbatim.
-typedef struct {
-    const STAGE_TITLE_ASSETS *assets;
-    uint8_t stage;
-    uint8_t music_id;
-    uint8_t music_timer;
-    bool demo;
-    bool banner_active;
-} STAGE_TITLES;
 
 static const uint8_t m_StageLabel[16] = {
     188, 189, 170, 176, 174, 161, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -87,6 +78,7 @@ static const uint8_t m_MusicBlank[27] = {
 };
 
 static STAGE_TITLES m_Titles;
+STAGE_TITLES *const p_Titles = &m_Titles;
 
 static TRAM_TEXT *M_Field(STAGE_TITLE_ASSETS *const assets, const size_t index)
 {
