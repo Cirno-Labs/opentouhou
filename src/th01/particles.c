@@ -1,5 +1,4 @@
-#include "th01/particles.h"
-
+#include "th01/particles_private.h"
 #include "th01/rng.h"
 #include "th01/sprite.h"
 
@@ -9,22 +8,9 @@
 
 #include <string.h>
 
-#define PARTICLES_COUNT 40
-
-typedef struct {
-    int16_t spawn_interval;
-    int16_t velocity_max;
-    int16_t x[PARTICLES_COUNT];
-    int16_t y[PARTICLES_COUNT];
-    int16_t velocity_x[PARTICLES_COUNT];
-    int16_t velocity_y[PARTICLES_COUNT];
-    uint8_t alive[PARTICLES_COUNT];
-    uint8_t velocity_base[PARTICLES_COUNT];
-    uint8_t cycle;
-} PARTICLES;
-
 static PARTICLES m_Particles;
 const PARTICLES *const g_Particles = &m_Particles;
+PARTICLES *const p_Particles = &m_Particles;
 
 static void M_SetX(const uint32_t i, const int16_t value)
 {
