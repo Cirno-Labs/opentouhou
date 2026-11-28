@@ -1,5 +1,4 @@
-#include "th01/route_select.h"
-
+#include "th01/route_select_private.h"
 #include "th01/scale2x.h"
 #include "th01/session.h"
 #include "th01/sound.h"
@@ -16,14 +15,8 @@ typedef struct {
     uint8_t color;
 } ROUTE_LINE;
 
-typedef struct {
-    ROUTE_SELECT_PHASE phase;
-    uint8_t selection;
-    bool holding_up;
-    bool holding_down;
-} ROUTE_SELECT;
-
 static ROUTE_SELECT m_Selection;
+ROUTE_SELECT *const p_Selection = &m_Selection;
 
 static const ROUTE_LINE m_Lines[] = {
     { "ＲＯＵＮＤ　１　ＣＬＥＡＲ", 64, 64, 7 },

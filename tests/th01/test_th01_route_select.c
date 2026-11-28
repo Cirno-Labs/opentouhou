@@ -6,7 +6,7 @@
 #include "th01/pellets.h"
 #include "th01/player.h"
 #include "th01/rng.h"
-#include "th01/route_select.c"
+#include "th01/route_select_private.h"
 #include "th01/scene_private.h"
 #include "th01/shots.h"
 #include "th01/vsync_irq_private.h"
@@ -103,9 +103,9 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     CHECK_EQ_INT(g_Palette->saved.colors[4][0], 0);
     CHECK_EQ_INT(p_Session->route, 1);
     CHECK(p_Scene->active == &f.cache[0]);
-    const ROUTE_SELECT frozen = m_Selection;
+    const ROUTE_SELECT frozen = *p_Selection;
     CHECK(!RouteSelect_Resume(&f.assets, &raw));
-    CHECK(memcmp(&frozen, &m_Selection, sizeof(frozen)) == 0);
+    CHECK(memcmp(&frozen, p_Selection, sizeof(frozen)) == 0);
     for (int32_t i = 0; i < 49; i++) {
         VSyncIrq_Edge();
     }
@@ -132,17 +132,17 @@ TEST(dual_direction_toggles_once_and_holds_do_not_repeat)
     RouteSelect_Init();
     const TH01_INPUT both = { .up = true, .down = true };
     CHECK(!RouteSelect_Begin(&f.assets, &both));
-    CHECK_EQ_INT(m_Selection.selection, 1);
+    CHECK_EQ_INT(p_Selection->selection, 1);
     CHECK_EQ_INT(g_Video->pages[0][250 * VIDEO_WIDTH + 128], 4);
     CHECK_EQ_INT(g_Video->pages[0][300 * VIDEO_WIDTH + 128], 7);
     CHECK_EQ_INT(g_Palette->saved.colors[1][0], 9);
     CHECK_EQ_INT(g_Palette->saved.colors[3][0], 15);
     CHECK(!M_Poll(&f, both));
-    CHECK_EQ_INT(m_Selection.selection, 1);
+    CHECK_EQ_INT(p_Selection->selection, 1);
     CHECK(!M_Poll(&f, (TH01_INPUT) { .down = true }));
-    CHECK_EQ_INT(m_Selection.selection, 1);
+    CHECK_EQ_INT(p_Selection->selection, 1);
     CHECK(!M_Poll(&f, both));
-    CHECK_EQ_INT(m_Selection.selection, 0);
+    CHECK_EQ_INT(p_Selection->selection, 0);
     CHECK(M_Poll(&f, (TH01_INPUT) { .up = true, .down = true, .ok = true }));
     CHECK_EQ_INT(p_Session->route, 0);
     Arena_Free(&arena);
