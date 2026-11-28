@@ -327,35 +327,26 @@ foreach part : ['tram_text', 'gaiji', 'palette', 'map', 'mpn']
   )
 endforeach
 foreach part : [
-  'items',
   'miss',
   'bomb',
   'bomb_render',
   'shots',
-  'shot_fire',
-  'shot_hit',
   'shot_render',
   'player',
   'player_render',
-  'bullet_spawn',
   'pillars',
   'stage_effects',
   'enemies',
   'shot_select_render',
-  'dialogue_box',
   'dialogue_render',
   'dialogue_sequence',
   'dialogue_slide',
-  'boss',
-  'boss_strategy',
   'rika',
   'stones',
   'gameplay_memory',
   'story',
   'credits',
-  'verdict',
   'ending',
-  'ending_assets',
   'ending_images',
   'ending_text',
 ]
@@ -367,6 +358,34 @@ foreach part : [
       implicit_include_directories: false,
       link_with: [
         th02_lib, core_io_lib, core_vfs_lib, core_hash_lib, core_base_lib,
+      ],
+      dependencies: [pc98_dep, sdl3],
+    ),
+    suite: 'unit',
+  )
+endforeach
+# These assert what their code drew through the fake draw modules, not
+# real pixels, so they draw through th02_fakes_lib.
+foreach part : [
+  'items',
+  'shot_fire',
+  'shot_hit',
+  'bullet_spawn',
+  'dialogue_box',
+  'boss',
+  'boss_strategy',
+  'verdict',
+  'ending_assets',
+]
+  test(
+    'th02/' + part,
+    executable(
+      'test_th02_' + part,
+      'test_th02_' + part + '.c',
+      implicit_include_directories: false,
+      link_with: [
+        th02_fakes_lib, th02_lib, core_io_lib, core_vfs_lib, core_hash_lib,
+        core_base_lib,
       ],
       dependencies: [pc98_dep, sdl3],
     ),
