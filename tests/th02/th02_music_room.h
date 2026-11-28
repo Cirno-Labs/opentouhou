@@ -1,5 +1,7 @@
 #pragma once
+
 #include "th02/music_room/logic.h"
+
 typedef struct {
     void (*begin)(void *context, uint8_t selection);
     void (*track)(void *context, uint8_t selection, uint8_t color);

@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""Fail when code follows #pragma once or an #include line without a
+blank line.
+
+Takes the paths of C files. #pragma once and the include block each end
+with a blank line, so that what follows stands apart; preprocessor lines
+such as #define may follow an include directly. --fix inserts the blank
+lines instead.
+"""
+
+import argparse
+import sys
+from pathlib import Path
+
+MESSAGE = "leave a blank line after #pragma once and the last #include"
+
+
+def errors(lines: list[str]) -> list[int]:
+    """Return the indices of the #pragma once and include lines that
+    another line follows directly."""
+    found = []
+    for index in range(len(lines) - 1):
+        following = lines[index + 1]
+        if not following.strip():
+            continue
+        if lines[index].strip() == "#pragma once" or (
+            lines[index].startswith("#include") and not following.startswith("#")
+        ):
+            found.append(index)
+    return found
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fix", action="store_true")
+    parser.add_argument("paths", nargs="*")
+    args = parser.parse_args(sys.argv[1:] if argv is None else argv)
+    failed = False
+    for name in args.paths:
+        path = Path(name)
+        lines = path.read_text(encoding="utf-8").split("\n")
+        found = errors(lines)
+        if args.fix:
+            for index in reversed(found):
+                lines.insert(index + 1, "")
+            path.write_text("\n".join(lines), encoding="utf-8")
+            continue
+        for index in found:
+            failed = True
+            print(f"{name}:{index + 1}: {MESSAGE}")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
