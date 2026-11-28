@@ -8,6 +8,7 @@
 #include "th02/boss/private_meira.h"
 #include "th02/bullets/private.h"
 #include "th02/performance_private.h"
+#include "th02/stage_effects.h"
 
 #include <string.h>
 

@@ -25,6 +25,7 @@
 #define CONTINUE_INVINCIBILITY_FRAMES 200
 
 static GAMEPLAY m_Gameplay;
+GAMEPLAY *const p_Gameplay = &m_Gameplay;
 
 static bool M_DemoInput(void)
 {
