@@ -11,8 +11,8 @@
 #include "th01/session_private.h"
 #include "th01/shots.h"
 #include "th01/stage.h"
-#include "th01/stage/objects.c"
 #include "th01/stage/private.h"
+#include "th01/stage/private_objects.h"
 
 #include "core/base/arena.h"
 #include "pc98/zun/master_rng.h"
@@ -104,7 +104,7 @@ TEST(card_scores_caps_widths_and_synchronous_order)
             CHECK_EQ_INT(
                 g_Stage->maximum_combo,
                 combos[variant] == 32767 ? 0 : combos[variant] + 1);
-            CHECK_EQ_INT(m_StageObjects.cards[0].flag, STAGE_CARD_FLIPPING);
+            CHECK_EQ_INT(p_StageObjects->cards[0].flag, STAGE_CARD_FLIPPING);
             CHECK(memcmp(&orb, p_Orb, sizeof(ORB)) == 0);
             CHECK_EQ_INT(g_Rng, rng);
             CHECK_EQ_INT(p_Hud->score_previous, expected);
@@ -141,7 +141,7 @@ TEST(all_postfix_drop_cycles_and_bomb_short_circuit)
         for (uint32_t seed = 1; seed < 12; seed++) {
             CASE state;
             M_Init(&state, 0);
-            m_StageObjects.cards[0].flag = flag;
+            p_StageObjects->cards[0].flag = flag;
             p_Player->bomb_damaging = true;
             p_Orb->left = 500;
             g_Rng = seed;
@@ -170,10 +170,10 @@ TEST(card_hp_frames_revenge_and_stage_exit)
                     Stage_UpdateCards(&state.sprites, &state.font);
                     CHECK_EQ_INT(M_Pellets(), flip + (frame >= 24));
                     CHECK_EQ_INT(
-                        m_StageObjects.cards[0].flip_frame,
+                        p_StageObjects->cards[0].flip_frame,
                         frame == 29 ? 0 : frame + 1);
                     CHECK_EQ_INT(
-                        m_StageObjects.cards[0].hp,
+                        p_StageObjects->cards[0].hp,
                         hp - flip - (frame == 29 && hp > flip));
                     CHECK_EQ_INT(g_Stage->cleared, flip == hp && frame == 29);
                     CHECK_EQ_INT(p_Player->is_hit, g_Stage->cleared);
@@ -192,7 +192,7 @@ TEST(score_popups_render_before_card_animation_and_clear_at_28)
     CHECK(IS_OK(Stage_ValidateScoreFont(&state.font)));
     const uint32_t scores[] = { 100, 1000, 1001, 10000, 10001, 25600 };
     for (int32_t i = 0; i < 6; i++) {
-        STAGE_CARD *const card = &m_StageObjects.cards[0];
+        STAGE_CARD *const card = &p_StageObjects->cards[0];
         card->flag = STAGE_CARD_ALIVE;
         card->score = scores[i];
         card->flip_frame = 15;
@@ -234,7 +234,7 @@ TEST(card_animation_overwrites_the_preceding_popup)
 {
     CASE state;
     M_Init(&state, 0);
-    STAGE_CARD *const card = &m_StageObjects.cards[0];
+    STAGE_CARD *const card = &p_StageObjects->cards[0];
     card->flag = STAGE_CARD_FLIPPING;
     card->flip_frame = 18;
     card->score = 1000;

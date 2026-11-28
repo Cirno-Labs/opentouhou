@@ -1,7 +1,6 @@
-#include "th01/stage/objects.h"
-
 #include "th01/rng.h"
 #include "th01/sprite.h"
+#include "th01/stage/private_objects.h"
 
 #include "pc98/zun/master_rng.h"
 
@@ -14,6 +13,7 @@ typedef struct {
 } STAGE_OBJECT_STORAGE;
 
 static STAGE_OBJECTS m_StageObjects;
+STAGE_OBJECTS *const p_StageObjects = &m_StageObjects;
 const STAGE_OBJECTS *const g_StageObjects = &m_StageObjects;
 static STAGE_OBJECT_STORAGE m_Storage;
 
