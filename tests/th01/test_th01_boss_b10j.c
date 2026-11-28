@@ -3,7 +3,7 @@
 #include "tests/th01/th01_world.h"
 #include "th01/boss/b10j.c"
 #include "th01/hud/hp_private.h"
-#include "th01/missiles.c"
+#include "th01/missiles_private.h"
 #include "th01/orb_private.h"
 #include "th01/pellets/private.h"
 #include "th01/player_private.h"
@@ -125,8 +125,8 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     m_B10J.still.previous_top = 27;
     m_B10J.hit.frame = 17;
     m_B10J.pattern_state = 99;
-    m_Missiles.slots[0].flag = MISSILE_MOVING;
-    m_Missiles.slots[0].previous_top = 36;
+    p_Missiles->slots[0].flag = MISSILE_MOVING;
+    p_Missiles->slots[0].previous_top = 36;
     VSyncIrq_Reset();
     p_VSync->count1 = 12;
     p_VSync->count2 = 19;
@@ -168,8 +168,8 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     CHECK_EQ_INT(m_B10J.status.phase, B10J_PHASE_START);
     CHECK_EQ_INT(p_Health->first_white, 6);
     CHECK_EQ_INT(p_Health->first_redwhite, 2);
-    CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
-    CHECK_EQ_INT(m_Missiles.slots[0].previous_top, 36);
+    CHECK_EQ_INT(p_Missiles->slots[0].flag, MISSILE_FREE);
+    CHECK_EQ_INT(p_Missiles->slots[0].previous_top, 36);
     CHECK_EQ_INT(g_VSync->count1, 28);
     CHECK_EQ_INT(g_VSync->count2, 35);
     CHECK_EQ_INT(arena.used, used);
@@ -223,14 +223,14 @@ TEST(entrance_preserves_prefix_and_requires_every_delay)
     M_SetupFixture(&f);
     p_VSync->count1 = 0;
     p_VSync->count2 = g_VSync->count2;
-    m_Missiles.slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
-                                      .left = 200 * 16,
-                                      .top = 200 * 16,
-                                      .previous_left = -1,
-                                      .velocity = { 16, 0 } };
+    p_Missiles->slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
+                                       .left = 200 * 16,
+                                       .top = 200 * 16,
+                                       .previous_left = -1,
+                                       .velocity = { 16, 0 } };
     const size_t used = arena.used;
     CHECK(!M_BossUpdate(&f.assets, &f.miko));
-    CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
+    CHECK_EQ_INT(p_Missiles->slots[0].left, 201 * 16);
     CHECK_EQ_INT(m_B10J.status.frame, 1);
     const B10J frozen = m_B10J;
     const uint32_t frozen_rng = g_Rng;
@@ -246,7 +246,7 @@ TEST(entrance_preserves_prefix_and_requires_every_delay)
     CHECK_EQ_INT(m_B10J.status.frame, 0);
     CHECK_EQ_INT(m_B10J.still.left, 256);
     CHECK_EQ_INT(m_B10J.still.top, 120);
-    CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
+    CHECK_EQ_INT(p_Missiles->slots[0].left, 201 * 16);
     uint32_t expected = frozen_rng;
     MasterRng_Next(&expected);
     CHECK_EQ_INT(g_Rng, expected);
@@ -432,12 +432,12 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
     m_B10J.pattern = 1;
     m_B10J.status.frame = 0;
     m_B10J.status.hp = 0;
-    m_Missiles.slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
-                                      .left = 200 * 16,
-                                      .top = 200 * 16,
-                                      .previous_left = -1,
-                                      .previous_top = 88,
-                                      .velocity = { 16, 0 } };
+    p_Missiles->slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
+                                       .left = 200 * 16,
+                                       .top = 200 * 16,
+                                       .previous_left = -1,
+                                       .previous_top = 88,
+                                       .velocity = { 16, 0 } };
     p_Pellets->slots[0] =
         (PELLET) { .moving = true, .left = 200 * 16, .top = 200 * 16 };
     p_Pellets->slots[1].cloud_frame = 10;
@@ -446,8 +446,8 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
     }
     CHECK(!M_BossUpdate(&f.assets, &f.miko));
     CHECK(m_B10J.defeating);
-    CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
-    CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
+    CHECK_EQ_INT(p_Missiles->slots[0].left, 201 * 16);
+    CHECK_EQ_INT(p_Missiles->slots[0].flag, MISSILE_FREE);
     CHECK(!p_Pellets->slots[0].moving);
     CHECK_EQ_INT(p_Pellets->slots[1].cloud_frame, 10);
     for (int32_t i = 0; i < 10; i++) {
