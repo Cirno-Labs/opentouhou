@@ -1,4 +1,4 @@
-#include "th01/boss/private.h"
+#include "th01/boss/private_b15j.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"
 #include "th01/rng.h"
@@ -14,51 +14,8 @@
 
 #include <string.h>
 
-typedef struct {
-    BOS souls;
-    BOS tears;
-    PTN ripples;
-    PI_IMAGE background;
-    PALETTE palette;
-    SCENE_DATA next_scene;
-} B15J_ASSETS;
-
-typedef enum {
-    B15J_PHASE_ENTRANCE = 0,
-    B15J_PHASE_SPIRAL = 2,
-    B15J_PHASE_RECOLOR = 3,
-    B15J_PHASE_SOULS = 4,
-    B15J_PHASE_TEARS = 5,
-    B15J_PHASE_PATTERNS = 6,
-} B15J_PHASE;
-
-typedef struct {
-    BOSS_ENTITY souls[2];
-    BOSS_ENTITY tears[10];
-    int8_t tear_frame[10];
-    BOSS_HIT hit;
-    PALETTE boss_palette;
-    PALETTE post_defeat;
-    BOSS_DEFEAT defeat;
-    BOSS_STATE status;
-    int16_t pattern_state;
-    int16_t subphase;
-    int16_t patterns_done;
-    int16_t spiral_distance;
-    int16_t random_range;
-    int16_t ring_radius;
-    uint8_t spiral_angle;
-    uint8_t spiral_drift;
-    uint8_t four_angle;
-    uint8_t entrance_stage;
-    bool hp_bar_filled;
-    bool entrance_active;
-    bool entrance_waiting;
-    bool defeating;
-    bool finished;
-} B15J;
-
 static B15J m_B15J;
+B15J *const p_B15J = &m_B15J;
 
 static const BOSS_DEFEAT_PARAMS m_Defeat = {
     .shift = 16,
@@ -78,7 +35,7 @@ static RESULT M_LoadRipples(
     return result;
 }
 
-static RESULT M_ValidateAssets(const B15J_ASSETS *const a)
+RESULT B15J_ValidateAssets(const B15J_ASSETS *const a)
 {
     FAIL_IF(
         a == nullptr || a->souls.pixels == nullptr
@@ -99,7 +56,7 @@ static RESULT M_ValidateAssets(const B15J_ASSETS *const a)
     return OK;
 }
 
-static RESULT M_LoadAssets(
+RESULT B15J_LoadAssets(
     VFS *const vfs, const ALLOCATOR *const a, void *const data)
 {
     B15J_ASSETS *const out = data;
@@ -110,7 +67,7 @@ static RESULT M_LoadAssets(
     MUST(M_LoadRipples(vfs, a, &loaded.ripples));
     MUST(BossAssets_LoadBackground(vfs, "BOSS4.GRP", a, &loaded.background));
     MUST(Scene_Load(vfs, 6, a, &loaded.next_scene));
-    MUST(M_ValidateAssets(&loaded));
+    MUST(B15J_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;
     return OK;
@@ -126,7 +83,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     const B15J_ASSETS *const assets = data;
     Boss_Select(&m_B15J.status);
     ASSERT(!m_B15J.entrance_active && !m_B15J.defeating);
-    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(B15J_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15J.souls[0], 0, &assets->souls)));
     BossEntity_CopyMetadata(&m_B15J.souls[1], &m_B15J.souls[0]);
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15J.tears[0], 1, &assets->tears)));
@@ -797,7 +754,7 @@ static void M_FinishEntrance(void)
 
 const BOSS_STRATEGY g_BossKikuri = {
     .assets_size = sizeof(B15J_ASSETS),
-    .load_assets = M_LoadAssets,
+    .load_assets = B15J_LoadAssets,
     .init = M_Init,
     .setup = M_Setup,
     .update = M_Update,
