@@ -16,7 +16,7 @@
 #include "th01/pellets/private.h"
 #include "th01/player_private.h"
 #include "th01/rng.h"
-#include "th01/scene.c"
+#include "th01/scene_private.h"
 #include "th01/score.h"
 #include "th01/score/score.c"
 #include "th01/session_private.h"
@@ -735,7 +735,7 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     p_Stage->boss = BOSS_SINGYOKU;
     Gameplay_Reset();
     CHECK_EQ_INT(f.arena.used, used);
-    CHECK(m_Scene.active == &f.assets->scenes[Session_Scene()]);
+    CHECK(p_Scene->active == &f.assets->scenes[Session_Scene()]);
     CHECK(M_InStage(GP_STAGE_BEGIN));
     CHECK(g_Stage->first_stage && g_Gameplay->wait_for_shot);
     CHECK_EQ_INT(g_Stage->frame, 0);

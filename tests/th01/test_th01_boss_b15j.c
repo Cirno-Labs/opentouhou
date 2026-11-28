@@ -9,7 +9,7 @@
 #include "th01/pellets/private.h"
 #include "th01/player_private.h"
 #include "th01/rng.h"
-#include "th01/scene.c"
+#include "th01/scene_private.h"
 #include "th01/session_private.h"
 #include "th01/shootout_lasers.c"
 #include "th01/shots.h"
@@ -346,8 +346,8 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     CHECK_EQ_INT(g_Stage->score, 98000);
     CHECK(g_Stage->cleared);
     CHECK(p_Player->is_hit);
-    CHECK(m_Scene.active == &f.assets.next_scene);
-    CHECK_EQ_INT(m_Scene.active->id, 6);
+    CHECK(p_Scene->active == &f.assets.next_scene);
+    CHECK_EQ_INT(p_Scene->active->id, 6);
     CHECK_EQ_INT(p_Pellets->slots[0].cloud_frame, 12);
     CHECK(m_Lasers.slots[4].alive);
     const B15J finished = m_B15J;

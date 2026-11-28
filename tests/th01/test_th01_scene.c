@@ -1,7 +1,6 @@
 #include "tests/test.h"
 #include "tests/th01/th01_world.h"
-#include "th01/scene.c"
-#include "th01/scene.h"
+#include "th01/scene_private.h"
 
 #include "core/base/arena.h"
 #include "core/io/reader.h"
@@ -59,8 +58,8 @@ TEST(cached_activation_borrows_independent_layouts)
     for (size_t i = 0; i < sizeof(ids); i++) {
         const uint8_t id = ids[i];
         Scene_Activate(&cache[id]);
-        CHECK(m_Scene.active == &cache[id]);
-        CHECK_EQ_INT(m_Scene.active->background[2], '0' + id);
+        CHECK(p_Scene->active == &cache[id]);
+        CHECK_EQ_INT(p_Scene->active->background[2], '0' + id);
         Scene_BeginStage(0, true, &sprites);
         CHECK_EQ_INT(g_StageObjects->card_count, 1);
         CHECK_EQ_INT(g_StageObjects->cards[0].left, id * 32);

@@ -1,16 +1,12 @@
-#include "th01/scene.h"
-
+#include "th01/scene_private.h"
 #include "th01/stage/objects.h"
 
 #include "core/base/assert.h"
 
 #include <string.h>
 
-typedef struct {
-    const SCENE_DATA *active;
-} SCENE_STATE;
-
 static SCENE_STATE m_Scene;
+SCENE_STATE *const p_Scene = &m_Scene;
 
 void Scene_Init(void)
 {

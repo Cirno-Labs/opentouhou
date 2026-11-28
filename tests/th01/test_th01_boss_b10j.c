@@ -8,7 +8,7 @@
 #include "th01/pellets/private.h"
 #include "th01/player_private.h"
 #include "th01/rng.h"
-#include "th01/scene.c"
+#include "th01/scene_private.h"
 #include "th01/session_private.h"
 #include "th01/shootout_lasers.c"
 #include "th01/shots.h"
@@ -296,7 +296,7 @@ TEST(all_ranks_complete_eight_patterns_without_allocating)
         CHECK_EQ_INT(loops, 2);
         CHECK_EQ_INT(m_B10J.status.hp, 6);
         CHECK(!m_B10J.finished);
-        CHECK(m_Scene.active == nullptr);
+        CHECK(p_Scene->active == nullptr);
         CHECK_EQ_INT(arena.used, used);
         Arena_Free(&arena);
     }
@@ -344,8 +344,8 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
     CHECK(m_B10J.finished);
     CHECK(g_Stage->cleared);
     CHECK(p_Player->is_hit);
-    CHECK(m_Scene.active == &f.assets.next_scene);
-    CHECK_EQ_INT(m_Scene.active->id, 4);
+    CHECK(p_Scene->active == &f.assets.next_scene);
+    CHECK_EQ_INT(p_Scene->active->id, 4);
     const B10J finished = m_B10J;
     CHECK(M_BossUpdate(&f.assets, &f.miko));
     CHECK(memcmp(&m_B10J, &finished, sizeof(m_B10J)) == 0);
@@ -454,7 +454,7 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
         CHECK(m_Lasers.slots[i].alive == (i >= 5));
     }
     CHECK(!g_Stage->cleared);
-    CHECK(m_Scene.active == nullptr);
+    CHECK(p_Scene->active == nullptr);
     Arena_Free(&arena);
 }
 

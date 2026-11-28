@@ -7,7 +7,7 @@
 #include "th01/player.h"
 #include "th01/rng.h"
 #include "th01/route_select.c"
-#include "th01/scene.c"
+#include "th01/scene_private.h"
 #include "th01/shots.h"
 #include "th01/vsync_irq_private.h"
 
@@ -102,7 +102,7 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     CHECK_EQ_INT(g_Palette->saved.colors[3][0], 9);
     CHECK_EQ_INT(g_Palette->saved.colors[4][0], 0);
     CHECK_EQ_INT(p_Session->route, 1);
-    CHECK(m_Scene.active == &f.cache[0]);
+    CHECK(p_Scene->active == &f.cache[0]);
     const ROUTE_SELECT frozen = m_Selection;
     CHECK(!RouteSelect_Resume(&f.assets, &raw));
     CHECK(memcmp(&frozen, &m_Selection, sizeof(frozen)) == 0);
@@ -113,8 +113,8 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     VSyncIrq_Edge();
     CHECK(RouteSelect_Resume(&f.assets, &raw));
     CHECK_EQ_INT(p_Session->route, 0);
-    CHECK(m_Scene.active == &f.cache[1]);
-    CHECK(m_Scene.active->layouts.stages[0].cells[0][1].card);
+    CHECK(p_Scene->active == &f.cache[1]);
+    CHECK(p_Scene->active->layouts.stages[0].cells[0][1].card);
     CHECK(g_Stage->cleared && g_Player->is_hit);
     CHECK(RouteSelect_Resume(&f.assets, &raw));
     Arena_Free(&arena);

@@ -10,7 +10,7 @@
 #include "th01/pellets/private.h"
 #include "th01/player_private.h"
 #include "th01/rng.h"
-#include "th01/scene.c"
+#include "th01/scene_private.h"
 #include "th01/session_private.h"
 #include "th01/shootout_lasers.c"
 #include "th01/shots.h"
@@ -272,7 +272,7 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         CHECK_EQ_INT(arena.used, used);
         CHECK(g_Rng != 0xb10a0000);
         CHECK(!m_B10M.finished);
-        CHECK(m_Scene.active == nullptr);
+        CHECK(p_Scene->active == nullptr);
         Arena_Free(&arena);
     }
 }
@@ -342,7 +342,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         CHECK(!M_BossUpdate(&f.assets, &f.miko));
         CHECK(m_B10M.defeating);
         CHECK(!g_Stage->cleared);
-        CHECK(m_Scene.active == nullptr);
+        CHECK(p_Scene->active == nullptr);
         CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
         CHECK_EQ_INT(
             m_Missiles.slots[0].flag,
@@ -361,8 +361,8 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         CHECK(m_B10M.finished);
         CHECK(g_Stage->cleared);
         CHECK(p_Player->is_hit);
-        CHECK(m_Scene.active == &f.assets.next_scene);
-        CHECK_EQ_INT(m_Scene.active->id, 3);
+        CHECK(p_Scene->active == &f.assets.next_scene);
+        CHECK_EQ_INT(p_Scene->active->id, 3);
         CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
         CHECK_EQ_INT(arena.used, used);
         const B10M finished = m_B10M;
