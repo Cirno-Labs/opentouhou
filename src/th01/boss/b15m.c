@@ -1,4 +1,4 @@
-#include "th01/boss/private.h"
+#include "th01/boss/private_b15m.h"
 #include "th01/missiles.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"
@@ -20,104 +20,8 @@
 
 #include <string.h>
 
-typedef struct {
-    BOS girl;
-    BOS attack;
-    BOS bat;
-    GRC spheres;
-    PTN missiles;
-    PI_IMAGE background;
-    PALETTE palette;
-    SCENE_DATA next_scene;
-    const uint8_t *star;
-} B15M_ASSETS;
-
-typedef struct {
-    int16_t x[5];
-    int16_t y[5];
-} B15M_RIFTS;
-
-typedef struct {
-    uint8_t angle;
-    int16_t frame;
-} B15M_CIRCLE;
-
-typedef enum {
-    B15M_PHASE_ENTRANCE,
-    B15M_PHASE_PATTERNS_1,
-    B15M_PHASE_CENTER,
-    B15M_PHASE_PATTERNS_2,
-    B15M_PHASE_TRANSFORM,
-    B15M_PHASE_FORMS,
-} B15M_PHASE;
-
-typedef enum {
-    B15M_FORM_GIRL,
-    B15M_FORM_BAT,
-} B15M_FORM;
-
-typedef struct {
-    BOSS_ENTITY girl;
-    BOSS_ENTITY attack;
-    BOSS_ENTITY bat;
-    BOSS_HIT hit;
-    PALETTE boss_palette;
-    PALETTE post_defeat;
-    BOSS_DEFEAT defeat;
-    uint8_t background[128 * 96];
-    B15M_RIFTS stars;
-    B15M_RIFTS missile_rifts;
-    B15M_RIFTS random_rifts;
-    B15M_RIFTS girl_rifts;
-    B15M_RIFTS bat_rifts;
-    int16_t sphere_x[10];
-    int16_t sphere_y[10];
-    B15M_CIRCLE circle;
-    B15M_CIRCLE star_circle;
-    B15M_CIRCLE safety_circle;
-    B15M_CIRCLE aimed_circle;
-    BOSS_STATE status;
-    int16_t pattern;
-    int16_t pattern_state;
-    int16_t form;
-    int16_t circle_radius;
-    int16_t direction;
-    int16_t phase3_pattern;
-    int16_t bat_target_x;
-    int16_t bat_target_y;
-    int16_t bat_target_frames;
-    int16_t bat_velocity_x;
-    int16_t bat_velocity_y;
-    int16_t safety_left;
-    int16_t girl_pattern;
-    int16_t girl_subphase;
-    int16_t phase5_subphase;
-    int16_t bat_pattern;
-    int16_t trail_x[2][3];
-    int16_t trail_y[2][3];
-    int16_t entrance_tick;
-    int16_t entrance_delay;
-    WAIT wait;
-    uint8_t entrance_stage;
-    uint8_t entrance_angle;
-    uint8_t transform_stage;
-    int8_t call_phase;
-    bool teleport_done;
-    bool hp_bar_filled;
-    bool entrance_active;
-    bool entrance_waiting;
-    bool trails_offscreen;
-    bool transform_bat;
-    bool defeating;
-    bool finished;
-} B15M;
-
-typedef enum {
-    B15M_TRANSFORM_RIFTS = 1,
-    B15M_TRANSFORM_SWAPPED = 2,
-} B15M_TRANSFORM;
-
 static B15M m_B15M;
+B15M *const p_B15M = &m_B15M;
 
 static const BOSS_DEFEAT_PARAMS m_Defeat = {
     .shift = 16,
@@ -158,7 +62,7 @@ static RESULT M_LoadStar(
     return OK;
 }
 
-static RESULT M_ValidateAssets(const B15M_ASSETS *const a)
+RESULT B15M_ValidateAssets(const B15M_ASSETS *const a)
 {
     FAIL_IF(
         a == nullptr || a->girl.pixels == nullptr || a->girl.coverage == nullptr
@@ -197,7 +101,7 @@ static RESULT M_LoadAssets(
     MUST(BossAssets_LoadBackground(vfs, "BOSS5.GRP", a, &loaded.background));
     MUST(Scene_Load(vfs, 5, a, &loaded.next_scene));
     MUST(M_LoadStar(vfs, a, &loaded.star));
-    MUST(M_ValidateAssets(&loaded));
+    MUST(B15M_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;
     return OK;
@@ -215,7 +119,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     ASSERT(
         !m_B15M.entrance_active && !m_B15M.defeating
         && Wait_Idle(&m_B15M.wait));
-    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(B15M_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15M.girl, 0, &assets->girl)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15M.attack, 1, &assets->attack)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15M.bat, 2, &assets->bat)));
