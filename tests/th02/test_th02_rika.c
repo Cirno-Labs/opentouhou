@@ -17,7 +17,6 @@
 #include "th02/player.h"
 #include "th02/shots/private.h"
 #include "th02/sparks.h"
-#include "th02/stage/flow.c"
 #include "th02/stage/private.h"
 #include "th02/stage_effects_private.h"
 #include "th02/video.h"
