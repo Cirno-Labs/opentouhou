@@ -13,6 +13,22 @@
 
 #include <string.h>
 
+static const BOSS_DEFEAT_PARAMS m_Regular = {
+    .shift = 16,
+    .step = 2,
+    .whiteout_period = 7,
+    .whitein_period = 5,
+    .clears_stage = true,
+};
+
+static const BOSS_DEFEAT_PARAMS m_Singyoku = {
+    .shift = 48,
+    .step = 1,
+    .whiteout_period = 15,
+    .whitein_period = 15,
+    .clears_stage = false,
+};
+
 typedef struct {
     PALETTE target;
     PTN miko;
@@ -62,7 +78,7 @@ TEST(raw_wait_reuses_counter_without_replaying_lines)
     m_VSync.count2 = 8;
     BOSS_DEFEAT defeat = {};
     Video_SetScroll(12);
-    BossDefeat_Begin(&defeat, BOSS_DEFEAT_REGULAR);
+    BossDefeat_Begin(&defeat, m_Regular);
     CHECK(!BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
     CHECK_EQ_INT(g_Video->scroll_top, 12);
     CHECK_EQ_INT(g_Video->pages[0][80 * VIDEO_WIDTH], 2);
@@ -95,7 +111,7 @@ TEST(restore_and_extra_fade_interval_precede_clear_flags)
     M_Init(&f, &arena, 14);
     VSyncIrq_Reset();
     BOSS_DEFEAT defeat = {};
-    BossDefeat_Begin(&defeat, BOSS_DEFEAT_REGULAR);
+    BossDefeat_Begin(&defeat, m_Regular);
     M_ReachWhitein(&defeat, &f);
     CHECK_EQ_INT(g_Video->drawing_page, 0);
     CHECK_EQ_INT(g_Palette->saved.colors[0][0], 15);
@@ -133,7 +149,7 @@ TEST(singyoku_parameters_leave_route_and_gameplay_flags_pending)
     m_VSync.count1 = 10;
     m_VSync.count2 = g_VSync->count2;
     BOSS_DEFEAT defeat = {};
-    BossDefeat_Begin(&defeat, BOSS_DEFEAT_SINGYOKU);
+    BossDefeat_Begin(&defeat, m_Singyoku);
     VSyncIrq_Edge();
     CHECK(!BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
     CHECK_EQ_INT(defeat.top, 126);
@@ -158,7 +174,7 @@ TEST(live_target_can_stop_below_a_raised_palette)
     M_Init(&f, &arena, 14);
     VSyncIrq_Reset();
     BOSS_DEFEAT defeat = {};
-    BossDefeat_Begin(&defeat, BOSS_DEFEAT_REGULAR);
+    BossDefeat_Begin(&defeat, m_Regular);
     M_ReachWhitein(&defeat, &f);
     while (defeat.frame < 5) {
         VSyncIrq_Edge();

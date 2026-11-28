@@ -119,6 +119,14 @@ typedef enum {
 
 static B15M m_B15M;
 
+static const BOSS_DEFEAT_PARAMS m_Defeat = {
+    .shift = 16,
+    .step = 2,
+    .whiteout_period = 7,
+    .whitein_period = 5,
+    .clears_stage = true,
+};
+
 static RESULT M_LoadGrc(
     VFS *const vfs, const ALLOCATOR *const a, GRC *const out)
 {
@@ -1527,7 +1535,7 @@ static bool M_Tail(const B15M_ASSETS *const assets, const PTN *const miko)
             M_Background(assets, miko);
             Missiles_Reset();
             ShootoutLasers_EraseAndReset(10);
-            BossDefeat_Begin(&m_B15M.defeat, BOSS_DEFEAT_REGULAR);
+            BossDefeat_Begin(&m_B15M.defeat, m_Defeat);
             m_B15M.defeating = true;
             return M_Death(assets, miko);
         }
@@ -1662,4 +1670,5 @@ const BOSS_STRATEGY g_BossElis = {
     .update = M_Update,
     .background = M_StageBackground,
     .song = 10,
+    .defeat = m_Defeat,
 };

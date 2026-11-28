@@ -87,6 +87,14 @@ typedef struct {
 
 static B10M m_B10M;
 
+static const BOSS_DEFEAT_PARAMS m_Defeat = {
+    .shift = 16,
+    .step = 2,
+    .whiteout_period = 7,
+    .whitein_period = 5,
+    .clears_stage = true,
+};
+
 static RESULT M_ValidateAssets(const B10M_ASSETS *const a)
 {
     FAIL_IF(
@@ -1016,7 +1024,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
                 Missiles_Reset();
             }
             ShootoutLasers_EraseAndReset(5);
-            BossDefeat_Begin(&m_B10M.defeat, BOSS_DEFEAT_REGULAR);
+            BossDefeat_Begin(&m_B10M.defeat, m_Defeat);
             m_B10M.defeating = true;
             return M_Death(assets, miko);
         }
@@ -1059,4 +1067,5 @@ const BOSS_STRATEGY g_BossYuugenMagan = {
     .update = M_Update,
     .background = M_StageBackground,
     .song = 8,
+    .defeat = m_Defeat,
 };

@@ -66,6 +66,14 @@ typedef enum {
 
 static B05 m_B05;
 
+static const BOSS_DEFEAT_PARAMS m_Defeat = {
+    .shift = 48,
+    .step = 1,
+    .whiteout_period = 15,
+    .whitein_period = 15,
+    .clears_stage = false,
+};
+
 static void M_Put(const BOSS_ENTITY *const entity, const int16_t image)
 {
     BossEntity_RestorePut(entity, m_B05.sphere.left, m_B05.sphere.top, image);
@@ -536,7 +544,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
             m_B05.sphere.image);
         Sound_Fade();
         Pellets_EraseAndResetMoving();
-        BossDefeat_Begin(&m_B05.defeat, BOSS_DEFEAT_SINGYOKU);
+        BossDefeat_Begin(&m_B05.defeat, m_Defeat);
         m_B05.pending = B05_DEFEAT;
         return M_Death(miko, route, raw);
     }
@@ -558,4 +566,5 @@ const BOSS_STRATEGY g_BossSingyoku = {
     .background = M_StageBackground,
     .update_on_life_begin = true,
     .song = 7,
+    .defeat = m_Defeat,
 };

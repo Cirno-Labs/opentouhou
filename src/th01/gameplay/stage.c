@@ -1,6 +1,7 @@
 #include "th01/stage.h"
 
 #include "th01/boss.h"
+#include "th01/boss/strategy.h"
 #include "th01/gameplay/private.h"
 #include "th01/hooks.h"
 #include "th01/hud.h"
@@ -106,12 +107,7 @@ static void M_StageBegin(const uint64_t host_tick)
     Shots_EraseAndReset();
     const int16_t stage = g_Session.stage_id;
     p_Gameplay->boss_stage = stage % 5 == 4;
-    Stage_SetBoss(
-        stage == 4       ? BOSS_SINGYOKU
-            : stage == 9 ? (g_Session.route == 0 ? BOSS_YUUGENMAGAN : BOSS_MIMA)
-            : stage == 14 ? (g_Session.route == 0 ? BOSS_ELIS : BOSS_KIKURI)
-            : stage == 19 ? (g_Session.route == 0 ? BOSS_SARIEL : BOSS_KONNGARA)
-                          : BOSS_NONE);
+    Stage_SetBoss(BossStrategy_ForStage(stage, g_Session.route));
     Hud_Load(
         &g_GameplayAssets->hud, Gameplay_StageSprites(),
         &g_GameplayAssets->hud_font);

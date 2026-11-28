@@ -60,6 +60,14 @@ typedef struct {
 
 static B15J m_B15J;
 
+static const BOSS_DEFEAT_PARAMS m_Defeat = {
+    .shift = 16,
+    .step = 2,
+    .whiteout_period = 7,
+    .whitein_period = 5,
+    .clears_stage = true,
+};
+
 static RESULT M_LoadRipples(
     VFS *const vfs, const ALLOCATOR *const a, PTN *const out)
 {
@@ -763,7 +771,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
             Sound_Fade();
             Pellets_EraseAndResetMoving();
             ShootoutLasers_EraseAndReset(4);
-            BossDefeat_Begin(&m_B15J.defeat, BOSS_DEFEAT_REGULAR);
+            BossDefeat_Begin(&m_B15J.defeat, m_Defeat);
             m_B15J.defeating = true;
             return M_Death(assets, miko);
         }
@@ -797,4 +805,5 @@ const BOSS_STRATEGY g_BossKikuri = {
     .begin_life = M_BeginLife,
     .finish_entrance = M_FinishEntrance,
     .song = 9,
+    .defeat = m_Defeat,
 };

@@ -55,11 +55,12 @@ RESULT BossDefeat_ValidateSprites(const PTN *const miko)
     return OK;
 }
 
-void BossDefeat_Begin(BOSS_DEFEAT *const defeat, const BOSS_DEFEAT_KIND kind)
+void BossDefeat_Begin(
+    BOSS_DEFEAT *const defeat, const BOSS_DEFEAT_PARAMS params)
 {
     ASSERT(defeat->phase == BOSS_DEFEAT_DONE);
-    ASSERT(kind == BOSS_DEFEAT_REGULAR || kind == BOSS_DEFEAT_SINGYOKU);
-    *defeat = (BOSS_DEFEAT) { .phase = BOSS_DEFEAT_SCROLL_WAIT, .kind = kind };
+    *defeat =
+        (BOSS_DEFEAT) { .phase = BOSS_DEFEAT_SCROLL_WAIT, .params = params };
     VSyncIrq_BeginWait(&defeat->wait);
 }
 
@@ -76,8 +77,7 @@ bool BossDefeat_Resume(
                 return false;
             }
             Video_SetScroll(0);
-            defeat->top = Math16_Wrap(
-                *origin_top + (defeat->kind == BOSS_DEFEAT_SINGYOKU ? 48 : 16));
+            defeat->top = Math16_Wrap(*origin_top + defeat->params.shift);
             ASSERT(defeat->top >= 0 && defeat->top < VIDEO_HEIGHT);
             defeat->bottom = defeat->top;
             defeat->phase = BOSS_DEFEAT_WHITEOUT;
@@ -89,17 +89,14 @@ bool BossDefeat_Resume(
             if (defeat->bottom < VIDEO_HEIGHT) {
                 Video_HorizontalLine(0, VIDEO_WIDTH - 1, defeat->bottom, 7);
             }
-            const int16_t distance =
-                defeat->kind == BOSS_DEFEAT_SINGYOKU ? 1 : 2;
-            defeat->top -= distance;
-            defeat->bottom += distance;
+            defeat->top -= defeat->params.step;
+            defeat->bottom += defeat->params.step;
             defeat->frame++;
             if (defeat->top < 0 && defeat->bottom >= VIDEO_HEIGHT) {
                 M_Restore(defeat, miko);
                 break;
             }
-            if (defeat->frame % (defeat->kind == BOSS_DEFEAT_SINGYOKU ? 15 : 7)
-                == 0) {
+            if (defeat->frame % defeat->params.whiteout_period == 0) {
                 M_Whiteout();
             }
             defeat->phase = BOSS_DEFEAT_WHITEOUT_DELAY;
@@ -113,10 +110,9 @@ bool BossDefeat_Resume(
             break;
         case BOSS_DEFEAT_WHITEIN:
             defeat->frame++;
-            if (defeat->frame % (defeat->kind == BOSS_DEFEAT_SINGYOKU ? 15 : 5)
-                    == 0
+            if (defeat->frame % defeat->params.whitein_period == 0
                 && M_Whitein(post_defeat)) {
-                if (defeat->kind == BOSS_DEFEAT_REGULAR) {
+                if (defeat->params.clears_stage) {
                     Stage_MarkCleared();
                     Player_Hit();
                 }

@@ -81,6 +81,14 @@ typedef struct {
 
 static B10J m_B10J;
 
+static const BOSS_DEFEAT_PARAMS m_Defeat = {
+    .shift = 16,
+    .step = 2,
+    .whiteout_period = 7,
+    .whitein_period = 5,
+    .clears_stage = true,
+};
+
 static RESULT M_LoadPillars(VFS *const vfs, B10J_PILLARS *const out)
 {
     uint8_t *masks;
@@ -973,7 +981,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
             Pellets_EraseAndResetMoving();
             Missiles_Reset();
             ShootoutLasers_EraseAndReset(5);
-            BossDefeat_Begin(&m_B10J.defeat, BOSS_DEFEAT_REGULAR);
+            BossDefeat_Begin(&m_B10J.defeat, m_Defeat);
             m_B10J.defeating = true;
             return M_Death(assets, miko);
         }
@@ -997,4 +1005,5 @@ const BOSS_STRATEGY g_BossMima = {
     .background = M_StageBackground,
     .update_on_life_begin = true,
     .song = 8,
+    .defeat = m_Defeat,
 };
