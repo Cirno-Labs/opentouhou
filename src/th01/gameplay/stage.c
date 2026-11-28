@@ -115,7 +115,7 @@ static void M_StageBegin(const uint64_t host_tick)
     M_BossSetup(host_tick);
     if (g_Gameplay->boss_stage) {
         Stage_SetFirstStage(true);
-        Items_Reset();
+        Items_ResetStage();
     }
     const BOSS_STRATEGY *const boss = Gameplay_Boss();
     if (boss != nullptr && boss->resume_setup != nullptr) {

@@ -128,7 +128,7 @@ void GameplayEnd_BeginBonus(
 
 void GameplayEnd_BeginGameover(void)
 {
-    Items_Reset();
+    Items_ResetStage();
     Orb_Put(Gameplay_StageSprites(), g_Orb->left, g_Orb->top, 0);
     const int16_t image = MasterRng_Next(&g_Rng) % 8 == 0 ? 23 : 22;
     Sprite_PtnPut(

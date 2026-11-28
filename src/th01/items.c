@@ -231,7 +231,7 @@ void Items_Add(const int16_t left, const int16_t top, const bool bomb)
     }
 }
 
-void Items_Reset(void)
+void Items_ResetStage(void)
 {
     for (int32_t i = 0; i < ITEMS_BOMB_COUNT; i++) {
         m_Items.bombs[i].flag = ITEM_FREE;
@@ -255,8 +255,7 @@ void Items_Render(const PTN *const sprites)
     }
 }
 
-void Items_UpdateAndRender(
-    const PTN *const sprites, const GAME_TEXT_FONT *const font)
+void Items_Update(const PTN *const sprites, const GAME_TEXT_FONT *const font)
 {
     for (int32_t i = 0; i < ITEMS_BOMB_COUNT; i++) {
         M_Update(&m_Items.bombs[i], sprites, font, true);

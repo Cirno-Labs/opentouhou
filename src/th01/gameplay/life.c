@@ -186,8 +186,7 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         return true;
     }
     case GP_LIFE_ITEMS:
-        Items_UpdateAndRender(
-            Gameplay_StageSprites(), &g_GameplayAssets->item_font);
+        Items_Update(Gameplay_StageSprites(), &g_GameplayAssets->item_font);
         Stage_AdvanceFrame();
         Orb_AdvanceForceFrame();
         Player_AdvanceBombFrame();
