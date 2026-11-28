@@ -7,7 +7,8 @@
 #include "core/patch/manager.h"
 #include "core/patch/repo.h"
 
-// Keeps the files of patches in a patches folder, as manager.h describes.
+// Keeps the files of patches in a patches folder, as manager.h describes:
+// fetching updates and writing them to disk.
 
 // Holds one patch in a patches folder.
 typedef struct {

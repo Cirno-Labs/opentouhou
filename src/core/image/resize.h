@@ -3,7 +3,10 @@
 #include "core/base/types.h"
 #include "core/image/pixels.h"
 
+// Scales an in-memory image to a new size.
+//
 // Scales image to width x height with a bilinear filter.
+
 void Image_Resize(IMAGE *image, int32_t width, int32_t height);
 
 // Downsamples quantized pixels with a triangle filter and wrapped edges,

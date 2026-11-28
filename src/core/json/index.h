@@ -15,6 +15,7 @@
 // const char *text = Json_GetString(Json_IndexGet(&strings, "th06_title"), "");
 // ...
 // HashMap_Free(&strings);
+
 typedef HASH_MAP(const char *, const JSON_VALUE *) JSON_INDEX;
 
 // Prepares an index of the members of object, with its memory and its copies

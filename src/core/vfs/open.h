@@ -9,6 +9,7 @@
 // thcrap jdiffs). A file opened as VFS_STREAM never goes through the hook,
 // because the hook needs the whole file in memory to patch it. A hook that
 // fails closes the READER and fails the open.
+
 typedef RESULT (*VFS_HOOK)(void *context, const char *path, READER *file);
 
 // Returns whether a lookup for path would find a file.

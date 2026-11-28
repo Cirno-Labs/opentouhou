@@ -2,6 +2,10 @@
 
 #include "core/io/reader.h"
 
+// Decompresses raw deflate streams, as the games' zip and PBG3 archives
+// store entries. Builds a seek index so a reopened entry can skip ahead
+// without redecompressing it from the start.
+
 typedef struct DEFLATE_INDEX DEFLATE_INDEX;
 
 // Takes ownership of packed, including on failure. Scans the raw deflate

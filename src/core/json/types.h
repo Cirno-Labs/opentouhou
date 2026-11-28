@@ -2,6 +2,9 @@
 
 #include "core/base/types.h"
 
+// Shared types for the JSON value tree: the tag and opaque node that
+// parse.h builds and get.h, index.h and merge.h all operate on.
+
 typedef enum {
     JSON_NULL,
     JSON_BOOL,

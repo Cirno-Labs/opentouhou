@@ -3,6 +3,10 @@
 #include "core/base/result.h"
 #include "core/base/types.h"
 
+// Converts PCM from a source sample rate to the engine's fixed output
+// rate. The audio engine resamples through this before mixing; nothing
+// else calls it.
+
 typedef struct AUDIO_RESAMPLER AUDIO_RESAMPLER;
 
 // Converts interleaved stereo float frames at rate to AUDIO_OUTPUT_RATE

@@ -9,6 +9,7 @@
 // Fails only when the file exists but cannot be read, or its text fails to
 // parse (see Ini_Parse). The INI and everything it owns come from allocator;
 // Ini_Free releases it.
+
 RESULT Ini_Load(const char *path, const ALLOCATOR *allocator, INI **out);
 
 // Parses size bytes of INI text. On success, *out is a new INI built from

@@ -3,6 +3,9 @@
 #include "core/audio/types.h"
 #include "core/base/result.h"
 
+// Feeds synthesized audio (such as a chip emulator's output) into the
+// mixer as a live bus, bypassing files and decoding entirely.
+
 typedef struct AUDIO_LIVE AUDIO_LIVE;
 
 // Creates a live input at the mixer's 48000 Hz stereo rate. Requires one to

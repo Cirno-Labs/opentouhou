@@ -8,6 +8,7 @@
 // key does not exist. The name comparisons ignore the case of ASCII
 // letters. The returned pointer is owned by ini and stays valid until the
 // key's value changes or ini is freed.
+
 const char *Ini_Get(const INI *ini, const char *section, const char *key);
 
 // Returns the name of the index-th key line of section, in file order, or

@@ -2,6 +2,9 @@
 
 #include "core/base/types.h"
 
+// Shared types for the audio engine: sample, playback and stream handles,
+// group and loop settings used across audio/.
+
 typedef struct AUDIO_SAMPLE AUDIO_SAMPLE;
 typedef struct AUDIO_PLAYBACK AUDIO_PLAYBACK;
 typedef struct AUDIO_STREAM AUDIO_STREAM;

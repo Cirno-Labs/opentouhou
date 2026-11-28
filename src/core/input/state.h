@@ -7,6 +7,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// Tracks connected controllers and polls bound inputs into per-frame
+// state, applying the bindings and schema the rest of input/ defines.
+
 typedef struct INPUT_STATE INPUT_STATE;
 
 // Describes one connected controller.

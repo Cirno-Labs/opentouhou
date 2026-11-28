@@ -1,5 +1,8 @@
 #pragma once
 
+// Installs, updates and selects thcrap patches from a network of
+// repositories, and stacks their files over a game's own data.
+
 #include "core/patch/fetch.h"
 #include "core/patch/files.h"
 #include "core/patch/language.h"

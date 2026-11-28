@@ -1,5 +1,8 @@
 #pragma once
 
+// Parses, reads, builds and merges JSON values, used for the patch
+// manager's manifests and other structured data the games read.
+
 #include "core/json/get.h"
 #include "core/json/index.h"
 #include "core/json/merge.h"

@@ -3,6 +3,9 @@
 #include "core/audio/types.h"
 #include "core/base/result.h"
 
+// Controls one running playback: a sample instance or a stream, started
+// by AudioSample_Play or by loading a stream.
+
 // Starts an independent playback of a ready sample. Reports incomplete loading.
 RESULT AudioSample_Play(
     AUDIO_SAMPLE *sample, const AUDIO_PLAY_OPTIONS *options,

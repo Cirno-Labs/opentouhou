@@ -3,6 +3,7 @@
 #include "core/base/types.h"
 
 // Computes SHA-1 digests, in one call or over data given in parts.
+// Used to verify game data files against known hashes.
 
 #define SHA1_DIGEST_SIZE 20
 

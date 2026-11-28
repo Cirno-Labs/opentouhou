@@ -2,7 +2,8 @@
 
 #include "core/base/types.h"
 
-// Finds the language that the user prefers, as the system settings give it.
+// Finds the language the user prefers, as the system settings give it.
+// Used to pick a default UI and subtitle language before config loads.
 
 // Sets the size of the code buffers of a LOCALE, NUL included.
 #define LOCALE_CODE_SIZE 4

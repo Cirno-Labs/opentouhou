@@ -5,6 +5,7 @@
 // Returns the view of the logical screen in its own pixels: x right,
 // y down, z from 0 to 1, pixel centers at half integers. Without
 // Gfx_Init, returns identity matrices and an empty viewport.
+
 GFX_VIEW GfxView_Screen(void);
 
 // Moves projected positions by x and y logical-screen pixels without

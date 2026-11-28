@@ -4,7 +4,11 @@
 #include "core/gfx/types.h"
 #include "core/image.h"
 
+// Holds pixels on the GPU for drawing. A texture is RGBA or indexed with
+// a palette; both upload and sample the same way through draw.h.
+//
 // Creates a texture holding image. Headless, keeps only the size.
+
 RESULT GfxTexture_Create(const IMAGE *image, GFX_TEXTURE **out);
 
 // Creates an indexed texture with one byte per pixel and 256 RGBA palette

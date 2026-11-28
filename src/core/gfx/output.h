@@ -5,6 +5,9 @@
 #include "core/gfx/types.h"
 #include "core/image.h"
 
+// Owns the renderer and the window it draws into: starting and stopping
+// it, and presenting the finished tick's image to the screen.
+
 typedef struct SDL_Window SDL_Window;
 
 // Starts the renderer on the program's window, with a logical screen of

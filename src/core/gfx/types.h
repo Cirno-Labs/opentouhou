@@ -3,6 +3,9 @@
 #include "core/base/types.h"
 #include "core/math/vec.h"
 
+// Shared types for the renderer: the opaque texture handle, and the
+// color and rectangle types gfx/ calls take and return.
+
 typedef struct GFX_TEXTURE GFX_TEXTURE;
 
 typedef struct {

@@ -6,6 +6,7 @@
 
 // Prepares an empty VFS: nothing is mounted, and no file is found until
 // something is.
+
 VFS *Vfs_Create(const ALLOCATOR *allocator);
 
 // Closes every mounted source and releases the VFS.
