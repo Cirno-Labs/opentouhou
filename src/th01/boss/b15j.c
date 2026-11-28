@@ -148,7 +148,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
             &m_B15J.souls[i], 0, 0, (BOSS_BOUNDS) { 32, 576, 64, 400 });
     }
     m_B15J.post_defeat = (PALETTE) {};
-    Particles_Init();
+    Particles_ResetStage();
 }
 
 static int8_t M_Byte(const int32_t value)

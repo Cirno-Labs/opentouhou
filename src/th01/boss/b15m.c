@@ -234,7 +234,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     HudHp_Begin(6, 10);
     Rng_Seed(g_Session.frame_rand);
     Pellets_Interlace();
-    Particles_Init();
+    Particles_ResetStage();
 }
 
 static uint16_t M_Random(const B15M_ASSETS *const assets, const PTN *const miko)

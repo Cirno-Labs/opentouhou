@@ -42,7 +42,7 @@ static inline void Th01Test_ResetWorld(void)
     Items_Init();
     Missiles_Init();
     ShootoutLasers_Init();
-    Particles_Reset();
+    Particles_Init();
     Bomb_Init();
     Miss_Init();
     Scene_Init();

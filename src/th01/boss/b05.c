@@ -445,7 +445,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     HudHp_Begin(2, 6);
     m_B05.status.phase = B05_PHASE_START;
     m_B05.pending = B05_IDLE;
-    Particles_Init();
+    Particles_ResetStage();
 }
 
 static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)

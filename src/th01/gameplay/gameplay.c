@@ -157,7 +157,7 @@ void Gameplay_Reset(void)
     Items_Init();
     Missiles_Init();
     ShootoutLasers_Init();
-    Particles_Reset();
+    Particles_Init();
     Bomb_Init();
     Miss_Init();
     Scene_Init();

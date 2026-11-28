@@ -164,7 +164,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     m_B10M.status.hp = 16;
     m_B10M.finished = false;
     HudHp_Begin(8, 12);
-    Particles_Init();
+    Particles_ResetStage();
     Missiles_Reset();
 }
 

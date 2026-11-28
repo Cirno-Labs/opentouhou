@@ -195,7 +195,7 @@ static bool M_ResumeSetup(const void *const data, const BOSS_CONTEXT *const ctx)
     m_B10J.status.phase = B10J_PHASE_START;
     m_B10J.status.hp = 12;
     HudHp_Begin(2, 6);
-    Particles_Init();
+    Particles_ResetStage();
     Missiles_Reset();
     Palette_SetStage(&g_Palette->saved);
     m_B10J.setup_active = false;
@@ -883,7 +883,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         return M_Death(assets, miko);
     }
     Missiles_UpdateAndRender((uint16_t)g_Session.frame_rand, &assets->missiles);
-    Particles_UpdateAndRender(PARTICLES_TOP_RIGHT, 7);
+    Particles_Update(PARTICLES_TOP_RIGHT, 7);
     if (m_B10J.status.phase == B10J_PHASE_START) {
         Video_SelectDrawingPage(0);
         m_B10J.status.frame = 0;

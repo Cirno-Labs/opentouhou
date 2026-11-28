@@ -137,20 +137,19 @@ static void M_Spawn(const PARTICLES_ORIGIN origin, const uint32_t i)
     }
 }
 
-void Particles_Reset(void)
+void Particles_Init(void)
 {
     memset(&m_Particles, 0, sizeof(m_Particles));
 }
 
-void Particles_Init(void)
+void Particles_ResetStage(void)
 {
     memset(m_Particles.alive, 0, sizeof(m_Particles.alive));
     m_Particles.spawn_interval = 2;
     m_Particles.velocity_max = 10;
 }
 
-void Particles_UpdateAndRender(
-    const PARTICLES_ORIGIN origin, const uint8_t color)
+void Particles_Update(const PARTICLES_ORIGIN origin, const uint8_t color)
 {
     ASSERT(m_Particles.spawn_interval == 2 && m_Particles.velocity_max == 10);
     ASSERT(origin >= PARTICLES_TOP && origin <= PARTICLES_TOP_LEFT);
