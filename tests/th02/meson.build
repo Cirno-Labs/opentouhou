@@ -512,7 +512,7 @@ test(
     'test_th02_main',
     'test_th02_main.c',
     implicit_include_directories: false,
-    link_with: [th02_lib, builtin_libs['th02'], core_io_lib, core_vfs_lib, core_hash_lib, core_audio_lib, core_base_lib],
+    link_with: [th02_main_lib, th02_lib, builtin_libs['th02'], core_io_lib, core_vfs_lib, core_hash_lib, core_audio_lib, core_base_lib],
     dependencies: [shell_game_dep, pc98_dep, sdl3],
   ),
   suite: 'unit',

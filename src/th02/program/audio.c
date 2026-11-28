@@ -128,7 +128,7 @@ static void M_MimaMusic(void *const context, const BOSS_MUSIC_REQUEST request)
     }
 }
 
-static void M_SaveSettings(void *const context)
+void ProgramAudio_SaveSettings(void *const context)
 {
     p_Program->scenes.save_settings = true;
 }
@@ -147,7 +147,7 @@ OPENING_AUDIO ProgramAudio_Opening(void)
     return (OPENING_AUDIO) {
         .title = M_TitleMusic,
         .music = M_RoomMusic,
-        .save_settings = M_SaveSettings,
+        .save_settings = ProgramAudio_SaveSettings,
     };
 }
 

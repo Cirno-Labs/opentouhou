@@ -13,6 +13,8 @@
 #include "th02/stage_effects.h"
 #include "th02/text_font.h"
 
+#include <string.h>
+
 static HIGH_SCORE_ENTRY_EVENTS M_TestRegistration(const TH02_INPUT *input);
 static void M_TestResume(void);
 static GAME_OVER_EVENT M_TestGameOver(uint16_t keys);
@@ -42,47 +44,25 @@ static uint16_t M_TestMeasure(const PMD *pmd);
 static bool M_TestBonus(const TH02_INPUT *input);
 static void M_TestBeginProgram(void);
 
-#define Ending_Begin M_TestEnding
-#define StageBonus_Update M_TestBonus
-#define Ending_Update M_TestEndingUpdate
-#define Pmd_Measure M_TestMeasure
-#define HighScoreEntry_Update M_TestRegistration
-#define GameOver_Resume M_TestResume
-#define GameOver_Update M_TestGameOver
-#define Opening_Update M_TestOpening
-#define Opening_BeginProgram M_TestBeginProgram
-#define HighScoresFile_Save M_TestSave
-#define Shell_GetUserFiles M_TestUserFiles
-#define Shell_RequestSaveSettings M_TestSettings
-#define GameAudio_Render M_TestAudio
-#define Presenter_Draw M_TestDraw
-#define Presenter_Close M_TestClose
-#define TextFont_Tram M_TestFont
-#define M_Render M_RenderClock
-#include "th02/audio_clock.c"
-#undef M_Render
-#include "th02/main.c"
-#include "th02/program/assets.c"
-#include "th02/program/audio.c"
-#include "th02/program/scenes.c"
+static const PROGRAM_HOOKS m_TestHooks = {
+    .ending_begin = M_TestEnding,
+    .stage_bonus_update = M_TestBonus,
+    .ending_update = M_TestEndingUpdate,
+    .pmd_measure = M_TestMeasure,
+    .high_score_entry_update = M_TestRegistration,
+    .game_over_resume = M_TestResume,
+    .game_over_update = M_TestGameOver,
+    .opening_update = M_TestOpening,
+    .opening_begin_program = M_TestBeginProgram,
+    .high_scores_file_save = M_TestSave,
+    .shell_get_user_files = M_TestUserFiles,
+    .shell_request_save_settings = M_TestSettings,
+    .presenter_draw = M_TestDraw,
+    .presenter_close = M_TestClose,
+    .text_font_tram = M_TestFont,
+};
 
-#include <string.h>
-#undef Ending_Begin
-#undef StageBonus_Update
-#undef Ending_Update
-#undef Pmd_Measure
-#undef HighScoreEntry_Update
-#undef GameOver_Resume
-#undef GameOver_Update
-#undef Opening_BeginProgram
-#undef Opening_Update
-#undef HighScoresFile_Save
-#undef Shell_GetUserFiles
-#undef Shell_RequestSaveSettings
-#undef GameAudio_Render
-#undef Presenter_Draw
-#undef Presenter_Close
-#undef TextFont_Tram
+static const AUDIO_CLOCK_RENDER m_TestRender = { .render = M_TestAudio };
 
 typedef struct {
     char events[64];
@@ -234,6 +214,8 @@ static bool M_Step(const TH02_INPUT *const input)
 static void M_Begin(void)
 {
     memset(&m_Test, 0, sizeof(m_Test));
+    Program_InitHooks(&m_TestHooks);
+    AudioClock_InitRender(&m_TestRender);
     AudioClock_Init((PMD *)&m_Test, nullptr, &p_Program->audio.music_wait);
     MusicWait_Init(&p_Program->audio.music_wait);
     p_Program->scenes.save_scores = p_Program->scenes.save_settings =
@@ -272,7 +254,7 @@ TEST(registration_retains_its_root_destination_across_waiting_ticks)
     m_Test.registration.save_section = false;
     const TH02_INPUT input = {};
     for (unsigned ending = 0; ending < 2; ending++) {
-        M_Registration(&input, ending != 0);
+        ProgramScenes_Registration(&input, ending != 0);
         const TH02_SCENE scene = ending != 0 ? TH02_SCENE_ENDING_REGISTRATION
                                              : TH02_SCENE_REGISTRATION;
         CHECK_EQ_INT(p_Program->scenes.scene, scene);
@@ -295,7 +277,7 @@ TEST(registration_snapshots_each_input_date)
     p_Program->scenes.session.shot_type = 0;
     p_Program->scenes.session.score = 34567;
     TH02_INPUT input = { .date = 20261231 };
-    M_Registration(&input, true);
+    ProgramScenes_Registration(&input, true);
     HIGH_SCORE_RECORD *const records =
         p_Program->scenes.scores.sections[1].records;
     CHECK_EQ_INT(records[0].year, 2026);
@@ -307,7 +289,7 @@ TEST(registration_snapshots_each_input_date)
     CHECK_EQ_INT(records[0].month, 12);
     CHECK_EQ_INT(records[0].day, 31);
     p_Program->scenes.session.score++;
-    M_Registration(&input, false);
+    ProgramScenes_Registration(&input, false);
     CHECK_EQ_INT(records[0].year, 2027);
     CHECK_EQ_INT(records[0].month, 1);
     CHECK_EQ_INT(records[0].day, 1);
@@ -330,7 +312,7 @@ TEST(main_score_converts_at_registration_and_stays_encoded_through_continue)
     CHECK_EQ_INT(p_Score->value, 12345);
     m_Test.registration =
         (HIGH_SCORE_ENTRY_EVENTS) { HIGH_SCORE_ENTRY_FRAME, false };
-    M_Registration(&input, false);
+    ProgramScenes_Registration(&input, false);
     CHECK_EQ_INT(p_Score->value, 123452);
     CHECK(M_Step(&input));
     CHECK_EQ_INT(p_Score->value, 123452);
@@ -349,8 +331,8 @@ TEST(quitting_tick_flushes_scores_and_coalesces_settings_requests)
     p_Program->scenes.scene = TH02_SCENE_OPENING;
     m_Test.quit = true;
     p_Program->scenes.save_scores = true;
-    M_SaveSettings(nullptr);
-    M_SaveSettings(nullptr);
+    ProgramAudio_SaveSettings(nullptr);
+    ProgramAudio_SaveSettings(nullptr);
     const TH02_INPUT input = {};
     CHECK(!g_GameDesc.tick(&input));
     CHECK(strcmp(m_Test.events, "OST") == 0);
@@ -451,7 +433,7 @@ TEST(ending_handoff_retains_mima_delta_and_commits_only_the_extra_delta)
             p_Score->transferred = 19;
             p_Score->lives = 2;
             p_Score->bombs = 3;
-            M_Ending(extra != 0);
+            ProgramScenes_Ending(extra != 0);
             CHECK_EQ_INT(p_Program->scenes.scene, TH02_SCENE_ENDING);
             CHECK(strcmp(m_Test.events, "E") == 0);
             CHECK_EQ_INT(p_Score->value, extra != 0 ? 12393 : 12345);

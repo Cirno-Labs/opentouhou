@@ -102,6 +102,50 @@ typedef struct {
 // Writable view of the program's state for its parts and tests.
 extern PROGRAM *const p_Program;
 
+// The calls scenes.c makes into the other screens and the shell, set by
+// Program_InitHooks: the real functions by default, a fake observer in
+// tests.
+typedef struct {
+    void (*ending_begin)(
+        const ENDING_ASSETS *assets, const TH02_SESSION *session,
+        STORY_AUDIO music, void *music_context, bool extra_unlocked);
+    bool (*stage_bonus_update)(const TH02_INPUT *input);
+    bool (*ending_update)(
+        const TH02_INPUT *input, bool music_active, uint16_t measure);
+    uint16_t (*pmd_measure)(const PMD *pmd);
+    HIGH_SCORE_ENTRY_EVENTS (*high_score_entry_update)(const TH02_INPUT *input);
+    void (*game_over_resume)(void);
+    GAME_OVER_EVENT (*game_over_update)(uint16_t keys);
+    OPENING_EVENTS (*opening_update)(
+        bool reference_edge, uint16_t keys, bool skip_logo);
+    void (*opening_begin_program)(void);
+    RESULT (*high_scores_file_save)(VFS *user_files, const HIGH_SCORES *scores);
+    VFS *(*shell_get_user_files)(void);
+    void (*shell_request_save_settings)(void);
+    void (*presenter_draw)(
+        bool text_visible, const GAIJI *gaiji, const TRAM_FONT *font,
+        uint16_t first_cell, bool blink_visible);
+    void (*presenter_close)(void);
+    TRAM_FONT (*text_font_tram)(const TEXT_FONT *font);
+} PROGRAM_HOOKS;
+
+extern const PROGRAM_HOOKS g_ProgramHooks;
+
+// Swaps scenes.c's hooks; defaults to g_ProgramHooks, so only tests need
+// to call this.
+void Program_InitHooks(const PROGRAM_HOOKS *hooks);
+
+// Begins or resumes score registration for the current run, entering
+// its scene and running its first update.
+void ProgramScenes_Registration(const TH02_INPUT *input, bool ending);
+
+// Commits the run's score and enters the ending at the given stage.
+void ProgramScenes_Ending(bool extra);
+
+// Requests the pending settings save, as an OPTIONS_MENU_SOUND context
+// callback.
+void ProgramAudio_SaveSettings(void *context);
+
 // Fills the options menu's sound state from the settings, with its
 // sound callback.
 void ProgramAudio_InitSound(OPTIONS_MENU_SOUND *sound);
