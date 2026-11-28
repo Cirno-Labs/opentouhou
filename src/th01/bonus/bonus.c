@@ -1,4 +1,4 @@
-#include "th01/bonus.h"
+#include "th01/bonus/bonus.h"
 
 #include "th01/session.h"
 #include "th01/sound.h"
