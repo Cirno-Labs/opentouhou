@@ -151,7 +151,7 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
             CHECK_EQ_INT(m_B10J.status.hp, 3);
         }
         CHECK(
-            memcmp(&g_Palette.saved, &f.assets.palette, sizeof(PALETTE)) == 0);
+            memcmp(&g_Palette->saved, &f.assets.palette, sizeof(PALETTE)) == 0);
         for (int32_t i = 0; i < 16; i++) {
             const int32_t target = f.assets.palette.colors[i][0];
             const int32_t faded = 14 - step;

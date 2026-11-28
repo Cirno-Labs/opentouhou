@@ -87,9 +87,9 @@ TEST(setup_preserves_patterns)
     m_B20M.shield.lock_frame = 7;
     m_B20M.hit.frame = 17;
     m_B20M.hit.invincible = true;
-    memset(&g_Palette, 0, sizeof(g_Palette));
+    memset(p_Palette, 0, sizeof(*p_Palette));
     memset(&m_Health, 0, sizeof(m_Health));
-    g_Palette.saved.colors[6][0] = 9;
+    p_Palette->saved.colors[6][0] = 9;
 
     const size_t used = arena.used;
     M_BossSetup(&a);
@@ -203,8 +203,8 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     g_Rng = 5;
     VSyncIrq_Reset();
     uint64_t tick = 0;
-    memset(&g_StagePalette, 0x07, sizeof(g_StagePalette));
-    const PALETTE before = g_StagePalette;
+    memset(p_StagePalette, 0x07, sizeof(*p_StagePalette));
+    const PALETTE before = *g_StagePalette;
     const size_t used = arena.used;
     M_BossBeginEntrance(&f.assets);
     CHECK(g_Pellets->interlace);
@@ -214,7 +214,7 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     CHECK(memcmp(&m_B20M, &pending, sizeof(m_B20M)) == 0);
     int32_t polls = 0;
     while (m_B20M.entrance_active && polls++ < 1500) {
-        CHECK(memcmp(&g_StagePalette, &before, sizeof(before)) == 0);
+        CHECK(memcmp(p_StagePalette, &before, sizeof(before)) == 0);
         tick++;
         VSyncIrq_Edge();
         M_BossResumeEntrance(&f.assets, tick);
@@ -224,7 +224,7 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     CHECK_EQ_INT(g_Video.drawing_page, 0);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(arena.used, used);
-    CHECK(memcmp(&g_StagePalette, &m_B20M.stage_palette, sizeof(PALETTE)) == 0);
+    CHECK(memcmp(p_StagePalette, &m_B20M.stage_palette, sizeof(PALETTE)) == 0);
     Arena_Free(&arena);
 }
 TEST(ring_entrance_preserves_pending_polls_and_reserves_wand_background)

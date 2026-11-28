@@ -31,7 +31,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     Video_Init(Arena_Allocator(arena));
     memset(g_Video.pages[0], 4, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
-    Palette_SetGray(&g_Palette, 3);
+    Palette_SetGray(p_Palette, 3);
     GAME_TEXT_GLYPH glyphs[96] = {};
     for (uint32_t i = 0; i < 90; i++) {
         glyphs[i].codepoint = 0xff01 + i;
@@ -98,9 +98,9 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     CHECK_EQ_INT(g_GameInput->bomb_frame, 72);
     CHECK_EQ_INT(g_Video.pages[0][250 * VIDEO_WIDTH + 128], 7);
     CHECK_EQ_INT(g_Video.pages[1][250 * VIDEO_WIDTH + 128], 4);
-    CHECK_EQ_INT(g_Palette.saved.colors[1][0], 15);
-    CHECK_EQ_INT(g_Palette.saved.colors[3][0], 9);
-    CHECK_EQ_INT(g_Palette.saved.colors[4][0], 0);
+    CHECK_EQ_INT(g_Palette->saved.colors[1][0], 15);
+    CHECK_EQ_INT(g_Palette->saved.colors[3][0], 9);
+    CHECK_EQ_INT(g_Palette->saved.colors[4][0], 0);
     CHECK_EQ_INT(g_Session.route, 1);
     CHECK(m_Scene.active == &f.cache[0]);
     const ROUTE_SELECT frozen = m_Selection;
@@ -135,8 +135,8 @@ TEST(dual_direction_toggles_once_and_holds_do_not_repeat)
     CHECK_EQ_INT(m_Selection.selection, 1);
     CHECK_EQ_INT(g_Video.pages[0][250 * VIDEO_WIDTH + 128], 4);
     CHECK_EQ_INT(g_Video.pages[0][300 * VIDEO_WIDTH + 128], 7);
-    CHECK_EQ_INT(g_Palette.saved.colors[1][0], 9);
-    CHECK_EQ_INT(g_Palette.saved.colors[3][0], 15);
+    CHECK_EQ_INT(g_Palette->saved.colors[1][0], 9);
+    CHECK_EQ_INT(g_Palette->saved.colors[3][0], 15);
     CHECK(!M_Poll(&f, both));
     CHECK_EQ_INT(m_Selection.selection, 1);
     CHECK(!M_Poll(&f, (TH01_INPUT) { .down = true }));

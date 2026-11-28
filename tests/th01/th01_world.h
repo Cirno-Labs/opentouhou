@@ -11,7 +11,7 @@
 #include "th01/miss.h"
 #include "th01/missiles.h"
 #include "th01/orb.h"
-#include "th01/palette.h"
+#include "th01/palette_private.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"
 #include "th01/player.h"
@@ -32,8 +32,8 @@ static inline void Th01Test_ResetWorld(void)
     Orb_Init();
     Shots_Init();
     Pellets_Init();
-    Palette_Init(&g_Palette);
-    memset(&g_StagePalette, 0, sizeof(g_StagePalette));
+    Palette_Init(p_Palette);
+    Palette_ResetStage();
     Boss_Init();
     g_Rng = 0;
     StageObjects_Clear();

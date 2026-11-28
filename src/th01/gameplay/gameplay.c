@@ -134,7 +134,7 @@ void Gameplay_Init(
     Hud_Init(allocator);
     HudHp_Init(allocator);
     Tram_Init(allocator);
-    Palette_Init(&g_Palette);
+    Palette_ResetGlobal();
     Hud_Load(&assets->hud, Gameplay_StageSprites(), &assets->hud_font);
 }
 
@@ -144,8 +144,8 @@ void Gameplay_Reset(void)
     Stage_Leave();
     p_Gameplay->wait_for_shot = true;
     GameplayStage_Begin();
-    Palette_Init(&g_Palette);
-    memset(&g_StagePalette, 0, sizeof(g_StagePalette));
+    Palette_ResetGlobal();
+    Palette_ResetStage();
     Boss_Init();
     Player_Init();
     Orb_Init();

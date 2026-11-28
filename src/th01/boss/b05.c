@@ -312,9 +312,9 @@ static bool M_Entrance(void)
                 m_B05.hit.invincible = false;
                 m_B05.status.frame = 0;
                 m_B05.hp_bar_filled = false;
-                Palette_Set(&g_Palette, &m_B05.boss_palette);
-                Palette_SetStage(&g_Palette.saved);
-                m_B05.boss_palette = g_Palette.saved;
+                Palette_SetGlobal(&m_B05.boss_palette);
+                Palette_SetStage(&g_Palette->saved);
+                m_B05.boss_palette = g_Palette->saved;
                 m_B05.sphere.orb_inactive = false;
                 m_B05.hit.frame = 0;
                 m_B05.pattern_state = Boss_Rank(70, 50, 30, 10);
@@ -336,14 +336,15 @@ static bool M_Entrance(void)
             const int32_t colors[] = { 5, 9, 15 };
             for (int32_t component = 0; component < 3; component++) {
                 for (int32_t i = 0; i < 3; i++) {
-                    int8_t *const value =
-                        &g_Palette.saved.colors[colors[i]][component];
-                    if (*value < g_StagePalette.colors[colors[i]][component]) {
-                        (*value)++;
+                    const int8_t value =
+                        g_Palette->saved.colors[colors[i]][component];
+                    if (value < g_StagePalette->colors[colors[i]][component]) {
+                        Palette_SetGlobalSavedComponent(
+                            colors[i], component, value + 1);
                     }
                 }
             }
-            Palette_Set(&g_Palette, &g_Palette.saved);
+            Palette_SetGlobal(&g_Palette->saved);
         }
         m_B05.pending = B05_ENTRANCE_DELAY;
     }
@@ -423,9 +424,9 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B05.person, 2, &assets->person)));
     m_B05.post_defeat = assets->palette;
     Palette_SetStage(&m_B05.post_defeat);
-    Palette_Set(&g_Palette, &m_B05.post_defeat);
-    m_B05.boss_palette = g_Palette.saved;
-    Palette_Set(&g_Palette, &g_Palette.saved);
+    Palette_SetGlobal(&m_B05.post_defeat);
+    m_B05.boss_palette = g_Palette->saved;
+    Palette_SetGlobal(&g_Palette->saved);
     BossEntity_SetPosition(
         &m_B05.sphere, 640, 64, (BOSS_BOUNDS) { 0, 736, 64, 304 });
     BossEntity_SetOrbHitbox(&m_B05.sphere, (BOSS_BOUNDS) { 8, 88, 8, 88 });
@@ -455,9 +456,9 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
     if (m_B05.status.phase == B05_PHASE_START) {
         m_B05.sphere.left = 272;
         m_B05.sphere.top = 96;
-        Palette_SetColor(&g_Palette, 5, 0, 0, 0);
-        Palette_SetColor(&g_Palette, 9, 0, 0, 0);
-        Palette_SetColor(&g_Palette, 15, 0, 0, 0);
+        Palette_SetGlobalColor(5, 0, 0, 0);
+        Palette_SetGlobalColor(9, 0, 0, 0);
+        Palette_SetGlobalColor(15, 0, 0, 0);
         m_B05.rotation_interval = 18;
         m_B05.status.frame = 0;
         m_B05.pending = B05_ENTRANCE;

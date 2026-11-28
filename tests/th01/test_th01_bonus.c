@@ -64,30 +64,30 @@ TEST(row_transition_empty_scan_fades_and_final_delay)
     Video_Init(a);
     memset(g_Video.pages[0], 3, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 7, VIDEO_PAGE_SIZE);
-    PALETTE_STATE palette = {};
+    Palette_Init(p_Palette);
     PALETTE target;
     memset(&target, 15, sizeof(target));
     Bonus_InitRowTransition();
     VSyncIrq_Reset();
     Bonus_BeginRowTransition();
-    CHECK(!Bonus_ResumeRowTransition(&palette, &target));
+    CHECK(!Bonus_ResumeRowTransition(&target));
     CHECK_EQ_INT(m_Transition.activated, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 639, 0), 3);
     for (int32_t step = 0; step < 70; step++) {
         const BONUS_ROW_TRANSITION frozen = m_Transition;
-        CHECK(!Bonus_ResumeRowTransition(&palette, &target));
+        CHECK(!Bonus_ResumeRowTransition(&target));
         CHECK(memcmp(&frozen, &m_Transition, sizeof(m_Transition)) == 0);
         m_VSync.count1 = 2;
         m_VSync.count2 = g_VSync->count2;
-        const bool ready = Bonus_ResumeRowTransition(&palette, &target);
+        const bool ready = Bonus_ResumeRowTransition(&target);
         CHECK(ready == (step == 69));
         CHECK_EQ_INT(g_VSync->count1, 0);
     }
     CHECK_EQ_INT(m_Transition.done, 400);
     CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
-    CHECK_EQ_INT(palette.saved.colors[0][0], 15);
+    CHECK_EQ_INT(g_Palette->saved.colors[0][0], 15);
     CHECK_EQ_INT(g_Video.palette[0].red, 255);
-    CHECK(Bonus_ResumeRowTransition(&palette, &target));
+    CHECK(Bonus_ResumeRowTransition(&target));
     Arena_Free(&arena);
 }
 
@@ -139,7 +139,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     m_GameInput.bomb_frame = 97;
     memset(g_Video.pages[0], 5, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
-    memset(&g_StagePalette, 11, sizeof(g_StagePalette));
+    memset(p_StagePalette, 11, sizeof(*p_StagePalette));
     Video_SelectDrawingPage(1);
     VSyncIrq_Reset();
     TH01_INPUT raw = {};
@@ -148,7 +148,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(Th01Test_Pixel(0, 32, 180), 5);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 179), 6);
     CHECK_EQ_INT(g_Video.drawing_page, 1);
-    CHECK_EQ_INT(g_Palette.saved.colors[0][0], 11);
+    CHECK_EQ_INT(g_Palette->saved.colors[0][0], 11);
     for (int32_t delay = 0; delay < 24; delay++) {
         const BONUS frozen = m_Bonus;
         CHECK(!Bonus_Resume(&f.assets, &f.font, &raw));
@@ -284,7 +284,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(m_Total.phase, BONUS_TOTAL_TRANSITION);
     CHECK_EQ_INT(Th01Test_Pixel(1, 0, 0), 14);
-    CHECK_EQ_INT(g_Palette.resource.colors[0][0], 13);
+    CHECK_EQ_INT(g_Palette->resource.colors[0][0], 13);
     for (int32_t i = 0; i < 70; i++) {
         m_VSync.count1 = 2;
         m_VSync.count2 = g_VSync->count2;
@@ -293,7 +293,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK_EQ_INT(m_Total.phase, BONUS_TOTAL_STAGE_WAIT);
     CHECK_EQ_INT(Th01Test_Pixel(0, 224, 14), 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 256, 14), 5);
-    CHECK_EQ_INT(g_Palette.saved.colors[0][0], 13);
+    CHECK_EQ_INT(g_Palette->saved.colors[0][0], 13);
     m_VSync.count1 = 30;
     m_VSync.count2 = g_VSync->count2;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));

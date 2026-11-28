@@ -146,9 +146,9 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     for (int32_t i = 1; i < 5; i++) {
         BossEntity_CopyMetadata(&m_B10M.eyes[i], &m_B10M.eyes[0]);
     }
-    Palette_Set(&g_Palette, &assets->palette);
-    m_B10M.boss_palette = g_Palette.saved;
-    m_B10M.post_defeat = g_Palette.saved;
+    Palette_SetGlobal(&assets->palette);
+    m_B10M.boss_palette = g_Palette->saved;
+    m_B10M.post_defeat = g_Palette->saved;
     Palette_SetStage(&m_B10M.post_defeat);
     const int16_t left[] = { 64, 512, 192, 384, 288 };
     const int16_t top[] = { 128, 128, 176, 176, 64 };
@@ -233,8 +233,8 @@ static void M_Common(void)
 
 static void M_Snap(const B10M_ASSETS *const assets, const PTN *const miko)
 {
-    Palette_Set(&g_Palette, &g_StagePalette);
-    m_B10M.boss_palette = g_Palette.saved;
+    Palette_SetGlobal(g_StagePalette);
+    m_B10M.boss_palette = g_Palette->saved;
 }
 
 static void M_Group(
@@ -280,18 +280,19 @@ static void M_Toggle(
     M_Lock(assets, miko, close | open);
     *frame = Math16_Wrap(*frame + 1);
     if (*frame % 10 != 0) {
-        if (dec < 3 && g_Palette.saved.colors[15][dec] > 0) {
-            g_Palette.saved.colors[15][dec]--;
-            g_StagePalette.colors[15][dec] =
-                M_Byte(g_StagePalette.colors[15][dec] - 1);
+        if (dec < 3 && g_Palette->saved.colors[15][dec] > 0) {
+            Palette_SetGlobalSavedComponent(
+                15, dec, g_Palette->saved.colors[15][dec] - 1);
+            Palette_SetStageComponent(
+                15, dec, M_Byte(g_StagePalette->colors[15][dec] - 1));
         }
         if (inc < 3) {
-            g_Palette.saved.colors[15][inc] =
-                M_Byte(g_Palette.saved.colors[15][inc] + 1);
-            g_StagePalette.colors[15][inc] =
-                M_Byte(g_StagePalette.colors[15][inc] + 1);
+            Palette_SetGlobalSavedComponent(
+                15, inc, M_Byte(g_Palette->saved.colors[15][inc] + 1));
+            Palette_SetStageComponent(
+                15, inc, M_Byte(g_StagePalette->colors[15][inc] + 1));
         }
-        Palette_Set(&g_Palette, &g_StagePalette);
+        Palette_SetGlobal(g_StagePalette);
     }
     if (*frame == 20) {
         M_Image(close, 2);
@@ -345,9 +346,11 @@ static void M_Entrance(const B10M_ASSETS *const assets, const PTN *const miko)
         Player_ClearHit();
     }
     if (m_B10M.status.frame % 40 == 0) {
-        g_StagePalette.colors[15][0] = M_Byte(g_StagePalette.colors[15][0] + 1);
-        g_StagePalette.colors[15][1] = M_Byte(g_StagePalette.colors[15][1] + 1);
-        Palette_Set(&g_Palette, &g_StagePalette);
+        Palette_SetStageComponent(
+            15, 0, M_Byte(g_StagePalette->colors[15][0] + 1));
+        Palette_SetStageComponent(
+            15, 1, M_Byte(g_StagePalette->colors[15][1] + 1));
+        Palette_SetGlobal(g_StagePalette);
     }
     const int16_t open_at[] = { 100, 120, 140, 160, 180, 200 };
     bool opening = false;

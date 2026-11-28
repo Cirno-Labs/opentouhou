@@ -36,9 +36,9 @@ static void M_Init(CASE *const state)
     const ALLOCATOR *const allocator = Arena_Allocator(&state->arena);
     Video_Init(allocator);
     Hud_Init(allocator);
-    Palette_Init(&g_Palette);
-    state->stage = g_Palette.saved;
-    g_StagePalette = state->stage;
+    Palette_Init(p_Palette);
+    state->stage = g_Palette->saved;
+    *p_StagePalette = state->stage;
     m_Player.left = 304;
     state->miko =
         (PTN) { .count = 4, .pixels = Arena_Alloc(&state->arena, 4 * 1024) };
@@ -90,9 +90,9 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
             result, frame == 140 ? BOMB_UPDATE_DONE : BOMB_UPDATE_RUNNING);
         CHECK_EQ_INT(m_Player.bomb_damaging, frame >= 50 && frame < 140);
         if (frame == 2) {
-            CHECK_EQ_INT(g_Palette.saved.colors[7][0], 14);
-            CHECK_EQ_INT(g_Palette.saved.colors[7][1], 14);
-            CHECK_EQ_INT(g_Palette.saved.colors[7][2], 15);
+            CHECK_EQ_INT(g_Palette->saved.colors[7][0], 14);
+            CHECK_EQ_INT(g_Palette->saved.colors[7][1], 14);
+            CHECK_EQ_INT(g_Palette->saved.colors[7][2], 15);
             CHECK_EQ_INT(m_Bomb.left[0], Math16_PolarX(304, 252, 2));
             CHECK_EQ_INT(m_Bomb.top[9], Math16_PolarY(184, 162, -2));
         }
@@ -105,7 +105,7 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
     CHECK_EQ_INT(m_Pellets.slots[0].decay_frame, 1);
     CHECK_EQ_INT(m_Player.invincibility_time, 100);
     CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
-    CHECK(memcmp(&g_Palette.saved, &state.stage, sizeof(PALETTE)) == 0);
+    CHECK(memcmp(&g_Palette->saved, &state.stage, sizeof(PALETTE)) == 0);
     const int16_t previous_x = m_Bomb.left[0];
     const int16_t previous_y = m_Bomb.top[0];
     Bomb_BeginUpdate(&state.miko, &state.assets, 0);

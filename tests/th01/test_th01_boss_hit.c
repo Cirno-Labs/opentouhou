@@ -45,7 +45,7 @@ static void M_Init(FIXTURE *const f)
     f->baseline.colors[2][0] = 1;
     f->baseline.colors[2][1] = 2;
     f->baseline.colors[2][2] = 3;
-    Palette_Set(&g_Palette, &f->baseline);
+    Palette_Set(p_Palette, &f->baseline);
     Hud_Load(nullptr, &f->sprites, &f->font);
 }
 
@@ -64,7 +64,7 @@ TEST(real_hud_health_and_flash_follow_hit_order)
     CHECK_EQ_INT(m_Orb.velocity_x, ORB_X_RIGHT_4);
     CHECK_EQ_INT(f.hp, 7);
     CHECK_EQ_INT(Th01Test_Pixel(0, 184, 48), 0);
-    CHECK_EQ_INT(g_Palette.saved.colors[2][0], 1);
+    CHECK_EQ_INT(g_Palette->saved.colors[2][0], 1);
     CHECK_EQ_INT(g_Video.palette[2].red, 17);
     Arena_Free(&f.arena);
 }
@@ -119,19 +119,19 @@ TEST(palette_reset_is_strictly_after_forty_even_without_invincibility)
     M_Init(&f);
     const uint8_t colors[] = { 2 };
     f.hit = (BOSS_HIT) { .frame = 40, .invincible = true };
-    Palette_SetColor(&g_Palette, 2, 15, 15, 15);
+    Palette_SetColor(p_Palette, 2, 15, 15, 15);
     BossHit_UpdateAndRender(
         &f.hit, &f.hp, &f.baseline, colors, 1, 3000, false,
         (BOSS_SHOT_HITBOX) {});
     CHECK(f.hit.invincible);
     CHECK_EQ_INT(f.hit.frame, 40);
-    CHECK_EQ_INT(g_Palette.saved.colors[2][0], 15);
+    CHECK_EQ_INT(g_Palette->saved.colors[2][0], 15);
     f.hit = (BOSS_HIT) { .frame = 41 };
     BossHit_UpdateAndRender(
         &f.hit, &f.hp, &f.baseline, colors, 1, 3000, false,
         (BOSS_SHOT_HITBOX) {});
     CHECK(!f.hit.invincible);
     CHECK_EQ_INT(f.hit.frame, 0);
-    CHECK_EQ_INT(g_Palette.saved.colors[2][0], 1);
+    CHECK_EQ_INT(g_Palette->saved.colors[2][0], 1);
     Arena_Free(&f.arena);
 }

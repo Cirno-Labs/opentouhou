@@ -452,17 +452,17 @@ TEST(palette_recolor_keeps_signed_overflow_and_dac_clamp)
     m_B10M.status.phase = B10M_PHASE_STAR_RISE;
     m_B10M.pentagram.center = (MATH16_VECTOR) { 316, 240 };
     m_B10M.pentagram.radius = 64;
-    g_StagePalette.colors[15][0] = 126;
-    g_StagePalette.colors[15][1] = 0;
-    g_StagePalette.colors[15][2] = 5;
-    Palette_Set(&g_Palette, &g_StagePalette);
+    p_StagePalette->colors[15][0] = 126;
+    p_StagePalette->colors[15][1] = 0;
+    p_StagePalette->colors[15][2] = 5;
+    Palette_Set(p_Palette, p_StagePalette);
     VSyncIrq_Reset();
     for (int32_t i = 0; i < 70; i++) {
         CHECK(M_BossUpdate(&f.assets, &f.miko));
     }
-    CHECK_EQ_INT(g_StagePalette.colors[15][0], -67);
-    CHECK_EQ_INT(g_Palette.saved.colors[15][0], 0);
-    CHECK_EQ_INT(g_Palette.saved.colors[15][2], 5);
+    CHECK_EQ_INT(g_StagePalette->colors[15][0], -67);
+    CHECK_EQ_INT(g_Palette->saved.colors[15][0], 0);
+    CHECK_EQ_INT(g_Palette->saved.colors[15][2], 5);
     CHECK_EQ_INT(m_B10M.status.phase, B10M_PHASE_STAR_ATTACK);
     CHECK_EQ_INT(m_B10M.pentagram.center.y, 189);
     CHECK_EQ_INT(m_B10M.pentagram.angle, 0);

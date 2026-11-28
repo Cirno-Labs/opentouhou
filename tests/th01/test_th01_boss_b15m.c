@@ -95,7 +95,7 @@ TEST(setup_reseeds_without_resetting_actor_or_missile_history)
     m_Missiles.slots[0].flag = MISSILE_MOVING;
     m_Missiles.slots[0].left = 300;
     const MISSILES missiles = m_Missiles;
-    const PALETTE saved = g_Palette.saved;
+    const PALETTE saved = g_Palette->saved;
     const size_t used = arena.used;
     M_BossSetup(&f.assets, &f.miko);
     CHECK((*g_Boss) == &m_B15M.status);
@@ -108,7 +108,7 @@ TEST(setup_reseeds_without_resetting_actor_or_missile_history)
     CHECK_EQ_INT(g_Rng, 0x12345678);
     CHECK(m_Pellets.interlace);
     CHECK(memcmp(&m_Missiles, &missiles, sizeof(missiles)) == 0);
-    CHECK(memcmp(&g_Palette.saved, &saved, sizeof(saved)) == 0);
+    CHECK(memcmp(&g_Palette->saved, &saved, sizeof(saved)) == 0);
     CHECK_EQ_INT(m_B15M.girl.left, 256);
     CHECK_EQ_INT(m_B15M.girl.top, 96);
     CHECK_EQ_INT(m_B15M.attack.left, 256);

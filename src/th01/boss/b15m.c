@@ -217,7 +217,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     BossEntity_SetPosition(&m_B15M.bat, 256, 96, bounds);
     BossEntity_SetOrbHitbox(&m_B15M.girl, (BOSS_BOUNDS) { 16, 112, -4, 80 });
     BossEntity_SetOrbHitbox(&m_B15M.bat, (BOSS_BOUNDS) { -8, 56, -8, 40 });
-    m_B15M.boss_palette = g_Palette.saved;
+    m_B15M.boss_palette = g_Palette->saved;
     m_B15M.post_defeat = (PALETTE) {};
     m_B15M.status.phase = B15M_PHASE_ENTRANCE;
     m_B15M.status.frame = 0;
@@ -662,7 +662,7 @@ static bool M_Entrance(const B15M_ASSETS *const assets, const PTN *const miko)
         m_B15M.entrance_stage = 0;
         m_B15M.entrance_angle = 0;
         m_B15M.hit.frame = 0;
-        m_B15M.boss_palette = g_Palette.saved;
+        m_B15M.boss_palette = g_Palette->saved;
         M_Snap(assets, miko);
     }
     if (m_B15M.entrance_waiting) {

@@ -197,7 +197,7 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     CHECK_EQ_INT(m_Particles.cycle, 73);
     CHECK_EQ_INT(m_Particles.velocity_base[0], 9);
     CHECK(memcmp(&m_B05.boss_palette, &f.assets.palette, sizeof(PALETTE)) == 0);
-    CHECK(memcmp(&g_StagePalette, &m_B05.post_defeat, sizeof(PALETTE)) == 0);
+    CHECK(memcmp(p_StagePalette, &m_B05.post_defeat, sizeof(PALETTE)) == 0);
     CHECK_EQ_INT(g_Video.pages[0][0], 3);
     CHECK_EQ_INT(g_Video.pages[1][0], 5);
     CHECK_EQ_INT(g_Video.palette[5].red, 5 * 17);
@@ -242,7 +242,7 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         CHECK(!M_BossUpdate(&f.miko, &f.route_assets, &raw));
         CHECK_EQ_INT(m_B05.status.frame, 1 + reuse);
         CHECK_EQ_INT(m_B05.hit.frame, 0);
-        CHECK_EQ_INT(g_Palette.saved.colors[5][0], 0);
+        CHECK_EQ_INT(g_Palette->saved.colors[5][0], 0);
         const B05 frozen = m_B05;
         CHECK(!M_BossUpdate(&f.miko, &f.route_assets, &raw));
         CHECK(memcmp(&m_B05, &frozen, sizeof(m_B05)) == 0);
@@ -261,7 +261,7 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         CHECK(memcmp(&m_Orb, &orb, sizeof(orb)) == 0);
         CHECK_EQ_INT(g_Rng, rng);
         CHECK(
-            memcmp(&g_Palette.saved, &m_B05.boss_palette, sizeof(PALETTE))
+            memcmp(&g_Palette->saved, &m_B05.boss_palette, sizeof(PALETTE))
             == 0);
         CHECK_EQ_INT(arena.used, used);
         Arena_Free(&arena);

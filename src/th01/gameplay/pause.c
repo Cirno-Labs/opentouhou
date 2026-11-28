@@ -1,6 +1,5 @@
 #include "th01/gameplay/private.h"
 #include "th01/input.h"
-#include "th01/palette.h"
 #include "th01/player.h"
 #include "th01/sprite.h"
 #include "th01/vsync_irq.h"
@@ -67,7 +66,7 @@ static bool M_PausePoll(const TH01_INPUT *const raw, const bool quit)
                 Session_CountContinue();
                 GameplayEnd_OpenMenu();
             } else {
-                Palette_Set(&g_Palette, &g_StagePalette);
+                Palette_SetGlobal(g_StagePalette);
                 GameInput_ResetGame();
                 Sprite_Restore16(232, 128, 176, 32);
                 GameplayLife_Resume();
@@ -84,7 +83,7 @@ static bool M_PausePoll(const TH01_INPUT *const raw, const bool quit)
 void GameplayPause_Begin(void)
 {
     M_PauseDraw(false);
-    PALETTE dark = g_Palette.saved;
+    PALETTE dark = g_Palette->saved;
     for (int32_t i = 0; i < 16; i++) {
         if (i == 7) {
             continue;
@@ -93,7 +92,7 @@ void GameplayPause_Begin(void)
             dark.colors[i][c] = (int8_t)(dark.colors[i][c] * 40 / 100);
         }
     }
-    Palette_Set(&g_Palette, &dark);
+    Palette_SetGlobal(&dark);
     p_Gameplay->sequence = GAMEPLAY_SEQUENCE_PAUSE;
     m_PausePhase = GP_PAUSE_MENU;
 }
@@ -112,7 +111,7 @@ bool GameplayPause_Step(const TH01_INPUT *const raw)
             M_PauseDraw(true);
             m_PausePhase = GP_PAUSE_QUIT_CONFIRM;
         } else {
-            Palette_Set(&g_Palette, &g_StagePalette);
+            Palette_SetGlobal(g_StagePalette);
             GameInput_ResetGame();
             Sprite_Restore16(232, 128, 176, 32);
             GameplayLife_Resume();

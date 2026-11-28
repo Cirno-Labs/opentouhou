@@ -4,7 +4,6 @@
 #include "th01/input.h"
 #include "th01/items.h"
 #include "th01/orb.h"
-#include "th01/palette.h"
 #include "th01/pellets.h"
 #include "th01/player.h"
 #include "th01/rng.h"
@@ -47,8 +46,7 @@ static GAMEPLAY_SWITCH m_SwitchTo;
 static void M_BeginSwitch(const GAMEPLAY_SWITCH to)
 {
     m_SwitchTo = to;
-    Palette_BeginFade(
-        &p_Gameplay->switch_fade, &g_Palette, PALETTE_FADE_BLACK_OUT);
+    Palette_BeginGlobalFade(&p_Gameplay->switch_fade, PALETTE_FADE_BLACK_OUT);
     VSyncIrq_BeginWait(&p_Gameplay->wait);
     p_Gameplay->sequence = GAMEPLAY_SEQUENCE_END;
     m_EndPhase = GP_END_SWITCH;
@@ -329,7 +327,7 @@ bool GameplayEnd_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         if (!VSyncIrq_WaitReady(&p_Gameplay->wait)) {
             return false;
         }
-        Palette_FadeStep(&p_Gameplay->switch_fade, &g_Palette);
+        Palette_GlobalFadeStep(&p_Gameplay->switch_fade);
         if (g_Gameplay->switch_fade.remaining > 0) {
             VSyncIrq_BeginWait(&p_Gameplay->wait);
         } else {

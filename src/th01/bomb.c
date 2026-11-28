@@ -69,7 +69,7 @@ static BOMB_UPDATE M_Finish(void)
     if (frame == 140) {
         Video_Copy(1, (GFX_RECT) { 0, 0, 640, 400 }, 0, 0, 0);
         Video_SelectDrawingPage(0);
-        Palette_Set(&g_Palette, &g_StagePalette);
+        Palette_SetGlobal(g_StagePalette);
         Player_EndBomb();
         return BOMB_UPDATE_DONE;
     }
@@ -131,7 +131,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
     if (frame == 0) {
         Pellets_Decay();
         Sprite_PtnPut(miko, 3, -1, g_Player->left, PLAYER_TOP);
-        m_Bomb.white = g_Palette.saved;
+        m_Bomb.white = g_Palette->saved;
         for (int32_t color = 0; color < 16; color++) {
             for (int32_t component = 0; component < 3; component++) {
                 const int8_t value = m_Bomb.white.colors[color][component];
@@ -143,8 +143,8 @@ BOMB_UPDATE Bomb_BeginUpdate(
         m_Bomb.tint_offset = -1;
     } else if (frame < 50) {
         if (frame % 2 == 0) {
-            Palette_SetColor(
-                &g_Palette, 7, m_Bomb.white.colors[7][0] + m_Bomb.tint_offset,
+            Palette_SetGlobalColor(
+                7, m_Bomb.white.colors[7][0] + m_Bomb.tint_offset,
                 m_Bomb.white.colors[7][1] + m_Bomb.tint_offset,
                 m_Bomb.white.colors[7][2]);
         }
@@ -193,9 +193,9 @@ BOMB_UPDATE Bomb_BeginUpdate(
                                                       : 13);
                 peak.colors[color][2] = 15;
             }
-            Palette_Set(&g_Palette, &peak);
+            Palette_SetGlobal(&peak);
         } else if (frame % 4 == 2) {
-            Palette_Set(&g_Palette, &m_Bomb.bright);
+            Palette_SetGlobal(&m_Bomb.bright);
         }
         if (frame % 4 != 0) {
             return M_Finish();

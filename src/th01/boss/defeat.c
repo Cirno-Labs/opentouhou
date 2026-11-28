@@ -8,13 +8,13 @@ static void M_Whiteout(void)
 {
     for (int32_t color = 0; color < 16; color++) {
         for (int32_t component = 0; component < 3; component++) {
-            int8_t *const value = &g_Palette.saved.colors[color][component];
-            if (*value < 15) {
-                (*value)++;
+            const int8_t value = g_Palette->saved.colors[color][component];
+            if (value < 15) {
+                Palette_SetGlobalSavedComponent(color, component, value + 1);
             }
         }
     }
-    Palette_Set(&g_Palette, &g_Palette.saved);
+    Palette_SetGlobal(&g_Palette->saved);
 }
 
 static bool M_Whitein(const PALETTE *const post_defeat)
@@ -22,24 +22,24 @@ static bool M_Whitein(const PALETTE *const post_defeat)
     int32_t done = 0;
     for (int32_t color = 0; color < 16; color++) {
         for (int32_t component = 0; component < 3; component++) {
-            int8_t *const value = &g_Palette.saved.colors[color][component];
+            const int8_t value = g_Palette->saved.colors[color][component];
             const int8_t target = post_defeat->colors[color][component];
             ASSERT(target >= 0 && target <= 15);
-            if (*value > target) {
-                (*value)--;
+            if (value > target) {
+                Palette_SetGlobalSavedComponent(color, component, value - 1);
             } else {
                 done++;
             }
         }
     }
-    Palette_Set(&g_Palette, &g_Palette.saved);
+    Palette_SetGlobal(&g_Palette->saved);
     return done == 48;
 }
 
 static void M_Restore(BOSS_DEFEAT *const defeat, const PTN *const miko)
 {
     defeat->frame = 0;
-    Palette_SetGray(&g_Palette, 15);
+    Palette_SetGlobalGray(15);
     Video_SelectDrawingPage(1);
     Video_Copy(1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0, 0);
     Video_SelectDrawingPage(0);

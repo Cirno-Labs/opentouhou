@@ -30,7 +30,7 @@ void Bonus_BeginRowTransition(void);
 
 // Includes the final two-count delay, clearing count1 only after each delay
 // succeeds.
-bool Bonus_ResumeRowTransition(PALETTE_STATE *palette, const PALETTE *target);
+bool Bonus_ResumeRowTransition(const PALETTE *target);
 
 // Clears stage and total bonus state for a new gameplay session.
 void Bonus_Init(void);

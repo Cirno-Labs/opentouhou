@@ -39,8 +39,7 @@ void Bonus_BeginRowTransition(void)
     m_Transition.pending = true;
 }
 
-bool Bonus_ResumeRowTransition(
-    PALETTE_STATE *const palette, const PALETTE *const target)
+bool Bonus_ResumeRowTransition(const PALETTE *const target)
 {
     while (m_Transition.pending) {
         if (!m_Transition.waiting) {
@@ -74,7 +73,7 @@ bool Bonus_ResumeRowTransition(
         m_Transition.activated += 8;
         if (m_Transition.done != m_Transition.previous_done
             && (m_Transition.activated & 15) == 0) {
-            Palette_StepTo(palette, target, false);
+            Palette_StepGlobalTo(target, false);
         }
         m_Transition.previous_done = m_Transition.done;
     }

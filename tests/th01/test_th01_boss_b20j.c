@@ -78,8 +78,8 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     Arena_Init(&arena, "Konngara", 1024 * 1024);
     B20J_ASSETS assets;
     M_Assets(&assets, &arena);
-    memset(&g_Palette, 0, sizeof(g_Palette));
-    g_Palette.saved.colors[10][1] = 7;
+    memset(p_Palette, 0, sizeof(*p_Palette));
+    p_Palette->saved.colors[10][1] = 7;
     memset(&m_Health, 0, sizeof(m_Health));
 
     memset(&m_B20J, 0xa5, sizeof(m_B20J));
@@ -184,8 +184,8 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     m_StageObjects.destination_left = 77;
     g_Rng = 91;
     Video_SelectDrawingPage(1);
-    memset(&g_StagePalette, 0x07, sizeof(g_StagePalette));
-    const PALETTE before = g_StagePalette;
+    memset(p_StagePalette, 0x07, sizeof(*p_StagePalette));
+    const PALETTE before = *g_StagePalette;
     const size_t used = arena.used;
     M_BossBeginEntrance(&f.assets);
     CHECK_EQ_INT(m_B20J.head.sprites.width_bytes, 10);
@@ -196,7 +196,7 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     VSyncIrq_Reset();
     int32_t polls = 0;
     while (!M_BossResumeEntrance(&f.assets)) {
-        CHECK(memcmp(&g_StagePalette, &before, sizeof(before)) == 0);
+        CHECK(memcmp(p_StagePalette, &before, sizeof(before)) == 0);
         const B20J snapshot = m_B20J;
         for (int32_t i = 0; i < 3; i++) {
             CHECK(!M_BossResumeEntrance(&f.assets));
@@ -205,13 +205,13 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
         VSyncIrq_Edge();
         CHECK(++polls < 2000);
     }
-    CHECK_EQ_INT(g_Palette.resource.colors[10][0], 2);
-    CHECK_EQ_INT(g_Palette.saved.colors[10][0], 13);
+    CHECK_EQ_INT(g_Palette->resource.colors[10][0], 2);
+    CHECK_EQ_INT(g_Palette->saved.colors[10][0], 13);
     CHECK_EQ_INT(m_B20J.stage_palette.colors[10][1], 7);
     CHECK_EQ_INT(arena.used, used);
     CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK_EQ_INT(m_B20J.status.hp, 18);
-    CHECK(memcmp(&g_StagePalette, &m_B20J.stage_palette, sizeof(PALETTE)) == 0);
+    CHECK(memcmp(p_StagePalette, &m_B20J.stage_palette, sizeof(PALETTE)) == 0);
     Arena_Free(&arena);
 }
 
@@ -266,7 +266,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     m_B20J.status.hp = 0;
     p_Stage->score = UINT32_MAX - 100;
     f.assets.scroll.palette[7] = (GFX_COLOR) { 255, 255, 255, 255 };
-    g_Palette.saved.colors[7][0] = 15;
+    p_Palette->saved.colors[7][0] = 15;
     VSyncIrq_Reset();
     const size_t used = arena.used;
     int32_t polls = 0;
@@ -405,9 +405,9 @@ TEST(siddham_layers_use_key_fifteen_and_retain_the_resource_palette)
     CHECK(!M_BossResumeEntrance(&f.assets));
     CHECK_EQ_INT(g_Video.pages[0][0], 6);
     CHECK_EQ_INT(g_Video.pages[0][1], 9);
-    CHECK_EQ_INT(g_Palette.resource.colors[10][0], 3);
-    CHECK_EQ_INT(g_Palette.saved.colors[9][0], 14);
-    CHECK_EQ_INT(g_Palette.saved.colors[9][1], 14);
-    CHECK_EQ_INT(g_Palette.saved.colors[9][2], 14);
+    CHECK_EQ_INT(g_Palette->resource.colors[10][0], 3);
+    CHECK_EQ_INT(g_Palette->saved.colors[9][0], 14);
+    CHECK_EQ_INT(g_Palette->saved.colors[9][1], 14);
+    CHECK_EQ_INT(g_Palette->saved.colors[9][2], 14);
     Arena_Free(&arena);
 }

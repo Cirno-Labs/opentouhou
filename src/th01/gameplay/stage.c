@@ -6,7 +6,6 @@
 #include "th01/hud.h"
 #include "th01/items.h"
 #include "th01/orb.h"
-#include "th01/palette.h"
 #include "th01/pellets.h"
 #include "th01/player.h"
 #include "th01/scene.h"
@@ -89,8 +88,8 @@ static void M_StageBackground(void)
     Video_SelectDrawingPage(0);
     if (g_Stage->first_stage) {
         memcpy(g_Video.pages[0], background->pixels, VIDEO_PAGE_SIZE);
-        Palette_Import(&g_StagePalette, background->palette);
-        Palette_Set(&g_Palette, &g_StagePalette);
+        Palette_ImportStage(background->palette);
+        Palette_SetGlobal(g_StagePalette);
         Gameplay_CopyPage(0, 1);
     } else {
         Gameplay_CopyPage(1, 0);

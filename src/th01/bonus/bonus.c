@@ -293,7 +293,7 @@ bool Bonus_BeginStage(
     memset(&m_Bonus.run, 0, sizeof(m_Bonus.run));
     m_Bonus.run.phase = BONUS_STAGE_BOX;
     m_Bonus.run.stage_number = stage_number;
-    Palette_Set(&g_Palette, &g_StagePalette);
+    Palette_SetGlobal(g_StagePalette);
     return Bonus_Resume(stage, font, raw);
 }
 
@@ -415,14 +415,14 @@ bool Bonus_ResumeTotal(
             Video_SelectDrawingPage(1);
             Video_Blit(
                 &image, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0);
-            g_Palette.resource = assets->palette;
+            Palette_SetResource(&assets->palette);
             Video_SelectDrawingPage(0);
             Bonus_BeginRowTransition();
             m_Total.phase = BONUS_TOTAL_TRANSITION;
             break;
         }
         case BONUS_TOTAL_TRANSITION:
-            if (!Bonus_ResumeRowTransition(&g_Palette, &g_Palette.resource)) {
+            if (!Bonus_ResumeRowTransition(&g_Palette->resource)) {
                 return false;
             }
             Sprite_PtnPut(
