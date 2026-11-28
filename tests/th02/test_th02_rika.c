@@ -5,20 +5,21 @@
 #include "tests/th02/th02_score_fixture.h"
 #include "tests/th02/th02_sound.h"
 #include "th02/background/private.h"
-#include "th02/bomb/logic.c"
+#include "th02/bomb/private.h"
 #include "th02/boss/fight.h"
-#include "th02/boss/rika.c"
+#include "th02/boss/private.h"
+#include "th02/boss/private_rika.h"
+#include "th02/boss/rika.h"
 #include "th02/bullets/private.h"
 #include "th02/grcg.h"
 #include "th02/performance_private.h"
 #include "th02/pillars.h"
 #include "th02/player.h"
-#include "th02/shots/fire.c"
-#include "th02/shots/pool.c"
+#include "th02/shots/private.h"
 #include "th02/sparks.h"
 #include "th02/stage/flow.c"
 #include "th02/stage/private.h"
-#include "th02/stage_effects.c"
+#include "th02/stage_effects_private.h"
 #include "th02/video.h"
 
 #include "core/base/arena.h"
@@ -75,7 +76,7 @@ static void M_Init(FIXTURE *const f)
     Sparks_Init();
     SoundEffects_Init(nullptr);
     Boss_Init(p_BossState);
-    M_InitCore();
+    Rika_Init();
 }
 
 TEST(rika_first_attack_emits_aimed_triple_and_wide_fan)
@@ -84,9 +85,9 @@ TEST(rika_first_attack_emits_aimed_triple_and_wide_fan)
     M_Init(&f);
     p_Performance->value = 0;
     BOSS_STATE *const boss = p_BossState;
-    M_BeginCore(boss, 1);
+    Rika_Begin(boss, 1);
     boss->phase_frame = 63;
-    CHECK_EQ_INT(M_UpdateCore(boss, &f.patterns, 1), BOSS_RUNNING);
+    CHECK_EQ_INT(Rika_Update(boss, &f.patterns, 1), BOSS_RUNNING);
     static const ENTITY_POINT velocities[] = {
         { 0, 30 }, { -13, 27 }, { 12, 27 }, { -24, 18 }, { 23, 18 },
     };
@@ -109,34 +110,34 @@ TEST(rika_entry_preserves_phase_clock_and_attack_history)
 {
     FIXTURE f;
     M_Init(&f);
-    M_BeginCore(p_BossState, (uint8_t)f.session.rank);
+    Rika_Begin(p_BossState, (uint8_t)f.session.rank);
     p_BossState->damage = 1400;
     p_BossState->phase_frame = 17;
     CHECK_EQ_INT(
-        M_UpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank),
+        Rika_Update(p_BossState, &f.patterns, (uint8_t)f.session.rank),
         BOSS_RUNNING);
     p_BossState->damage = 700;
     p_Stage->world.frame = 32;
     CHECK_EQ_INT(
-        M_UpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank),
+        Rika_Update(p_BossState, &f.patterns, (uint8_t)f.session.rank),
         BOSS_RUNNING);
     p_BossState->defeated = 1;
     for (int frame = 0; frame < 7; frame++) {
         CHECK_EQ_INT(
-            M_UpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank),
+            Rika_Update(p_BossState, &f.patterns, (uint8_t)f.session.rank),
             BOSS_RUNNING);
     }
-    CHECK_EQ_INT(m_Rika.current.x, 192);
-    CHECK_EQ_INT(m_Rika.angle, 24);
-    CHECK_EQ_INT(m_Rika.frame, 1);
-    CHECK_EQ_INT(m_Rika.kill_frame, 7);
+    CHECK_EQ_INT(p_Rika->current.x, 192);
+    CHECK_EQ_INT(p_Rika->angle, 24);
+    CHECK_EQ_INT(p_Rika->frame, 1);
+    CHECK_EQ_INT(p_Rika->kill_frame, 7);
     p_BossState->phase_frame = 177;
     p_BossState->position[0].y = 123;
     p_BossState->damage = 700;
     p_BossState->defeated = 1;
     p_Stage->world.frame = 900;
     p_Stage->scroll.line = 399;
-    M_BeginCore(p_BossState, (uint8_t)f.session.rank);
+    Rika_Begin(p_BossState, (uint8_t)f.session.rank);
     CHECK_EQ_INT(BossFight_State()->phase_frame, 177);
     CHECK_EQ_INT(BossFight_State()->position[0].x, 192);
     CHECK_EQ_INT(BossFight_State()->position[1].x, 192);
@@ -146,20 +147,20 @@ TEST(rika_entry_preserves_phase_clock_and_attack_history)
     CHECK_EQ_INT(BossFight_State()->sprite, 150);
     CHECK_EQ_INT(BossFight_State()->angle, 32);
     CHECK_EQ_INT(g_Stage->world.frame, 0);
-    CHECK_EQ_INT(m_Rika.current.x, 192);
-    CHECK_EQ_INT(m_Rika.current.y, 47);
-    CHECK_EQ_INT(m_Rika.angle, 24);
-    CHECK_EQ_INT(m_Rika.frame, 1);
-    CHECK_EQ_INT(m_Rika.kill_frame, 7);
+    CHECK_EQ_INT(p_Rika->current.x, 192);
+    CHECK_EQ_INT(p_Rika->current.y, 47);
+    CHECK_EQ_INT(p_Rika->angle, 24);
+    CHECK_EQ_INT(p_Rika->frame, 1);
+    CHECK_EQ_INT(p_Rika->kill_frame, 7);
     CHECK(g_Pillars->enabled);
-    CHECK_EQ_INT(m_Rika.fire_mask, 7);
+    CHECK_EQ_INT(p_Rika->fire_mask, 7);
     f.session.rank = 1;
-    M_BeginCore(p_BossState, (uint8_t)f.session.rank);
-    CHECK_EQ_INT(m_Rika.fire_mask, 3);
-    CHECK_EQ_INT(m_Rika.mirrored_pattern, BULLET_FAN2_MEDIUM);
+    Rika_Begin(p_BossState, (uint8_t)f.session.rank);
+    CHECK_EQ_INT(p_Rika->fire_mask, 3);
+    CHECK_EQ_INT(p_Rika->mirrored_pattern, BULLET_FAN2_MEDIUM);
     p_BossState->phase_frame = 0;
-    M_MidbossUpdateCore(p_BossState, &f.patterns);
-    CHECK(m_Midboss.active);
+    Rika_MidbossUpdate(p_BossState, &f.patterns);
+    CHECK(p_RikaMidboss->active);
     Arena_Free(&f.arena);
 }
 
@@ -167,31 +168,31 @@ TEST(rika_enters_pillar_attack_and_retains_source_attack_boundaries)
 {
     FIXTURE f;
     M_Init(&f);
-    M_BeginCore(p_BossState, (uint8_t)f.session.rank);
+    Rika_Begin(p_BossState, (uint8_t)f.session.rank);
     p_BossState->damage = 1400;
     p_BossState->phase_frame = 17;
     CHECK_EQ_INT(
-        M_UpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank), 1);
-    CHECK_EQ_INT(m_Rika.phase, RIKA_CENTER);
-    CHECK_EQ_INT(m_Rika.frame, 1);
+        Rika_Update(p_BossState, &f.patterns, (uint8_t)f.session.rank), 1);
+    CHECK_EQ_INT(p_Rika->phase, RIKA_CENTER);
+    CHECK_EQ_INT(p_Rika->frame, 1);
     CHECK_EQ_INT(BossFight_State()->position[g_Stage->scroll.back].x, 191);
     for (int frame = 2; frame <= 100; frame++) {
-        M_InvalidateCore(p_BossState);
+        Rika_Invalidate(p_BossState);
         CHECK_EQ_INT(
-            M_UpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank), 1);
+            Rika_Update(p_BossState, &f.patterns, (uint8_t)f.session.rank), 1);
     }
-    CHECK_EQ_INT(m_Rika.phase, RIKA_HOLD);
+    CHECK_EQ_INT(p_Rika->phase, RIKA_HOLD);
     CHECK_EQ_INT(BossFight_State()->phase_frame, 0);
     CHECK_EQ_INT(g_Pillars->frames_new, 64);
     CHECK_EQ_INT(g_Pillars->slots[0].state, ENTITY_ACTIVE);
     CHECK_EQ_INT(g_Pillars->slots[0].frames, 64);
     CHECK_EQ_INT(g_Pillars->slots[0].duration, 160);
-    CHECK_EQ_INT(g_Pillars->slots[0].position.x, m_Rika.current.x + 2);
-    CHECK_EQ_INT(g_Pillars->slots[1].position.x, m_Rika.current.x + 46);
+    CHECK_EQ_INT(g_Pillars->slots[0].position.x, p_Rika->current.x + 2);
+    CHECK_EQ_INT(g_Pillars->slots[1].position.x, p_Rika->current.x + 46);
     for (int frame = 101; frame <= 280; frame++) {
-        M_InvalidateCore(p_BossState);
+        Rika_Invalidate(p_BossState);
         CHECK_EQ_INT(
-            M_UpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank), 1);
+            Rika_Update(p_BossState, &f.patterns, (uint8_t)f.session.rank), 1);
         if (frame == 260) {
             CHECK_EQ_INT(BossFight_State()->sprite, 152);
         } else if (frame == 270) {
@@ -199,7 +200,7 @@ TEST(rika_enters_pillar_attack_and_retains_source_attack_boundaries)
         }
     }
     CHECK_EQ_INT(g_Bullets->slots[0].state, ENTITY_ACTIVE);
-    CHECK_EQ_INT(m_Rika.frame, 280);
+    CHECK_EQ_INT(p_Rika->frame, 280);
     Arena_Free(&f.arena);
 }
 
@@ -213,7 +214,7 @@ TEST(stage_one_midboss_enters_through_live_modules_and_activates_weather)
     const int32_t session = f.session.frame;
     BossFight_MidbossUpdate(
         &f.patterns, f.session.stage, (uint8_t)f.session.rank);
-    CHECK(m_Midboss.active);
+    CHECK(p_RikaMidboss->active);
     CHECK_EQ_INT(BossFight_State()->phase_frame, 1);
     CHECK_EQ_INT(BossFight_State()->position[0].x, 192);
     CHECK_EQ_INT(BossFight_State()->position[1].x, 192);
@@ -237,7 +238,7 @@ TEST(stage_one_midboss_enters_through_live_modules_and_activates_weather)
         &p_Stage->world.slowdown);
     CHECK_EQ_INT(g_StageEffects->storm_frame, 2);
     CHECK_EQ_INT(p_Palette->colors[8][0], 176);
-    m_StageEffects.storm_frame = 527;
+    p_StageEffects->storm_frame = 527;
     StageEffects_Update(
         StageScroll_Pages(), g_Stage->index, g_Stage->reduce_effects,
         &p_Stage->world.slowdown);
@@ -295,7 +296,7 @@ TEST(default_stage_one_boss_hits_defeats_and_finishes_through_stage_flow)
     CHECK_EQ_INT(BossFight_State()->defeated, 1);
     CHECK_EQ_INT(p_Score->delta, 20002);
     CHECK_EQ_INT(g_Player->invincibility, 200);
-    CHECK_EQ_INT(m_Rika.frame, 2);
+    CHECK_EQ_INT(p_Rika->frame, 2);
     CHECK_EQ_INT(g_Sparks->next, next);
     p_Bomb->active = 0;
     for (int frame = 1; frame <= 80; frame++) {
@@ -304,7 +305,7 @@ TEST(default_stage_one_boss_hits_defeats_and_finishes_through_stage_flow)
             StageFlow_Update(&f.patterns, &assets, &music, &f.session, &input),
             STAGE_FLOW_RUNNING);
         CHECK_EQ_INT(g_Stage->world.progression, frame == 80 ? 2 : 1);
-        CHECK_EQ_INT(m_Rika.kill_frame, frame == 80 ? 0 : frame);
+        CHECK_EQ_INT(p_Rika->kill_frame, frame == 80 ? 0 : frame);
     }
     CHECK_EQ_INT(g_Sparks->next, (next + 160) % SPARK_COUNT);
     CHECK_EQ_INT(p_Score->delta, 20002);
