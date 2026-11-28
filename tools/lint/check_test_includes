@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""Fail when a th02 test file includes a .c file instead of a header.
+
+A test gets at another file's internals through a private view (a
+p_<Module> pointer) or a hook, never by #including its .c directly: that
+either compiles production code twice or fakes a function by #defining
+its name. Takes the paths of files under tests/th02.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+INCLUDE_C_RE = re.compile(r'#include\s*"[^"]+\.c"')
+MESSAGE = "includes a .c file; give it a header instead"
+
+
+def errors(lines: list[str]) -> list[int]:
+    """Return the index of each line that includes a .c file."""
+    return [index for index, line in enumerate(lines) if INCLUDE_C_RE.search(line)]
+
+
+def main(argv: list[str] | None = None) -> int:
+    failed = False
+    for name in sys.argv[1:] if argv is None else argv:
+        lines = Path(name).read_text(encoding="utf-8").split("\n")
+        for index in errors(lines):
+            print(f"{name}:{index + 1}: {MESSAGE}")
+            failed = True
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
