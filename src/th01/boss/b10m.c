@@ -1019,7 +1019,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         M_Hit(assets, miko);
         if (m_B10M.status.hp <= 0) {
             Sound_Fade();
-            Pellets_EraseAndResetMoving();
+            Pellets_RemoveAll();
             if (attack) {
                 Missiles_ResetStage();
             }

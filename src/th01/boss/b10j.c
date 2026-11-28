@@ -978,7 +978,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
             M_Erase(assets, miko);
             Video_SelectDrawingPage(0);
             Sound_Fade();
-            Pellets_EraseAndResetMoving();
+            Pellets_RemoveAll();
             Missiles_ResetStage();
             ShootoutLasers_EraseAndReset(5);
             BossDefeat_Begin(&m_B10J.defeat, m_Defeat);

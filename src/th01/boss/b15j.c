@@ -769,7 +769,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         M_Hit(assets, miko);
         if (m_B15J.status.hp <= 0) {
             Sound_Fade();
-            Pellets_EraseAndResetMoving();
+            Pellets_RemoveAll();
             ShootoutLasers_EraseAndReset(4);
             BossDefeat_Begin(&m_B15J.defeat, m_Defeat);
             m_B15J.defeating = true;

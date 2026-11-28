@@ -103,7 +103,7 @@ static void M_StageBackground(void)
 
 static void M_StageBegin(const uint64_t host_tick)
 {
-    Pellets_EraseAndResetMoving();
+    Pellets_RemoveAll();
     Shots_EraseAndReset();
     const int16_t stage = g_Session->stage_id;
     p_Gameplay->boss_stage = stage % 5 == 4;

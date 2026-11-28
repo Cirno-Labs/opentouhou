@@ -405,7 +405,7 @@ void Pellets_Decay(void)
     }
 }
 
-void Pellets_EraseAndResetMoving(void)
+void Pellets_RemoveAll(void)
 {
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
         PELLET *const p = &m_Pellets.slots[i];

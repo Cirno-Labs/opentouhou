@@ -543,7 +543,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
             &m_B05.sphere, m_B05.sphere.left, m_B05.sphere.top,
             m_B05.sphere.image);
         Sound_Fade();
-        Pellets_EraseAndResetMoving();
+        Pellets_RemoveAll();
         BossDefeat_Begin(&m_B05.defeat, m_Defeat);
         m_B05.pending = B05_DEFEAT;
         return M_Death(miko, route, raw);

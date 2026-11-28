@@ -1531,7 +1531,7 @@ static bool M_Tail(const B15M_ASSETS *const assets, const PTN *const miko)
         M_Hit(assets, miko, m_B15M.form);
         if (m_B15M.status.hp <= 0) {
             Sound_Fade();
-            Pellets_EraseAndResetMoving();
+            Pellets_RemoveAll();
             M_Background(assets, miko);
             Missiles_ResetStage();
             ShootoutLasers_EraseAndReset(10);

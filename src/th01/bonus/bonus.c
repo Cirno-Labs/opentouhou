@@ -389,7 +389,7 @@ bool Bonus_BeginTotal(
     m_Total.stage_number = stage_number;
     m_Total.last_tick = host_tick;
     Shots_EraseAndReset();
-    Pellets_EraseAndResetMoving();
+    Pellets_RemoveAll();
     return Bonus_ResumeTotal(assets, raw, host_tick);
 }
 

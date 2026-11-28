@@ -265,7 +265,7 @@ bool GameplayEnd_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         Video_SetScroll(0);
         Player_SetBombs(1);
         Shots_EraseAndReset();
-        Pellets_EraseAndResetMoving();
+        Pellets_RemoveAll();
         Extend_Reset();
         Gameplay_SyncSession();
         p_Gameplay->request = GAMEPLAY_REQUEST_SCORE;
