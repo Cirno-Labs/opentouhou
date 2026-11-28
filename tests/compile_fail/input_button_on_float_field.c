@@ -7,7 +7,7 @@ typedef struct {
     float volume;
 } GAME_INPUT;
 
-static void Use(void)
+static void M_Use(void)
 {
 #ifdef BREAK
     [[maybe_unused]] static const INPUT_ACTION actions[] = {

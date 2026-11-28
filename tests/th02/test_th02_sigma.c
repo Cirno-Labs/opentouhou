@@ -25,11 +25,11 @@ TEST(extra_tile_midboss_runs_three_waves_and_ends_without_damage_or_rewards)
     const SCORE score = *g_Score;
     const uint32_t world = g_Stage->world.frame;
     const int32_t session_frame = f.session.frame;
-    CHECK(!Sigma_MidbossInvalidate());
+    CHECK(!M_MidbossInvalidateCore());
     for (int frame = 1; frame <= 421; frame++) {
-        Sigma_MidbossUpdate(TestBossFight_State());
+        M_MidbossUpdateCore(TestBossFight_State());
         CHECK_EQ_INT(BossFight_State()->phase_frame, frame == 421 ? 0 : frame);
-        CHECK_EQ_INT(Sigma_MidbossInvalidate(), frame <= 420);
+        CHECK_EQ_INT(M_MidbossInvalidateCore(), frame <= 420);
         if (frame == 16) {
             CHECK_EQ_INT(m_Sigma.midboss_spread, 16);
             CHECK_EQ_INT(m_Sigma.tiles[0].flag, 1);
@@ -76,7 +76,7 @@ TEST(extra_tile_midboss_emits_with_live_scroll_performance_and_bomb_state)
             .speed = 100,
             .padding = 91,
         };
-        Sigma_MidbossUpdate(TestBossFight_State());
+        M_MidbossUpdateCore(TestBossFight_State());
         CHECK_EQ_INT(m_Sigma.tiles[0].flag, 0);
         CHECK_EQ_INT(m_Sigma.tiles[0].frame, 8);
         CHECK_EQ_INT(m_Sigma.tiles[0].position.y, 33);
@@ -216,7 +216,7 @@ TEST(sigma_background_carries_back_position_and_clears_only_the_playfield)
     memset(g_Video.pages[0], 11, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 9, VIDEO_PAGE_SIZE);
     Video_AccessPage(1);
-    Sigma_Invalidate(TestBossFight_State());
+    M_InvalidateCore(TestBossFight_State());
     CHECK_EQ_INT(BossFight_State()->position[1].x, 111);
     CHECK_EQ_INT(BossFight_State()->position[1].y, 88);
     CHECK_EQ_INT(m_Sigma.position.x, 160);
@@ -257,7 +257,7 @@ TEST(sigma_live_hit_draws_the_hit_sprite_then_restores_its_pattern)
     shot->position[1] = (ENTITY_POINT) { 200 * 16, 88 * 16 };
     shot->velocity.y = -128;
     CHECK_EQ_INT(
-        Sigma_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns,
             f.session.reduce_effects),
         1);
@@ -290,7 +290,7 @@ TEST(sigma_defeat_awards_directly_and_excludes_its_animation_from_fight_time)
     p_Stage->world.extra_boss_frames = UINT32_MAX;
     m_Player.invincibility = 77;
     CHECK_EQ_INT(
-        Sigma_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns,
             f.session.reduce_effects),
         1);
@@ -304,7 +304,7 @@ TEST(sigma_defeat_awards_directly_and_excludes_its_animation_from_fight_time)
     for (int frame = 1; frame <= 224; frame++) {
         m_Player.hit = 0;
         CHECK_EQ_INT(
-            Sigma_Update(
+            M_UpdateCore(
                 TestBossFight_State(), &g->assets.patterns,
                 f.session.reduce_effects),
             frame == 224 ? 2 : 1);
@@ -342,10 +342,10 @@ TEST(sigma_circles_advance_on_background_and_change_hit_radius_before_testing)
                           .radius_max = 64,
                           .radius = 64 };
     m_Player.position[1] = (ENTITY_POINT) { 224, 184 };
-    Sigma_Invalidate(TestBossFight_State());
+    M_InvalidateCore(TestBossFight_State());
     CHECK_EQ_INT(c->flag, 3);
     CHECK_EQ_INT(
-        Sigma_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns,
             f.session.reduce_effects),
         1);
@@ -355,7 +355,7 @@ TEST(sigma_circles_advance_on_background_and_change_hit_radius_before_testing)
     CHECK_EQ_INT(c->radius, 8);
     CHECK_EQ_INT(m_Player.hit, 0);
     CHECK_EQ_INT(
-        Sigma_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns,
             f.session.reduce_effects),
         1);
@@ -364,7 +364,7 @@ TEST(sigma_circles_advance_on_background_and_change_hit_radius_before_testing)
     p_Stage->scroll.back = 1;
     p_Stage->scroll.front = 0;
     CHECK_EQ_INT(
-        Sigma_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns,
             f.session.reduce_effects),
         1);
@@ -373,7 +373,7 @@ TEST(sigma_circles_advance_on_background_and_change_hit_radius_before_testing)
     p_Stage->scroll.front = 1;
     for (int frame = 0; frame < 4; frame++) {
         CHECK_EQ_INT(
-            Sigma_Update(
+            M_UpdateCore(
                 TestBossFight_State(), &g->assets.patterns,
                 f.session.reduce_effects),
             1);
@@ -402,7 +402,7 @@ TEST(sigma_sweep_reads_x_before_speed_and_keeps_the_frame_start_origin)
     m_Rng.ring[0] = 17;
     m_Rng.ring[1] = 3;
     CHECK_EQ_INT(
-        Sigma_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns,
             f.session.reduce_effects),
         1);
@@ -433,7 +433,7 @@ TEST(sigma_dot_rings_apply_live_scroll_after_the_unrolled_point_guard)
     p_Stage->world.frame = 0;
     memset(g_Video.pages[1], 0, VIDEO_PAGE_SIZE);
     CHECK_EQ_INT(
-        Sigma_Update(
+        M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns,
             f.session.reduce_effects),
         1);

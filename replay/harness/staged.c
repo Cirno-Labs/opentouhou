@@ -58,7 +58,7 @@ static void M_Close(VFS_SOURCE *const source)
     Mem_Free(source);
 }
 
-static const VFS_SOURCE_FUNCS M_Funcs = {
+static const VFS_SOURCE_FUNCS m_Funcs = {
     .contains = M_Contains,
     .open = M_Open,
     .list = M_List,
@@ -70,7 +70,7 @@ VFS_SOURCE *Staged_CreateSource(
 {
     M_SOURCE *const source = Mem_Alloc(sizeof(*source));
     *source = (M_SOURCE) {
-        .base = { .funcs = &M_Funcs, .name = "case" },
+        .base = { .funcs = &m_Funcs, .name = "case" },
         .files = files,
         .count = count,
     };

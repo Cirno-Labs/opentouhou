@@ -209,7 +209,7 @@ static void M_Close(VFS_SOURCE *const source)
     Archive_Close((ARCHIVE *)source);
 }
 
-static const VFS_SOURCE_FUNCS M_SourceFuncs = {
+static const VFS_SOURCE_FUNCS m_SourceFuncs = {
     .contains = M_Contains,
     .open = M_Open,
     .list = M_List,
@@ -362,7 +362,7 @@ RESULT Archive_Read(
 VFS_SOURCE *Archive_ToSource(ARCHIVE *const archive, const char *const root)
 {
     archive->root = Str_Dup(root);
-    archive->base.funcs = &M_SourceFuncs;
+    archive->base.funcs = &m_SourceFuncs;
     const char *const name = M_Name(archive);
     archive->base.name = name == nullptr ? "archive" : name;
     if (archive->format->lookup == ARCHIVE_LOOKUP_PATH) {

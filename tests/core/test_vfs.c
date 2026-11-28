@@ -82,7 +82,7 @@ static void M_Close(VFS_SOURCE *const source)
     Allocator_Free(fake->allocator, fake, sizeof(*fake));
 }
 
-static const VFS_SOURCE_FUNCS M_Funcs = {
+static const VFS_SOURCE_FUNCS m_Funcs = {
     .contains = M_Contains,
     .open = M_Open,
     .list = M_List,
@@ -95,7 +95,7 @@ static VFS_SOURCE *M_CreateFake(
     int32_t *const close_count)
 {
     FAKE_SOURCE *const fake = Allocator_AllocZ(allocator, sizeof(*fake));
-    fake->base.funcs = &M_Funcs;
+    fake->base.funcs = &m_Funcs;
     fake->base.name = name;
     fake->entries = entries;
     fake->count = count;
@@ -365,7 +365,7 @@ TEST(removal_does_not_fall_back_from_an_unsupported_or_failing_source)
     for (int32_t failure = 0; failure < 2; failure++) {
         VFS *const vfs = Vfs_Create(&test.allocator);
         int32_t removed = 0;
-        VFS_SOURCE_FUNCS low_funcs = M_Funcs;
+        VFS_SOURCE_FUNCS low_funcs = m_Funcs;
         low_funcs.write = M_WriteUnused;
         low_funcs.remove = M_RemoveCount;
         VFS_SOURCE *const low =
@@ -373,7 +373,7 @@ TEST(removal_does_not_fall_back_from_an_unsupported_or_failing_source)
         low->funcs = &low_funcs;
         ((FAKE_SOURCE *)low)->remove_count = &removed;
         Vfs_MountSource(vfs, "", low, -1);
-        VFS_SOURCE_FUNCS funcs = M_Funcs;
+        VFS_SOURCE_FUNCS funcs = m_Funcs;
         funcs.write = M_WriteUnused;
         funcs.remove = failure != 0 ? M_RemoveFailed : nullptr;
         VFS_SOURCE *const source =

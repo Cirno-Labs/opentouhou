@@ -11,7 +11,7 @@ typedef struct {
     float x;
 } POINT;
 
-static void Use(void)
+static void M_Use(void)
 {
     ARRAY(SPRITE) sprites;
     Array_Init(&sprites, &g_HeapAllocator);

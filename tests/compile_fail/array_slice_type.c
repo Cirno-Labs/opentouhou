@@ -3,7 +3,7 @@
 #include "core/base/array.h"
 #include "core/base/memory.h"
 
-static void Use(void)
+static void M_Use(void)
 {
     ARRAY(int32_t) values;
     Array_Init(&values, &g_HeapAllocator);

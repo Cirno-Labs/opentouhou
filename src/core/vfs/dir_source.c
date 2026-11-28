@@ -328,14 +328,14 @@ static void M_Close(VFS_SOURCE *const source)
     Allocator_Free(dir->allocator, dir, sizeof(*dir));
 }
 
-static const VFS_SOURCE_FUNCS M_ReadFuncs = {
+static const VFS_SOURCE_FUNCS m_ReadFuncs = {
     .contains = M_Contains,
     .open = M_Open,
     .list = M_List,
     .close = M_Close,
 };
 
-static const VFS_SOURCE_FUNCS M_WriteFuncs = {
+static const VFS_SOURCE_FUNCS m_WriteFuncs = {
     .contains = M_Contains,
     .open = M_Open,
     .list = M_List,
@@ -395,7 +395,7 @@ RESULT VfsDirSource_Create(
         !Result_Ignore(File_GetType(path, &type)) || type != FILE_TYPE_DIR,
         "%s: not a directory", path);
     DIR_SOURCE *const dir = Allocator_AllocZ(allocator, sizeof(*dir));
-    dir->base.funcs = writable ? &M_WriteFuncs : &M_ReadFuncs;
+    dir->base.funcs = writable ? &m_WriteFuncs : &m_ReadFuncs;
     dir->name = Str_DupWith(allocator, path);
     dir->base.name = dir->name;
     dir->allocator = allocator;
