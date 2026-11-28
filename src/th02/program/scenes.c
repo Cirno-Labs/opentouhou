@@ -111,6 +111,7 @@ RESULT Program_Init(void)
 
     Session_Init(&p_Program->scenes.session);
     p_Program->scenes.session.reduce_effects = g_Th02Settings.reduce_effects;
+    HighScoreEntry_Init(&g_HighScoreEntryRender);
     const OPENING_AUDIO opening_audio = ProgramAudio_Opening();
     Opening_Begin(
         &p_Program->assets.opening, &p_Program->scenes.session, &g_Th02Settings,
