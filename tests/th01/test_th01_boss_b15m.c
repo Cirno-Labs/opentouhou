@@ -11,7 +11,7 @@
 #include "th01/rng.h"
 #include "th01/scene_private.h"
 #include "th01/session_private.h"
-#include "th01/shootout_lasers.c"
+#include "th01/shootout_lasers_private.h"
 #include "th01/shots.h"
 #include "th01/sound.h"
 #include "th01/vsync_irq_private.h"
@@ -440,7 +440,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
                                       .flag = MISSILE_MOVING };
     p_Pellets->slots[1].cloud_frame = 10;
     for (int32_t i = 0; i < 10; i++) {
-        m_Lasers.slots[i].alive = true;
+        p_Lasers->slots[i].alive = true;
     }
     VSyncIrq_Reset();
     const uint32_t rng = g_Rng;
@@ -464,7 +464,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
     CHECK_EQ_INT(p_Pellets->slots[1].cloud_frame, 10);
     for (int32_t i = 0; i < 10; i++) {
-        CHECK(!m_Lasers.slots[i].alive);
+        CHECK(!p_Lasers->slots[i].alive);
     }
     const B15M frozen = m_B15M;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 106));

@@ -10,7 +10,7 @@
 #include "th01/rng.h"
 #include "th01/scene_private.h"
 #include "th01/session_private.h"
-#include "th01/shootout_lasers.c"
+#include "th01/shootout_lasers_private.h"
 #include "th01/shots.h"
 #include "th01/sound.h"
 #include "th01/vsync_irq_private.h"
@@ -378,13 +378,13 @@ TEST(two_squares_preserve_cloud_spawns_and_laser_slots)
     m_B10J.laser_x[1] = 200;
     m_B10J.laser_y[1] = 128;
     CHECK(M_BossUpdate(&f.assets, &f.miko));
-    CHECK(m_Lasers.slots[1].alive);
-    CHECK_EQ_INT(m_Lasers.slots[1].origin_left, 200 * 256);
-    const SHOOTOUT_LASER first = m_Lasers.slots[1];
+    CHECK(p_Lasers->slots[1].alive);
+    CHECK_EQ_INT(p_Lasers->slots[1].origin_left, 200 * 256);
+    const SHOOTOUT_LASER first = p_Lasers->slots[1];
     m_B10J.status.frame = 184;
     m_B10J.laser_x[1] = 300;
     CHECK(M_BossUpdate(&f.assets, &f.miko));
-    CHECK(memcmp(&first, &m_Lasers.slots[1], sizeof(first)) == 0);
+    CHECK(memcmp(&first, &p_Lasers->slots[1], sizeof(first)) == 0);
     Arena_Free(&arena);
 }
 
@@ -442,7 +442,7 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
         (PELLET) { .moving = true, .left = 200 * 16, .top = 200 * 16 };
     p_Pellets->slots[1].cloud_frame = 10;
     for (int32_t i = 0; i < 10; i++) {
-        m_Lasers.slots[i].alive = true;
+        p_Lasers->slots[i].alive = true;
     }
     CHECK(!M_BossUpdate(&f.assets, &f.miko));
     CHECK(m_B10J.defeating);
@@ -451,7 +451,7 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
     CHECK(!p_Pellets->slots[0].moving);
     CHECK_EQ_INT(p_Pellets->slots[1].cloud_frame, 10);
     for (int32_t i = 0; i < 10; i++) {
-        CHECK(m_Lasers.slots[i].alive == (i >= 5));
+        CHECK(p_Lasers->slots[i].alive == (i >= 5));
     }
     CHECK(!g_Stage->cleared);
     CHECK(p_Scene->active == nullptr);

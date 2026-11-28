@@ -12,7 +12,7 @@
 #include "th01/rng.h"
 #include "th01/scene_private.h"
 #include "th01/session_private.h"
-#include "th01/shootout_lasers.c"
+#include "th01/shootout_lasers_private.h"
 #include "th01/shots.h"
 #include "th01/sound.h"
 
@@ -337,7 +337,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         p_Pellets->slots[0] =
             (PELLET) { .moving = true, .left = 200 * 16, .top = 200 * 16 };
         p_Pellets->slots[1].cloud_frame = 10;
-        m_Lasers.slots[6].alive = true;
+        p_Lasers->slots[6].alive = true;
         VSyncIrq_Reset();
         CHECK(!M_BossUpdate(&f.assets, &f.miko));
         CHECK(m_B10M.defeating);
@@ -349,7 +349,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
             phase == B10M_PHASE_STAR_ATTACK ? MISSILE_FREE : MISSILE_MOVING);
         CHECK(!p_Pellets->slots[0].moving);
         CHECK_EQ_INT(p_Pellets->slots[1].cloud_frame, 10);
-        CHECK(m_Lasers.slots[6].alive);
+        CHECK(p_Lasers->slots[6].alive);
         const B10M frozen = m_B10M;
         CHECK(!M_BossUpdate(&f.assets, &f.miko));
         CHECK(memcmp(&m_B10M, &frozen, sizeof(m_B10M)) == 0);

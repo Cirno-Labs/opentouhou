@@ -1,4 +1,4 @@
-#include "th01/shootout_lasers.h"
+#include "th01/shootout_lasers_private.h"
 
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"
@@ -6,31 +6,8 @@
 
 #include <string.h>
 
-typedef struct {
-    int32_t origin_left;
-    int32_t origin_y;
-    int32_t start_left;
-    int32_t start_y;
-    int32_t cursor_left;
-    int32_t cursor_y;
-    int32_t step_x;
-    int32_t step_y;
-    int16_t length;
-    int16_t tail_speed;
-    int16_t extend_speed;
-    int16_t age;
-    int16_t detach_age;
-    uint8_t color;
-    uint8_t width_mask;
-    bool alive;
-    bool damaging;
-} SHOOTOUT_LASER;
-
-typedef struct {
-    SHOOTOUT_LASER slots[SHOOTOUT_LASERS_COUNT];
-} SHOOTOUT_LASERS;
-
 static SHOOTOUT_LASERS m_Lasers;
+SHOOTOUT_LASERS *const p_Lasers = &m_Lasers;
 
 static int32_t M_Floor(const int32_t value, const int32_t divisor)
 {

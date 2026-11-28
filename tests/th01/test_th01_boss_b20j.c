@@ -9,7 +9,7 @@
 #include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/session_private.h"
-#include "th01/shootout_lasers.c"
+#include "th01/shootout_lasers_private.h"
 #include "th01/shots.h"
 #include "th01/sound.h"
 #include "th01/stage/objects.c"
@@ -237,7 +237,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
                     p_Pellets->slots[i].moving = false;
                 }
                 for (int32_t i = 0; i < 10; i++) {
-                    m_Lasers.slots[i].alive = false;
+                    p_Lasers->slots[i].alive = false;
                 }
                 VSyncIrq_Edge();
                 CHECK(++frames < 1500);
