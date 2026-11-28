@@ -1,4 +1,4 @@
-#include "th01/boss/private.h"
+#include "th01/boss/private_b20j.h"
 #include "th01/gameplay.h"
 #include "th01/grz.h"
 #include "th01/pellets.h"
@@ -19,115 +19,8 @@
 
 #include <string.h>
 
-typedef struct {
-    BOS head;
-    BOS face;
-    BOS aim;
-    GRZ body;
-    PI_IMAGE scroll;
-    PI_IMAGE upper;
-    PI_IMAGE layers[4];
-    const uint8_t *diamond;
-    const uint8_t *flake;
-} B20J_ASSETS;
-
-typedef struct {
-    int16_t left[4][5];
-    int16_t top[4][5];
-    MATH16_VECTOR velocity[4];
-    int16_t target_left[4];
-    bool target_locked[4];
-} B20J_SNAKES;
-
-typedef enum {
-    B20J_PHASE_START,
-    B20J_PHASE_PATTERNS_1,
-    B20J_PHASE_FLASH_1,
-    B20J_PHASE_PATTERNS_2,
-    B20J_PHASE_FLASH_2,
-    B20J_PHASE_PATTERNS_3,
-    B20J_PHASE_FLASH_3,
-    B20J_PHASE_FINAL,
-} B20J_PHASE;
-
-typedef enum {
-    B20J_ENTRANCE_SCROLL = 1,
-    B20J_ENTRANCE_SCROLL_STEP,
-    B20J_ENTRANCE_SCROLL_END,
-    B20J_ENTRANCE_SHAKE_DELAY,
-    B20J_ENTRANCE_SHAKE,
-    B20J_ENTRANCE_SHAKE_STEP,
-    B20J_ENTRANCE_PAN,
-    B20J_ENTRANCE_PAN_STEP,
-    B20J_ENTRANCE_TREMBLE,
-    B20J_ENTRANCE_TREMBLE_STEP,
-    B20J_ENTRANCE_FLASH_DELAY,
-    B20J_ENTRANCE_FLASH,
-    B20J_ENTRANCE_FADE_IN,
-} B20J_ENTRANCE;
-
-typedef enum {
-    B20J_DEFEAT_KUJI = 1,
-    B20J_DEFEAT_SHAKE,
-    B20J_DEFEAT_SHAKE_STEP,
-    B20J_DEFEAT_SCROLL,
-    B20J_DEFEAT_SCROLL_STEP,
-    B20J_DEFEAT_CLEAR,
-} B20J_DEFEAT;
-
-typedef struct {
-    BOSS_ENTITY head;
-    BOSS_ENTITY face;
-    BOSS_ENTITY aim;
-    BOSS_HIT hit;
-    PALETTE boss_palette;
-    PALETTE stage_palette;
-    B20J_SNAKES two_snakes;
-    B20J_SNAKES four_snakes;
-    MATH16_VECTOR diamond_velocity[2];
-    int16_t diamond_left[4];
-    int16_t diamond_top[4];
-    int16_t diamond_edges_frame;
-    MATH16_VECTOR row_velocity;
-    int16_t row_left;
-    int16_t row_top;
-    int16_t row_direction;
-    int16_t row_speed;
-    int16_t spray_delta;
-    int16_t spray_fired;
-    int16_t ray_x;
-    int16_t ray_y;
-    int16_t ray_previous_x;
-    int16_t ray_previous_y;
-    int16_t slash_left[3];
-    int16_t slash_top[3];
-    BOSS_STATE status;
-    int16_t pattern_state;
-    int16_t pattern;
-    int16_t pattern_previous;
-    int16_t patterns_done;
-    int16_t face_direction;
-    int16_t face_expression;
-    int16_t scroll_line;
-    int16_t scroll_speed;
-    int16_t scroll_quarter;
-    int16_t scroll_frame;
-    int16_t animation_frame;
-    WAIT wait;
-    uint8_t cup_angle;
-    uint8_t spray_offset;
-    uint8_t spray_angle;
-    uint8_t entrance_stage;
-    uint8_t defeat_stage;
-    bool direction_can_change;
-    bool laser_right_to_left;
-    bool hp_bar_filled;
-    bool entrance_active;
-    bool defeating;
-    bool finished;
-} B20J;
-
 static B20J m_B20J;
+B20J *const p_B20J = &m_B20J;
 
 static RESULT M_LoadBody(
     VFS *const vfs, const ALLOCATOR *const a, GRZ *const out)
@@ -149,7 +42,7 @@ static RESULT M_LoadMasks(
     out->flake = shapes + 2 * 8;
     return OK;
 }
-static RESULT M_ValidateAssets(const B20J_ASSETS *const a)
+RESULT B20J_ValidateAssets(const B20J_ASSETS *const a)
 {
     FAIL_IF(a == nullptr, "Missing Konngara assets");
     const BOS *const banks[] = { &a->head, &a->face, &a->aim };
@@ -202,7 +95,7 @@ static RESULT M_LoadAssets(
         MUST(BossAssets_LoadBackground(vfs, names[i], a, &loaded.layers[i]));
     }
     MUST(M_LoadMasks(vfs, a, &loaded));
-    MUST(M_ValidateAssets(&loaded));
+    MUST(B20J_ValidateAssets(&loaded));
     *out = loaded;
     return OK;
 }
@@ -219,7 +112,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     ASSERT(
         !m_B20J.entrance_active && !m_B20J.defeating
         && Wait_Idle(&m_B20J.wait));
-    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(B20J_ValidateAssets(assets)));
     m_B20J.boss_palette = g_Palette->saved;
     m_B20J.status.hp = 18;
     m_B20J.status.phase = B20J_PHASE_START;
