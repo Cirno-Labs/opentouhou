@@ -60,7 +60,7 @@ TEST(real_hud_health_and_flash_follow_hit_order)
     BossHit_UpdateAndRender(
         &f.hit, &f.hp, &f.baseline, colors, 1, 10, true, (BOSS_SHOT_HITBOX) {});
     CHECK_EQ_INT(g_Stage->score, 4);
-    CHECK_EQ_INT(p_Session->high_score, 4);
+    CHECK_EQ_INT(g_Session->high_score, 4);
     CHECK_EQ_INT(p_Orb->velocity_x, ORB_X_RIGHT_4);
     CHECK_EQ_INT(f.hp, 7);
     CHECK_EQ_INT(Th01Test_Pixel(0, 184, 48), 0);

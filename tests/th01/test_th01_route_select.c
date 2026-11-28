@@ -101,7 +101,7 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     CHECK_EQ_INT(g_Palette->saved.colors[1][0], 15);
     CHECK_EQ_INT(g_Palette->saved.colors[3][0], 9);
     CHECK_EQ_INT(g_Palette->saved.colors[4][0], 0);
-    CHECK_EQ_INT(p_Session->route, 1);
+    CHECK_EQ_INT(g_Session->route, 1);
     CHECK(p_Scene->active == &f.cache[0]);
     const ROUTE_SELECT frozen = *p_Selection;
     CHECK(!RouteSelect_Resume(&f.assets, &raw));
@@ -112,7 +112,7 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     CHECK(!RouteSelect_Resume(&f.assets, &raw));
     VSyncIrq_Edge();
     CHECK(RouteSelect_Resume(&f.assets, &raw));
-    CHECK_EQ_INT(p_Session->route, 0);
+    CHECK_EQ_INT(g_Session->route, 0);
     CHECK(p_Scene->active == &f.cache[1]);
     CHECK(p_Scene->active->layouts.stages[0].cells[0][1].card);
     CHECK(g_Stage->cleared && g_Player->is_hit);
@@ -144,7 +144,7 @@ TEST(dual_direction_toggles_once_and_holds_do_not_repeat)
     CHECK(!M_Poll(&f, both));
     CHECK_EQ_INT(p_Selection->selection, 0);
     CHECK(M_Poll(&f, (TH01_INPUT) { .up = true, .down = true, .ok = true }));
-    CHECK_EQ_INT(p_Session->route, 0);
+    CHECK_EQ_INT(g_Session->route, 0);
     Arena_Free(&arena);
 }
 

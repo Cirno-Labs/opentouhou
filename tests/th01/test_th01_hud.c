@@ -124,14 +124,14 @@ TEST(force_draws_leading_zeroes_and_preserves_resident_high_score)
     p_Stage->score = 1;
     p_Hud->force_numbers = true;
     Hud_ScoreAndCombo();
-    CHECK_EQ_INT(p_Session->high_score, 100);
+    CHECK_EQ_INT(g_Session->high_score, 100);
     CHECK_EQ_INT(Th01Test_Pixel(0, 256, 16), 7);
     CHECK_EQ_INT(Th01Test_Pixel(1, 256, 16), 7);
     p_Hud->force_numbers = false;
     p_Stage->score = 101;
     p_Stage->combo = 257;
     Hud_ScoreAndCombo();
-    CHECK_EQ_INT(p_Session->high_score, 101);
+    CHECK_EQ_INT(g_Session->high_score, 101);
     CHECK_EQ_INT(p_Hud->maximum_combo, 1);
     CHECK_EQ_INT(p_Hud->max_previous, 257);
     Hud_SnapNumbers(false);

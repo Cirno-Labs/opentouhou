@@ -156,8 +156,8 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(p_Bonus->run.phase, BONUS_CONFIRM);
     CHECK_EQ_INT(g_Stage->score, 410000);
     CHECK_EQ_INT(p_Bonus->score_bonus, 17000);
-    CHECK_EQ_INT(p_Session->bonus_per_stage[3], 17000);
-    CHECK_EQ_INT(p_Session->high_score, 410000);
+    CHECK_EQ_INT(g_Session->bonus_per_stage[3], 17000);
+    CHECK_EQ_INT(g_Session->high_score, 410000);
     CHECK_EQ_INT(p_Pellets->speed, 1);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 41), 0);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 319), 0);
@@ -204,7 +204,7 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
     const uint32_t expected =
         UINT32_MAX - 100 + (uint32_t)(-5536 * 10) + 65530 + 12000 + 36000;
     CHECK_EQ_INT(p_Bonus->score_bonus, expected);
-    CHECK_EQ_INT((uint32_t)p_Session->bonus_per_stage[3], expected);
+    CHECK_EQ_INT((uint32_t)g_Session->bonus_per_stage[3], expected);
     CHECK_EQ_INT(g_Stage->score, UINT32_MAX - 1000 + expected);
     CHECK_EQ_INT(p_Bonus->run.phase, BONUS_CONFIRM);
     CHECK_EQ_INT(g_GameInput->bomb_frame, 0);
@@ -311,10 +311,10 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK(ticks < 1000);
     CHECK_EQ_INT(p_Bonus->score_bonus, 96050);
     CHECK_EQ_INT(g_Stage->score, 486050);
-    CHECK_EQ_INT(p_Session->lives, 2);
+    CHECK_EQ_INT(g_Session->lives, 2);
     CHECK_EQ_INT(p_Hud->score_previous, 0);
-    CHECK_EQ_INT(p_Session->bonus_per_stage[0], 0);
-    CHECK_EQ_INT(p_Session->continues_per_scene[0], 3);
+    CHECK_EQ_INT(g_Session->bonus_per_stage[0], 0);
+    CHECK_EQ_INT(g_Session->continues_per_scene[0], 3);
     CHECK_EQ_INT(g_GameInput->bomb_frame, 123);
     const int16_t sum_digits[] = { 0, 9, 6, 0, 5, 0 };
     for (int32_t i = 0; i < 6; i++) {

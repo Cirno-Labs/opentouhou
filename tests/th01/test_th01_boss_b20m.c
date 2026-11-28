@@ -219,7 +219,7 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
         M_BossResumeEntrance(&f.assets, tick);
     }
     CHECK(!p_B20M->entrance_active);
-    CHECK_EQ_INT(g_Rng, p_Session->frame_rand);
+    CHECK_EQ_INT(g_Rng, g_Session->frame_rand);
     CHECK_EQ_INT(g_Video->drawing_page, 0);
     CHECK_EQ_INT(g_Video->scroll_top, 0);
     CHECK_EQ_INT(arena.used, used);

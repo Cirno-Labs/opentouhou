@@ -316,7 +316,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK(!M_BossUpdate(&f.miko, &f.route_assets, &raw));
         CHECK(memcmp(p_B05, &frozen, sizeof(*p_B05)) == 0);
         const uint32_t rng = g_Rng;
-        const uint32_t frame_rand = p_Session->frame_rand;
+        const uint32_t frame_rand = g_Session->frame_rand;
         for (int32_t edge = 0; edge < 1000 && p_B05->pending != B05_FINISHED;
              edge++) {
             const TH01_INPUT held = { .shot = true, .down = rank % 2 == 1 };
@@ -324,11 +324,11 @@ TEST(real_hit_controller_reaches_both_cached_routes)
             M_BossUpdate(&f.miko, &f.route_assets, &held);
         }
         CHECK_EQ_INT(p_B05->pending, B05_FINISHED);
-        CHECK_EQ_INT(p_Session->route, rank % 2);
+        CHECK_EQ_INT(g_Session->route, rank % 2);
         CHECK(p_Scene->active == &f.cache[1 + rank % 2]);
         CHECK(g_Stage->cleared && p_Player->is_hit);
         CHECK_EQ_INT(g_Rng, rng);
-        CHECK_EQ_INT(p_Session->frame_rand, frame_rand);
+        CHECK_EQ_INT(g_Session->frame_rand, frame_rand);
         CHECK_EQ_INT(arena.used, used);
         const B05 finished = *p_B05;
         CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));

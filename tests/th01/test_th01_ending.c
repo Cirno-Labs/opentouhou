@@ -96,20 +96,20 @@ TEST(snapshot_copies_bits_recomputes_total_and_clears_history)
     CHECK_EQ_INT(r.random, 1234);
     CHECK_EQ_INT(r.total, 98319);
     CHECK_EQ_INT(r.continues[0], 65535);
-    CHECK_EQ_INT(p_Session->score, 0);
-    CHECK_EQ_INT(p_Session->highest_score, 0);
-    CHECK_EQ_INT(p_Session->continues_total, 0);
-    CHECK_EQ_INT(p_Session->continues_per_scene[1], 0);
-    CHECK_EQ_INT(p_Session->ending, SESSION_END_JIGOKU);
-    CHECK_EQ_INT(p_Session->stage_id, 19);
+    CHECK_EQ_INT(g_Session->score, 0);
+    CHECK_EQ_INT(g_Session->highest_score, 0);
+    CHECK_EQ_INT(g_Session->continues_total, 0);
+    CHECK_EQ_INT(g_Session->continues_per_scene[1], 0);
+    CHECK_EQ_INT(g_Session->ending, SESSION_END_JIGOKU);
+    CHECK_EQ_INT(g_Session->stage_id, 19);
     Ending_Clear();
-    CHECK_EQ_INT(p_Session->ending, SESSION_END_NONE);
-    CHECK_EQ_INT(p_Session->stage_id, 0);
-    CHECK_EQ_INT(p_Session->high_score, 888);
-    CHECK_EQ_INT(p_Session->table_high_score, 999);
-    CHECK_EQ_INT(p_Session->frame_rand, 999);
-    CHECK_EQ_INT(p_Session->exit_rand, 1234);
-    CHECK_EQ_INT(p_Session->lives, 7);
+    CHECK_EQ_INT(g_Session->ending, SESSION_END_NONE);
+    CHECK_EQ_INT(g_Session->stage_id, 0);
+    CHECK_EQ_INT(g_Session->high_score, 888);
+    CHECK_EQ_INT(g_Session->table_high_score, 999);
+    CHECK_EQ_INT(g_Session->frame_rand, 999);
+    CHECK_EQ_INT(g_Session->exit_rand, 1234);
+    CHECK_EQ_INT(g_Session->lives, 7);
 }
 
 TEST(results_use_signed_scores_and_all_source_levels)
@@ -200,7 +200,7 @@ TEST(all_four_stories_preserve_source_wait_totals_and_complete)
             CHECK_EQ_INT(g_Video->palette[3].red, 119);
             CHECK_EQ_INT(g_Video->palette[7].red, 255);
             CHECK_EQ_INT(g_Video->scroll_top, 0);
-            CHECK_EQ_INT(p_Session->score, 0);
+            CHECK_EQ_INT(g_Session->score, 0);
             Arena_Free(&f.arena);
         }
     }

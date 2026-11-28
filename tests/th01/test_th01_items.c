@@ -116,7 +116,7 @@ TEST(point_width_wrap_cap_and_live_popup_on_drop)
             (ITEM) { .left = 0, .top = 345, .flag = ITEM_FALL };
         const uint32_t score = g_Stage->score;
         Items_Update(&c.sprites, &c.font);
-        CHECK_EQ_INT(p_Session->point_value, after[i]);
+        CHECK_EQ_INT(g_Session->point_value, after[i]);
         CHECK_EQ_INT(g_Stage->score, score + after[i]);
         CHECK_EQ_INT(p_Hud->score_previous, g_Stage->score);
     }
@@ -131,7 +131,7 @@ TEST(point_width_wrap_cap_and_live_popup_on_drop)
                                   .flag = ITEM_COLLECTED_OVER_CAP,
                                   .radius_or_time = 3 };
     Items_Update(&c.sprites, &c.font);
-    CHECK_EQ_INT(p_Session->point_value, 0);
+    CHECK_EQ_INT(g_Session->point_value, 0);
     CHECK_EQ_INT(p_Items->points[0].flag, ITEM_FREE);
     CHECK_EQ_INT(p_Items->points[1].radius_or_time, 2);
     CHECK_EQ_INT(Th01Test_Pixel(0, 200 + 4 * 8 + 2, 198), 7);
