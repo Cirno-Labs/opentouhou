@@ -23,7 +23,7 @@
 #include "th01/shots.h"
 #include "th01/sound.c"
 #include "th01/stage/private.h"
-#include "th01/timer.c"
+#include "th01/timer_private.h"
 
 #include "core/audio.h"
 #include "core/audio/backend.h"
@@ -177,7 +177,7 @@ TEST(hurry_wait_freezes_the_remaining_iteration_prefix)
     TH01_INPUT raw = {};
     Gameplay_Tick(&raw, false, 1);
     CHECK(M_InLife(GP_LIFE_TIMER));
-    CHECK_EQ_INT(m_Timer.phase, TIMER_WAIT_HURRY);
+    CHECK_EQ_INT(p_Timer->phase, TIMER_WAIT_HURRY);
     CHECK_EQ_INT(g_Stage->frame, 1);
     CHECK_EQ_INT(p_Player->invincibility_time, 1);
     CHECK_EQ_INT(p_Orb->left, 600);

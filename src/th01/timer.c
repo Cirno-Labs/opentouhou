@@ -1,11 +1,10 @@
-#include "th01/timer.h"
-
 #include "th01/hooks.h"
 #include "th01/hud.h"
 #include "th01/pellets.h"
 #include "th01/rng.h"
 #include "th01/session.h"
 #include "th01/sound.h"
+#include "th01/timer_private.h"
 #include "th01/tram.h"
 #include "th01/vsync_irq.h"
 
@@ -15,19 +14,8 @@
 
 #include <string.h>
 
-typedef enum {
-    TIMER_IDLE,
-    TIMER_WAIT_HURRY,
-    TIMER_WAIT_UP,
-} TIMER_PHASE;
-
-typedef struct {
-    uint16_t frames_since_hurry;
-    uint8_t hurry_cycle;
-    TIMER_PHASE phase;
-} STAGE_TIMER;
-
 static STAGE_TIMER m_Timer;
+STAGE_TIMER *const p_Timer = &m_Timer;
 
 static bool M_Continue(void)
 {
