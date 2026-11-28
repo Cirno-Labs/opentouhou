@@ -19,7 +19,7 @@ bool Stage_BeginOrbComposite(
 {
     ASSERT(!p_OrbComposite.active);
     Orb_AdvanceMotion(&p_Stage->combo);
-    p_OrbComposite.boss = g_Session.stage_id % 5 == 4;
+    p_OrbComposite.boss = g_Session->stage_id % 5 == 4;
     p_OrbComposite.active = true;
     p_OrbComposite.waiting = false;
     return Stage_ResumeOrbComposite(sprites, font, pellet_assets);

@@ -123,7 +123,7 @@ static void M_Format(char *const text, uint16_t value, const int32_t width)
 static void M_Resource(
     const bool bomb, const int16_t previous, const bool initial)
 {
-    const int16_t count = bomb ? g_Player->remaining_bombs : g_Session.lives;
+    const int16_t count = bomb ? g_Player->remaining_bombs : g_Session->lives;
     ASSERT(count >= 0 && count <= HUD_RESOURCE_CAPACITY);
     ASSERT(previous >= 0 && previous <= HUD_RESOURCE_CAPACITY);
     uint8_t *const bg = bomb ? m_Hud.bombs : m_Hud.lives;
@@ -279,10 +279,9 @@ void Hud_ScoreAndCombo(void)
     }
     m_Hud.score_previous = score;
     m_Hud.combo_previous = combo;
-    if (g_Session.high_score < score) {
+    if (Session_RecordHighScore(score)) {
         M_Number(0, 7, score, m_Hud.high_previous, false);
         m_Hud.high_previous = score;
-        g_Session.high_score = score;
     }
     if (m_Hud.maximum_combo < combo) {
         m_Hud.maximum_combo = (uint8_t)combo;
@@ -295,21 +294,22 @@ void Hud_ScoreAndCombo(void)
 
 void Hud_SnapStage(void)
 {
-    ASSERT((g_Session.stage_id + 1) <= 99);
+    ASSERT((g_Session->stage_id + 1) <= 99);
     M_Snap(m_Hud.stage, 608, 32);
     char text[3];
-    M_Format(text, (g_Session.stage_id + 1), 2);
+    M_Format(text, (g_Session->stage_id + 1), 2);
     M_DrawText(text, 608, 32, 7, true);
     M_Copy(608, 32, 16);
 }
 void Hud_PutStage(void)
 {
     ASSERT(
-        g_Session.settings.difficulty >= 0 && g_Session.settings.difficulty <= 3
-        && (g_Session.stage_id + 1) <= 99);
+        g_Session->settings.difficulty >= 0
+        && g_Session->settings.difficulty <= 3
+        && (g_Session->stage_id + 1) <= 99);
     char text[3];
-    M_Format(text, (g_Session.stage_id + 1), 2);
-    const char *const rank = m_Ranks[g_Session.settings.difficulty];
+    M_Format(text, (g_Session->stage_id + 1), 2);
+    const char *const rank = m_Ranks[g_Session->settings.difficulty];
     int32_t length = 0;
     while (rank[length] != '\0') {
         length++;
@@ -333,7 +333,7 @@ void Hud_SnapNumbers(const bool first_stage)
             }
             Video_SelectDrawingPage(0);
             const uint32_t value =
-                bank == 1 ? g_Stage->score : g_Session.high_score;
+                bank == 1 ? g_Stage->score : g_Session->high_score;
             uint32_t divisor = 1000000;
             for (int32_t i = 0; i < 7; i++, divisor /= 10) {
                 M_DrawText(

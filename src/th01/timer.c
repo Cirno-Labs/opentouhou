@@ -59,10 +59,10 @@ static void M_Rain(void)
     if (m_Timer.hurry_cycle % frequency != 0) {
         return;
     }
-    for (uint32_t i = 0; i <= (uint32_t)g_Session.settings.difficulty; i++) {
+    for (uint32_t i = 0; i <= (uint32_t)g_Session->settings.difficulty; i++) {
         const int16_t left = (int16_t)(MasterRng_Next(&g_Rng) % 640);
         Pellets_AddGroup(
-            g_Session.settings.difficulty, left, 64, PELLET_GROUP_RANDOM_WIDE,
+            g_Session->settings.difficulty, left, 64, PELLET_GROUP_RANDOM_WIDE,
             48);
     }
 }
@@ -93,7 +93,7 @@ void StageTimer_Redraw(
 {
     Hud_PutMask();
     if (!timer_initialized) {
-        M_InitFor(g_Session.stage_id, route);
+        M_InitFor(g_Session->stage_id, route);
     }
     Hud_Redraw(first_stage, g_Stage->time);
 }

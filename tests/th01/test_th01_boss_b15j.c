@@ -13,7 +13,7 @@
 #include "th01/player.h"
 #include "th01/rng.h"
 #include "th01/scene.c"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shootout_lasers.c"
 #include "th01/shots.h"
 #include "th01/sound.h"
@@ -91,14 +91,14 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     memset(f->stage.pixels, PTN_TRANSPARENT, 4096);
     f->miko = (PTN) { .count = 1, .pixels = Allocator_Alloc(a, 1024) };
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
-    g_Session.lives = 3;
+    p_Session->lives = 3;
     g_Rng = 0xb15a0000;
     m_Player.invincible = true;
     m_Player.left = 300;
     m_Orb.top = 64;
     m_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 TEST(setup_binds_shared_banks_and_keeps_actor_history)
@@ -258,8 +258,8 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
         Arena_Init(&arena, "b15j", 2 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        g_Session.settings.difficulty = rank;
-        g_Session.settings.difficulty = rank;
+        p_Session->settings.difficulty = rank;
+        p_Session->settings.difficulty = rank;
         g_BossKikuri.init();
         M_BossSetup(&f.assets, &f.miko);
         VSyncIrq_Reset();
@@ -274,7 +274,7 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
             if (m_B15J.status.phase == B15J_PHASE_PATTERNS) {
                 patterns |= 1u << m_B15J.subphase;
             }
-            g_Session.frame_rand++;
+            p_Session->frame_rand++;
             CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
             for (int32_t i = 0; i < 10; i++) {
                 saw_tear |= m_B15J.tear_frame[i] != 0;
@@ -367,8 +367,8 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         Arena_Init(&arena, "b15j", 2 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        g_Session.settings.difficulty = rank;
-        g_Session.settings.difficulty = rank;
+        p_Session->settings.difficulty = rank;
+        p_Session->settings.difficulty = rank;
         g_BossKikuri.init();
         M_BossSetup(&f.assets, &f.miko);
         m_B15J.status.phase = B15J_PHASE_PATTERNS;

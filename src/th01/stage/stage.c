@@ -88,10 +88,10 @@ void Stage_HitTestCards(void)
                 && MasterRng_Next(&g_Rng) % 4 != 0
                 && card->flag == STAGE_CARD_ALIVE)) {
             card->flag = STAGE_CARD_FLIPPING;
-            card->score = (uint32_t)(g_Session.stage_id / 5 * 100 + 100)
+            card->score = (uint32_t)(g_Session->stage_id / 5 * 100 + 100)
                 + (uint32_t)(int32_t)Math16_Wrap(
                       (int32_t)game->combo * game->combo)
-                    * ((SETTINGS_DIFFICULTY)g_Session.settings.difficulty
+                    * ((SETTINGS_DIFFICULTY)g_Session->settings.difficulty
                                == SETTINGS_DIFFICULTY_LUNATIC
                            ? 35u
                            : 20u);
@@ -139,13 +139,13 @@ void Stage_UpdateCards(
             }
             card->flip_frame++;
             if (card->flip_frame >= 24) {
-                if ((SETTINGS_DIFFICULTY)g_Session.settings.difficulty
+                if ((SETTINGS_DIFFICULTY)g_Session->settings.difficulty
                         == SETTINGS_DIFFICULTY_LUNATIC
                     && card->flip_frame == 25) {
                     Pellets_AddGroup(
-                        g_Session.settings.difficulty, card->left + 12,
+                        g_Session->settings.difficulty, card->left + 12,
                         card->top + 12,
-                        (PELLET_GROUP)(g_Session.stage_id + 1 < 10
+                        (PELLET_GROUP)(g_Session->stage_id + 1 < 10
                                            ? STAGE_PELLET_1_AIMED
                                            : STAGE_PELLET_1_RANDOM_NARROW_AIMED),
                         56);

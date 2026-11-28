@@ -66,7 +66,7 @@ static void M_Reset(const PTN *const miko, const PTN *const stage)
     Sprite_Restore16(Math16_Wrap(player->left - 8), 352, 48, 48);
     Shots_EraseAndReset();
     Pellets_Decay();
-    Player_Reset(g_Session.settings.difficulty);
+    Player_Reset(g_Session->settings.difficulty);
     m_Miss.target_right = Math16_Wrap(player->left + 160);
     if (m_Miss.target_right >= 608) {
         m_Miss.target_right = 608;
@@ -86,7 +86,7 @@ static void M_Finish(
     const PLAYER *const player = g_Player;
     Sprite_Restore16(player->left, PLAYER_TOP, 32, 32);
     Sprite_Restore16(m_Miss.effect_left, PLAYER_TOP, 32, 32);
-    Hud_LivesPut(Math16_Wrap(g_Session.lives + 1));
+    Hud_LivesPut(Math16_Wrap(g_Session->lives + 1));
     const int16_t previous = player->remaining_bombs;
     const int16_t bombs = Math16_Wrap(previous + extra_bombs);
     if (bombs > 5) {

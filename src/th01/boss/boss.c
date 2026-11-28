@@ -20,7 +20,7 @@ int16_t Boss_Rank(
     const int16_t easy, const int16_t normal, const int16_t hard,
     const int16_t lunatic)
 {
-    switch (g_Session.settings.difficulty) {
+    switch (g_Session->settings.difficulty) {
     case SETTINGS_DIFFICULTY_EASY:
         return easy;
     case SETTINGS_DIFFICULTY_HARD:

@@ -10,7 +10,7 @@
 #include "th01/player.c"
 #include "th01/player.h"
 #include "th01/rng.h"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shots.h"
 #include "th01/stage.h"
 #include "th01/stage/objects.c"
@@ -78,8 +78,8 @@ static void M_Init(CASE *const state, const uint8_t hp)
         digits, 10, Arena_Allocator(&state->arena), &state->font)));
     Hud_Init(Arena_Allocator(&state->arena));
     Hud_Load(nullptr, &state->sprites, &state->font);
-    g_Session.stage_id = 0;
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
+    p_Session->stage_id = 0;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
 }
 
 TEST(card_scores_caps_widths_and_synchronous_order)
@@ -90,8 +90,8 @@ TEST(card_scores_caps_widths_and_synchronous_order)
             CASE state;
             M_Init(&state, 0);
             p_Stage->combo = combos[variant];
-            g_Session.stage_id = 19;
-            g_Session.settings.difficulty = rank;
+            p_Session->stage_id = 19;
+            p_Session->settings.difficulty = rank;
             const ORB orb = m_Orb;
             const uint32_t rng = g_Rng;
             Stage_HitTestCards();
@@ -163,8 +163,8 @@ TEST(card_hp_frames_revenge_and_stage_exit)
         for (int32_t stage = 9; stage <= 10; stage++) {
             CASE state;
             M_Init(&state, (uint8_t)hp);
-            g_Session.settings.difficulty = SETTINGS_DIFFICULTY_LUNATIC;
-            g_Session.stage_id = (int16_t)(stage - 1);
+            p_Session->settings.difficulty = SETTINGS_DIFFICULTY_LUNATIC;
+            p_Session->stage_id = (int16_t)(stage - 1);
             const size_t used = state.arena.used;
             for (int32_t flip = 0; flip <= hp; flip++) {
                 Stage_HitTestCards();

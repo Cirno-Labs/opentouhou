@@ -460,10 +460,10 @@ void Score_Close(void)
 
 void Score_SyncSession(void)
 {
-    g_Session.table_high_score =
-        (uint32_t)m_Saves.tables[g_Session.settings.difficulty]
+    Session_SyncTableHighScore(
+        (uint32_t)m_Saves.tables[g_Session->settings.difficulty]
             .entries[0]
-            .score;
+            .score);
 }
 
 RESULT Score_FlushSaves(void)

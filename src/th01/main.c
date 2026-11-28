@@ -251,15 +251,15 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
         if (request == GAMEPLAY_REQUEST_OPENING) {
             M_BeginOpening(true, raw);
         } else if (request == GAMEPLAY_REQUEST_SCORE) {
-            SCORE_ENTRY entry = { .score = (int32_t)g_Session.score,
-                                  .stage = (int16_t)(g_Session.stage_id + 1) };
+            SCORE_ENTRY entry = { .score = (int32_t)g_Session->score,
+                                  .stage = (int16_t)(g_Session->stage_id + 1) };
             strcpy(
                 entry.route,
-                g_Session.stage_id < 5                       ? "社"
-                    : g_Session.route == SESSION_ROUTE_MAKAI ? "魔"
-                                                             : "地");
+                g_Session->stage_id < 5                       ? "社"
+                    : g_Session->route == SESSION_ROUTE_MAKAI ? "魔"
+                                                              : "地");
             Score_Begin(
-                &m_ScoreAssets, SCORE_GAMEOVER, g_Session.settings.difficulty,
+                &m_ScoreAssets, SCORE_GAMEOVER, g_Session->settings.difficulty,
                 &entry);
             m_Th01Scene = TH01_SCENE_SCORE;
         } else if (request == GAMEPLAY_REQUEST_ENDING) {

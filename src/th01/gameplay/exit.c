@@ -31,7 +31,7 @@ bool GameplayExit_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
             return false;
         }
         Video_SetScroll(0);
-        g_Session.exit_rand = g_Session.frame_rand;
+        Session_MarkExitCheckpoint();
         Boss_ClearTestDamage();
         Player_SetBombFrame(200);
         if (Stage_TakeCleared()) {
@@ -40,14 +40,14 @@ bool GameplayExit_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
                 p_Gameplay->wait_for_shot = true;
                 Stage_SetFirstStage(true);
             }
-            g_Session.stage_id++;
-            GameplayEnd_BeginBonus(g_Session.stage_id, raw, host_tick);
-        } else if (g_Session.lives <= 0) {
+            Session_AdvanceStage();
+            GameplayEnd_BeginBonus(g_Session->stage_id, raw, host_tick);
+        } else if (g_Session->lives <= 0) {
             GameplayEnd_BeginGameover();
         } else {
             Sound_Effect(SOUND_EFFECT_MISS);
-            g_Session.lives--;
-            Extend_SyncResidentLives(g_Session.lives);
+            Session_LoseLife();
+            Extend_SyncResidentLives(g_Session->lives);
             Miss_Begin(&g_GameplayAssets->miko, Gameplay_StageSprites());
             m_ExitPhase = GP_EXIT_MISS;
         }

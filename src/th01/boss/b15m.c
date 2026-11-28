@@ -232,7 +232,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     m_B15M.status.hp = 14;
     m_B15M.finished = false;
     HudHp_Begin(6, 10);
-    Rng_Seed(g_Session.frame_rand);
+    Rng_Seed(g_Session->frame_rand);
     Pellets_Interlace();
     Particles_ResetStage();
 }
@@ -455,7 +455,7 @@ static void M_Group(
     const B15M_ASSETS *const assets, const PTN *const miko, const int16_t x,
     const int16_t y, const PELLET_GROUP group, const int16_t speed)
 {
-    Pellets_AddGroup(g_Session.settings.difficulty, x, y, group, speed);
+    Pellets_AddGroup(g_Session->settings.difficulty, x, y, group, speed);
 }
 static void M_FormGroup(
     const B15M_ASSETS *const assets, const PTN *const miko, const int16_t form,
@@ -471,7 +471,7 @@ static void M_Single(
     const PELLET_MOTION motion, const int16_t ms)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, x, y, angle, speed, motion, ms, 0, 0);
+        g_Session->settings.difficulty, x, y, angle, speed, motion, ms, 0, 0);
 }
 static void M_Laser(
     const B15M_ASSETS *const assets, const PTN *const miko, const int16_t slot,
@@ -1287,8 +1287,8 @@ static void M_SafetyAfterHit(
         const int16_t x = M_Random(assets, miko) % 632;
         M_Group(
             assets, miko, x, 64,
-            g_Session.settings.difficulty == 3 ? PELLET_GROUP_RANDOM_WIDE
-                                               : PELLET_GROUP_SINGLE,
+            g_Session->settings.difficulty == 3 ? PELLET_GROUP_RANDOM_WIDE
+                                                : PELLET_GROUP_SINGLE,
             72);
     }
     if (m_B15M.safety_circle.frame > 180
@@ -1580,7 +1580,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         return M_Entrance(assets, miko);
     }
     m_B15M.call_phase = m_B15M.status.phase;
-    Missiles_Update((uint16_t)g_Session.frame_rand, &assets->missiles);
+    Missiles_Update((uint16_t)g_Session->frame_rand, &assets->missiles);
     if (m_B15M.status.phase == B15M_PHASE_ENTRANCE) {
         return M_Entrance(assets, miko);
     }

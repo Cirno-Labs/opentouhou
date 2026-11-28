@@ -13,7 +13,7 @@
 #include "th01/player.h"
 #include "th01/rng.h"
 #include "th01/scene.c"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shootout_lasers.c"
 #include "th01/shots.h"
 #include "th01/sound.h"
@@ -73,7 +73,7 @@ static void M_InitFixture(FIXTURE *const f, ARENA *const arena)
     CHECK(
         Result_Ignore(Scene_LoadReader(&reader, 5, a, &f->assets.next_scene)));
     Reader_Close(&reader);
-    g_Session.frame_rand = 0x12345678;
+    p_Session->frame_rand = 0x12345678;
 }
 
 TEST(setup_reseeds_without_resetting_actor_or_missile_history)
@@ -180,14 +180,14 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     memset(f->stage.pixels, PTN_TRANSPARENT, 4096);
     f->miko = (PTN) { .count = 1, .pixels = Allocator_Alloc(a, 1024) };
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
-    g_Session.lives = 3;
+    p_Session->lives = 3;
     g_Rng = 0xb15a0000;
     m_Player.invincible = true;
     m_Player.left = 300;
     m_Orb.top = 64;
     m_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 static void M_Run(FIXTURE *const f, uint64_t *const tick)
@@ -332,9 +332,9 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         Arena_Init(&arena, "b15m", 4 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        g_Session.settings.difficulty = rank;
-        g_Session.settings.difficulty = rank;
-        g_Session.frame_rand = 0xb15f0000u + (uint32_t)rank;
+        p_Session->settings.difficulty = rank;
+        p_Session->settings.difficulty = rank;
+        p_Session->frame_rand = 0xb15f0000u + (uint32_t)rank;
         g_BossElis.init();
         memset(m_B15M.background, 0, 128 * 96);
         M_BossSetup(&f.assets, &f.miko);
@@ -349,7 +349,7 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         int32_t p1ticks = 0;
         int32_t p3ticks = 0;
         for (int32_t step = 1; step < 40000 && !m_B15M.finished; step++) {
-            g_Session.frame_rand = (uint32_t)step;
+            p_Session->frame_rand = (uint32_t)step;
             if (m_B15M.status.phase == B15M_PHASE_PATTERNS_1) {
                 p1ticks++;
                 if (m_B15M.pattern > 0 && m_B15M.pattern <= 3) {

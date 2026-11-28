@@ -26,7 +26,7 @@ static void M_PutBoth(
 static void M_Turret(
     const PTN *const sprites, STAGE_OBSTACLE *const obstacle, const bool reset)
 {
-    if ((SETTINGS_DIFFICULTY)g_Session.settings.difficulty
+    if ((SETTINGS_DIFFICULTY)g_Session->settings.difficulty
         != SETTINGS_DIFFICULTY_EASY) {
         obstacle->frame = Math16_Wrap(obstacle->frame + 1);
     }
@@ -50,7 +50,7 @@ static void M_Turret(
                 STAGE_PELLET_5_SPREAD_WIDE_AIMED,
             };
             Pellets_AddGroup(
-                g_Session.settings.difficulty, obstacle->left + 12,
+                g_Session->settings.difficulty, obstacle->left + 12,
                 obstacle->top + 12,
                 (PELLET_GROUP)(groups[(obstacle->type - 2) % 6]), 56);
             M_Put(sprites, obstacle, 24);

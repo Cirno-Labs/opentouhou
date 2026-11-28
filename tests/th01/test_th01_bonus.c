@@ -13,7 +13,7 @@
 #include "th01/player.c"
 #include "th01/player.h"
 #include "th01/rng.h"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shots.c"
 #include "th01/shots.h"
 #include "th01/stage/private.h"
@@ -118,7 +118,7 @@ static void M_Init(FIXTURE *const f, const ALLOCATOR *const a)
     memset(f->sprites.pixels, 3, 1024);
     Hud_Load(nullptr, &f->sprites, &f->font);
     m_Bonus.score_bonus = 0;
-    memset(g_Session.bonus_per_stage, 0, sizeof(g_Session.bonus_per_stage));
+    memset(p_Session->bonus_per_stage, 0, sizeof(p_Session->bonus_per_stage));
     CHECK(Result_Ignore(Bonus_ValidateStageAssets(&f->assets, &f->font)));
     memset(f->assets.box, 0xff, sizeof(f->assets.box));
     Extend_Reset();
@@ -134,7 +134,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     p_Stage->score = 393000;
     p_Stage->maximum_combo = 3;
     p_Stage->time = 100;
-    g_Session.lives = 1;
+    p_Session->lives = 1;
     m_Player.remaining_bombs = 3;
     m_GameInput.bomb_frame = 97;
     memset(g_Video->pages[0], 5, VIDEO_PAGE_SIZE);
@@ -160,8 +160,8 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(m_Bonus.run.phase, BONUS_CONFIRM);
     CHECK_EQ_INT(g_Stage->score, 410000);
     CHECK_EQ_INT(m_Bonus.score_bonus, 17000);
-    CHECK_EQ_INT(g_Session.bonus_per_stage[3], 17000);
-    CHECK_EQ_INT(g_Session.high_score, 410000);
+    CHECK_EQ_INT(p_Session->bonus_per_stage[3], 17000);
+    CHECK_EQ_INT(p_Session->high_score, 410000);
     CHECK_EQ_INT(m_Pellets.speed, 1);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 41), 0);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 319), 0);
@@ -189,7 +189,7 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
     FIXTURE f = {};
     Th01Test_ResetWorld();
     M_Init(&f, Arena_Allocator(&arena));
-    g_Session.lives = 6;
+    p_Session->lives = 6;
     m_Bonus.score_bonus = UINT32_MAX - 100;
     p_Stage->score = UINT32_MAX - 1000;
     p_Stage->time = 20000;
@@ -208,7 +208,7 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
     const uint32_t expected =
         UINT32_MAX - 100 + (uint32_t)(-5536 * 10) + 65530 + 12000 + 36000;
     CHECK_EQ_INT(m_Bonus.score_bonus, expected);
-    CHECK_EQ_INT((uint32_t)g_Session.bonus_per_stage[3], expected);
+    CHECK_EQ_INT((uint32_t)p_Session->bonus_per_stage[3], expected);
     CHECK_EQ_INT(g_Stage->score, UINT32_MAX - 1000 + expected);
     CHECK_EQ_INT(m_Bonus.run.phase, BONUS_CONFIRM);
     CHECK_EQ_INT(g_GameInput->bomb_frame, 0);
@@ -245,9 +245,9 @@ static void M_InitTotal(TOTAL_FIXTURE *const f, const ALLOCATOR *const a)
         }
     }
     memset(
-        g_Session.continues_per_scene, 0,
-        sizeof(g_Session.continues_per_scene));
-    g_Session.continues_total = 0;
+        p_Session->continues_per_scene, 0,
+        sizeof(p_Session->continues_per_scene));
+    p_Session->continues_total = 0;
     CHECK(Result_Ignore(Bonus_ValidateTotalAssets(&f->assets)));
 }
 
@@ -260,10 +260,10 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     p_Stage->time = 321;
     p_Stage->maximum_combo = 7;
     p_Stage->score = 390000;
-    g_Session.lives = 2;
+    p_Session->lives = 2;
     m_Player.remaining_bombs = 3;
     m_GameInput.bomb_frame = 123;
-    g_Session.continues_total = 65539;
+    p_Session->continues_total = 65539;
     m_Shots.slots[0] = (SHOT) { .moving = true, .left = 100, .top = 100 };
     m_Shots.slots[1] = (SHOT) { .decay_frame = 2, .left = 200, .top = 100 };
     m_Pellets.slots[0] = (PELLET) { .moving = true, .not_rendered = true };
@@ -315,10 +315,10 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK(ticks < 1000);
     CHECK_EQ_INT(m_Bonus.score_bonus, 96050);
     CHECK_EQ_INT(g_Stage->score, 486050);
-    CHECK_EQ_INT(g_Session.lives, 2);
+    CHECK_EQ_INT(p_Session->lives, 2);
     CHECK_EQ_INT(m_Hud.score_previous, 0);
-    CHECK_EQ_INT(g_Session.bonus_per_stage[0], 0);
-    CHECK_EQ_INT(g_Session.continues_per_scene[0], 3);
+    CHECK_EQ_INT(p_Session->bonus_per_stage[0], 0);
+    CHECK_EQ_INT(p_Session->continues_per_scene[0], 3);
     CHECK_EQ_INT(g_GameInput->bomb_frame, 123);
     const int16_t sum_digits[] = { 0, 9, 6, 0, 5, 0 };
     for (int32_t i = 0; i < 6; i++) {

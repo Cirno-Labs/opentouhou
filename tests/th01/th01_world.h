@@ -17,7 +17,7 @@
 #include "th01/player.h"
 #include "th01/rng.h"
 #include "th01/scene.h"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shootout_lasers.h"
 #include "th01/shots.h"
 #include "th01/stage.h"
@@ -49,10 +49,10 @@ static inline void Th01Test_ResetWorld(void)
     Bonus_Init();
     Extend_Reset();
     Extend_SyncResidentLives(0);
-    g_Session.lives = 0;
-    g_Session.high_score = 0;
-    g_Session.point_value = 0;
-    g_Session.stage_id = 0;
+    p_Session->lives = 0;
+    p_Session->high_score = 0;
+    p_Session->point_value = 0;
+    p_Session->stage_id = 0;
     Hud_Reset();
     HudHp_Reset();
 }

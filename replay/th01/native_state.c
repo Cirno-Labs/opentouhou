@@ -92,13 +92,13 @@ static void M_Boss(uint32_t *const row)
 static void M_Gameplay(uint32_t *const row)
 {
     row[TH01_COLUMN_vsync_count1] = M_I32(g_VSync->count1);
-    row[TH01_COLUMN_frame_rand] = g_Session.frame_rand;
+    row[TH01_COLUMN_frame_rand] = g_Session->frame_rand;
     row[TH01_COLUMN_rng] = g_Rng;
     row[TH01_COLUMN_game_frames] = g_Stage->frame;
-    row[TH01_COLUMN_stage] = (uint32_t)g_Session.stage_id;
-    row[TH01_COLUMN_route] = g_Session.route;
+    row[TH01_COLUMN_stage] = (uint32_t)g_Session->stage_id;
+    row[TH01_COLUMN_route] = g_Session->route;
     row[TH01_COLUMN_score] = g_Stage->score;
-    row[TH01_COLUMN_lives] = M_I32(g_Session.lives);
+    row[TH01_COLUMN_lives] = M_I32(g_Session->lives);
     row[TH01_COLUMN_bombs] = M_I32(g_Player->remaining_bombs);
     row[TH01_COLUMN_pellet_speed] = M_I32(g_Pellets->speed);
     row[TH01_COLUMN_stage_time] = g_Stage->time;

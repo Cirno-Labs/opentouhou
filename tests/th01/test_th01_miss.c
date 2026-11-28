@@ -11,7 +11,7 @@
 #include "th01/player.c"
 #include "th01/player.h"
 #include "th01/rng.h"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shots.c"
 #include "th01/shots.h"
 #include "th01/timer.h"
@@ -74,8 +74,8 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
     M_Init(&state, 304, 1);
     memset(&m_Miss, 0, sizeof(m_Miss));
     VSyncIrq_Reset();
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
-    g_Session.lives = 2;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
+    p_Session->lives = 2;
     CHECK(IS_OK(Miss_ValidateSprites(&state.miko, &state.stage)));
     uint32_t rng = g_Rng;
     const int32_t expected_image = MasterRng_Next(&rng) % 8 == 0 ? 23 : 22;
@@ -115,8 +115,8 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 const int16_t extra_bombs = variant == 0 ? 1
                     : variant == 1                       ? 1
                                                          : 2;
-                g_Session.settings.difficulty = rank;
-                g_Session.lives = variant;
+                p_Session->settings.difficulty = rank;
+                p_Session->lives = variant;
                 const ORB orb = m_Orb;
                 const size_t used = state.arena.used;
                 VSyncIrq_Reset();

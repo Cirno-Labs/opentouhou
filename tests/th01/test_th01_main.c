@@ -175,10 +175,10 @@ RESULT ScoreAssets_Load(
 
 void Score_SyncSession(void)
 {
-    g_Session.table_high_score =
-        (uint32_t)m_Saves.tables[g_Session.settings.difficulty]
+    Session_SyncTableHighScore(
+        (uint32_t)m_Saves.tables[g_Session->settings.difficulty]
             .entries[0]
-            .score;
+            .score);
 }
 
 RESULT Score_FlushSaves(void)
@@ -449,8 +449,8 @@ TEST(gameover_registration_saves_before_returning_to_continue)
     M_Play();
     p_Gameplay->sequence = GAMEPLAY_SEQUENCE_TERMINAL;
     p_Gameplay->request = GAMEPLAY_REQUEST_SCORE;
-    g_Session.score = 12345;
-    g_Session.stage_id = 4;
+    p_Session->score = 12345;
+    p_Session->stage_id = 4;
     CHECK(M_Tick((TH01_INPUT) {}));
     CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_SCORE);
     CHECK_EQ_INT(m_Fixture.score_begins, 1);

@@ -11,7 +11,7 @@
 #include "th01/player.c"
 #include "th01/player.h"
 #include "th01/rng.h"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shots.h"
 #include "th01/sound.h"
 
@@ -175,15 +175,15 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     f->mask.coverage = Allocator_AllocZ(a, 640 * 66);
     m_Player.left = 300;
     m_Player.invincible = true;
-    g_Session.lives = 3;
+    p_Session->lives = 3;
     m_Orb.top = 64;
     m_Orb.previous_top = 64;
     Hud_Load(&f->mask, &f->stage, &f->font);
-    g_Session.stage_id = 19;
-    g_Session.frame_rand = 0x12345678;
+    p_Session->stage_id = 19;
+    p_Session->frame_rand = 0x12345678;
     g_BossSariel.init();
     M_BossSetup(&f->assets);
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 static bool M_Tick(FIXTURE *const f, uint64_t *const tick)
@@ -220,7 +220,7 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
         M_BossResumeEntrance(&f.assets, tick);
     }
     CHECK(!m_B20M.entrance_active);
-    CHECK_EQ_INT(g_Rng, g_Session.frame_rand);
+    CHECK_EQ_INT(g_Rng, p_Session->frame_rand);
     CHECK_EQ_INT(g_Video->drawing_page, 0);
     CHECK_EQ_INT(g_Video->scroll_top, 0);
     CHECK_EQ_INT(arena.used, used);
@@ -271,8 +271,8 @@ TEST(all_first_form_patterns_finish_with_real_projectile_pools)
                 Arena_Init(&arena, "Sariel first form", 4 * 1024 * 1024);
                 FIXTURE f;
                 M_Fixture(&f, &arena);
-                g_Session.settings.difficulty = rank;
-                g_Session.settings.difficulty = rank;
+                p_Session->settings.difficulty = rank;
+                p_Session->settings.difficulty = rank;
                 g_Rng = 0x12345678u + (uint32_t)rank;
                 m_B20M.status.phase = phases[phase];
                 m_B20M.pattern = pattern;
@@ -301,8 +301,8 @@ TEST(all_second_form_patterns_finish_with_persistent_leaf_state)
             Arena_Init(&arena, "Sariel second form", 4 * 1024 * 1024);
             FIXTURE f;
             M_Fixture(&f, &arena);
-            g_Session.settings.difficulty = rank;
-            g_Session.settings.difficulty = rank;
+            p_Session->settings.difficulty = rank;
+            p_Session->settings.difficulty = rank;
             g_Rng = 0xabcdef01u + (uint32_t)rank;
             m_B20M.status.phase = B20M_PHASE_SECOND_FORM;
             m_B20M.status.hp = 6;

@@ -364,7 +364,7 @@ static void M_Add(
     const int16_t y, const uint8_t angle, const int16_t speed, const bool chase)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, x, y, angle, speed,
+        g_Session->settings.difficulty, x, y, angle, speed,
         chase ? PELLET_CHASE : PELLET_REGULAR, chase ? speed : 0, 0, 0);
 }
 
@@ -685,7 +685,7 @@ static void M_Pillars(const B10J_ASSETS *const assets, const PTN *const miko)
             m_B10J.pillar_time[i] -= 8;
         } else if (m_B10J.pillar_time[i] != -999) {
             Pellets_AddGroup(
-                g_Session.settings.difficulty,
+                g_Session->settings.difficulty,
                 Math16_Wrap(m_B10J.still.left + 64),
                 Math16_Wrap(m_B10J.still.top + 80),
                 PELLET_GROUP_THREE_WIDE_AIMED, 36);
@@ -882,7 +882,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
     if (m_B10J.defeating) {
         return M_Death(assets, miko);
     }
-    Missiles_Update((uint16_t)g_Session.frame_rand, &assets->missiles);
+    Missiles_Update((uint16_t)g_Session->frame_rand, &assets->missiles);
     Particles_Update(PARTICLES_TOP_RIGHT, 7);
     if (m_B10J.status.phase == B10J_PHASE_START) {
         Video_SelectDrawingPage(0);

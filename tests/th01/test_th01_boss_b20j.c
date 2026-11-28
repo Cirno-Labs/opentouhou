@@ -11,7 +11,7 @@
 #include "th01/player.c"
 #include "th01/player.h"
 #include "th01/rng.h"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shootout_lasers.c"
 #include "th01/shots.h"
 #include "th01/sound.h"
@@ -161,14 +161,14 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     memset(f->stage.pixels, PTN_TRANSPARENT, 4096);
     m_Player.left = 300;
     m_Player.invincible = true;
-    g_Session.lives = 3;
+    p_Session->lives = 3;
     m_Orb.top = 64;
     m_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    g_Session.frame_rand = 0x12345678;
+    p_Session->frame_rand = 0x12345678;
     g_BossKonngara.init();
     M_BossSetup(&f->assets);
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
@@ -224,8 +224,8 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             Arena_Reset(&arena);
             FIXTURE f;
             M_Fixture(&f, &arena);
-            g_Session.settings.difficulty = rank;
-            g_Session.settings.difficulty = rank;
+            p_Session->settings.difficulty = rank;
+            p_Session->settings.difficulty = rank;
             m_B20J.status.phase = B20J_PHASE_FINAL;
             m_B20J.pattern = pattern;
             m_B20J.status.frame = 0;

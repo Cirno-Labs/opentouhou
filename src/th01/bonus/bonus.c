@@ -143,13 +143,11 @@ static void M_StageCommit(const GAME_TEXT_FONT *const font)
     M_StageMetric(font, 5, Math16_Wrap(g_Stage->maximum_combo * 100));
     M_StageMetric(
         font, 7,
-        Math16_Wrap(g_Session.lives * 200 + g_Player->remaining_bombs * 100));
+        Math16_Wrap(g_Session->lives * 200 + g_Player->remaining_bombs * 100));
     M_StageMetric(font, 9, Math16_Wrap((m_Bonus.run.stage_number - 1) * 200));
     Stage_AddScore(m_Bonus.score_bonus);
     const uint32_t bits = m_Bonus.score_bonus;
-    g_Session.bonus_per_stage[(m_Bonus.run.stage_number - 1) % 5] =
-        bits <= INT32_MAX ? (int32_t)bits
-                          : (int32_t)((int64_t)bits - INT64_C(4294967296));
+    Session_RecordStageBonus(m_Bonus.run.stage_number, bits);
     const int16_t div = Math16_Wrap((int32_t)(bits / 10000));
     const int16_t remainder = Math16_Wrap((int32_t)(bits % 10000));
     const int16_t digits[] = { (int16_t)(div / 10),
@@ -203,7 +201,7 @@ static void M_Prepare(const uint64_t host_tick)
             value = Math16_Wrap(g_Stage->maximum_combo * 200);
             break;
         case 2:
-            value = Math16_Wrap(g_Session.lives * 500);
+            value = Math16_Wrap(g_Session->lives * 500);
             value += Math16_Wrap(g_Player->remaining_bombs * 200);
             break;
         default:
@@ -487,8 +485,7 @@ bool Bonus_ResumeTotal(
             }
             GameInput_ResetGame();
             GameInput_HoldConfirm();
-            g_Session.continues_per_scene[m_Total.stage_number / 5 - 1] =
-                (uint16_t)g_Session.continues_total;
+            Session_RecordContinuesForScene(m_Total.stage_number);
             m_Total.phase = BONUS_TOTAL_CONFIRM;
             break;
         case BONUS_TOTAL_CONFIRM:

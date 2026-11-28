@@ -240,7 +240,7 @@ static void M_Group(
     const PELLET_GROUP group, const int16_t speed, const bool iris)
 {
     Pellets_AddGroup(
-        g_Session.settings.difficulty, Math16_Wrap(m_B10M.eyes[eye].left + 28),
+        g_Session->settings.difficulty, Math16_Wrap(m_B10M.eyes[eye].left + 28),
         Math16_Wrap(m_B10M.eyes[eye].top + (iris ? 28 : 32)), group, speed);
 }
 
@@ -249,7 +249,7 @@ static void M_Single(
     const uint8_t angle, const PELLET_MOTION motion)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, Math16_Wrap(m_B10M.eyes[eye].left + 28),
+        g_Session->settings.difficulty, Math16_Wrap(m_B10M.eyes[eye].left + 28),
         Math16_Wrap(m_B10M.eyes[eye].top + 32), angle, 64, motion,
         motion == PELLET_REGULAR ? 0 : 64, 0, 0);
 }
@@ -385,14 +385,14 @@ static void M_Entrance(const B10M_ASSETS *const assets, const PTN *const miko)
             M_Active(31, false);
         }
         if ((m_B10M.status.frame == 240
-             && g_Session.settings.difficulty == SETTINGS_DIFFICULTY_HARD)
+             && g_Session->settings.difficulty == SETTINGS_DIFFICULTY_HARD)
             || (m_B10M.status.frame == 260
-                && g_Session.settings.difficulty
+                && g_Session->settings.difficulty
                     == SETTINGS_DIFFICULTY_LUNATIC)) {
             M_Group(assets, miko, 4, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
             M_Group(assets, miko, 3, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
             M_Group(assets, miko, 2, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
-            if (g_Session.settings.difficulty == SETTINGS_DIFFICULTY_LUNATIC) {
+            if (g_Session->settings.difficulty == SETTINGS_DIFFICULTY_LUNATIC) {
                 M_Group(
                     assets, miko, 0, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
                 M_Group(
@@ -628,11 +628,11 @@ static void M_Lasers(const B10M_ASSETS *const assets, const PTN *const miko)
             m_B10M.subphase = 6;
             m_B10M.status.frame = 0;
             m_B10M.pattern_state = 0;
-            if (g_Session.settings.difficulty == SETTINGS_DIFFICULTY_HARD) {
+            if (g_Session->settings.difficulty == SETTINGS_DIFFICULTY_HARD) {
                 M_Group(
                     assets, miko, 4, PELLET_GROUP_THREE_NARROW_AIMED, 3, true);
             }
-            if (g_Session.settings.difficulty == SETTINGS_DIFFICULTY_LUNATIC) {
+            if (g_Session->settings.difficulty == SETTINGS_DIFFICULTY_LUNATIC) {
                 M_Group(
                     assets, miko, 4, PELLET_GROUP_FIVE_NARROW_AIMED, 4, true);
             }
@@ -648,7 +648,7 @@ static void M_Lasers(const B10M_ASSETS *const assets, const PTN *const miko)
             m_B10M.subphase = (int16_t)((iteration + 1) * 2);
             m_B10M.status.frame = 0;
             m_B10M.pattern_state = 0;
-            if (g_Session.settings.difficulty > SETTINGS_DIFFICULTY_NORMAL) {
+            if (g_Session->settings.difficulty > SETTINGS_DIFFICULTY_NORMAL) {
                 M_Group(
                     assets, miko, 4, PELLET_GROUP_THREE_NARROW_AIMED, 3, true);
             }
@@ -844,7 +844,7 @@ static void M_AttackStar(const B10M_ASSETS *const assets, const PTN *const miko)
                 Math16_Wrap(p->y[i] - p->center.y),
                 Math16_Wrap(p->x[i] - p->center.x));
             Pellets_AddSingle(
-                g_Session.settings.difficulty, p->x[i], p->y[i], m_B10M.angle,
+                g_Session->settings.difficulty, p->x[i], p->y[i], m_B10M.angle,
                 48, PELLET_REGULAR, 0, 0, 0);
         }
     }
@@ -921,7 +921,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
     if (m_B10M.defeating) {
         return M_Death(assets, miko);
     }
-    Missiles_Update((uint16_t)g_Session.frame_rand, &assets->missiles);
+    Missiles_Update((uint16_t)g_Session->frame_rand, &assets->missiles);
     if (m_B10M.status.phase == B10M_PHASE_ENTRANCE) {
         M_Entrance(assets, miko);
     } else if (m_B10M.status.phase == B10M_PHASE_LATERAL) {

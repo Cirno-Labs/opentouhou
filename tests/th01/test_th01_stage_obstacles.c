@@ -7,7 +7,7 @@
 #include "th01/player.c"
 #include "th01/player.h"
 #include "th01/rng.h"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shots.h"
 #include "th01/stage.h"
 #include "th01/stage/objects.c"
@@ -56,7 +56,7 @@ static void M_Init(CASE *const state)
     }
     m_StageObjects.obstacles =
         Arena_AllocZ(&state->arena, 200 * sizeof(STAGE_OBSTACLE));
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
 }
 
 TEST(bumpers_teleport_and_only_reverse_speed_four_even_on_reset)
@@ -157,8 +157,8 @@ TEST(turret_types_rank_intervals_rng_and_reset_order)
         for (int32_t rank = 0; rank < 4; rank++) {
             CASE state;
             M_Init(&state);
-            g_Session.settings.difficulty = rank;
-            g_Session.settings.difficulty = rank;
+            p_Session->settings.difficulty = rank;
+            p_Session->settings.difficulty = rank;
             m_StageObjects.obstacle_count = 1;
             m_StageObjects.obstacles[0] =
                 (STAGE_OBSTACLE) { .left = 96, .top = 128, .type = type };
@@ -302,7 +302,7 @@ TEST(orb_composite_reuses_ready_count_and_never_replays_motion)
     for (int32_t variant = 0; variant < 4; variant++) {
         CASE state;
         M_Init(&state);
-        g_Session.stage_id = 4;
+        p_Session->stage_id = 4;
         m_Orb.previous_left = 499;
         m_Orb.previous_top = 349;
         StageOrb_Init();

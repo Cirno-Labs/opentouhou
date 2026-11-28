@@ -527,22 +527,22 @@ static void M_Single(
     const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, x, y, angle, speed, PELLET_REGULAR, 0, 0,
-        0);
+        g_Session->settings.difficulty, x, y, angle, speed, PELLET_REGULAR, 0,
+        0, 0);
 }
 static void M_Rain(
     const B20J_ASSETS *const assets, const int16_t x, const int16_t y,
     const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, x, y, angle, speed, PELLET_GRAVITY, 1, 0,
-        0);
+        g_Session->settings.difficulty, x, y, angle, speed, PELLET_GRAVITY, 1,
+        0, 0);
 }
 static void M_Group(
     const B20J_ASSETS *const assets, const int16_t x, const int16_t y,
     const int16_t group, const int16_t speed)
 {
-    Pellets_AddGroup(g_Session.settings.difficulty, x, y, group, speed);
+    Pellets_AddGroup(g_Session->settings.difficulty, x, y, group, speed);
 }
 static uint8_t M_Angle(const int32_t y, const int32_t x)
 {
@@ -781,7 +781,7 @@ static void M_Snakes(const B20J_ASSETS *const assets, const bool four)
             Sound_Effect(SOUND_EFFECT_SPAWN);
         }
         if (!four
-            && m_B20J.status.frame > 240 - g_Session.settings.difficulty * 40
+            && m_B20J.status.frame > 240 - g_Session->settings.difficulty * 40
             && m_B20J.status.frame % 40 == 0) {
             uint8_t angle = M_Random(assets) % 12;
             const int16_t x = m_B20J.status.frame % 120 == 0 ? 410
@@ -1114,7 +1114,7 @@ static void M_Sleeve(const B20J_ASSETS *const assets)
                 M_Rain(assets, 290, 200, angle, 32);
             } else {
                 Pellets_AddSingle(
-                    g_Session.settings.difficulty, 290, 200, angle, 32,
+                    g_Session->settings.difficulty, 290, 200, angle, 32,
                     PELLET_FALL_STRAIGHT_FROM_TOP_THEN_REGULAR, 48, 0, 0);
             }
         }
@@ -1315,7 +1315,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         m_B20J.hit.invincible = false;
         m_B20J.hp_bar_filled = false;
         m_B20J.boss_palette = g_Palette->saved;
-        Rng_Seed(g_Session.frame_rand);
+        Rng_Seed(g_Session->frame_rand);
         return true;
     }
     if (m_B20J.status.phase < B20J_PHASE_PATTERNS_1

@@ -14,7 +14,7 @@
 #include "th01/player.h"
 #include "th01/rng.h"
 #include "th01/scene.c"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shootout_lasers.c"
 #include "th01/shots.h"
 #include "th01/sound.h"
@@ -93,20 +93,20 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     memset(f->stage.pixels, PTN_TRANSPARENT, 4096);
     f->miko = (PTN) { .count = 1, .pixels = Allocator_Alloc(a, 1024) };
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
-    g_Session.lives = 3;
+    p_Session->lives = 3;
     g_Rng = 0xb10a0000;
     m_Player.invincible = true;
     m_Player.left = 300;
     m_Orb.top = 64;
     m_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 static void M_Enter(FIXTURE *const f)
 {
     for (int32_t frame = 0; frame < 331; frame++) {
-        g_Session.frame_rand++;
+        p_Session->frame_rand++;
         CHECK(M_BossUpdate(&f->assets, &f->miko));
     }
     CHECK_EQ_INT(m_B10M.status.phase, B10M_PHASE_LATERAL);
@@ -198,8 +198,8 @@ TEST(ordinary_entrance_preserves_world_and_rank_fire)
         Arena_Init(&arena, "b10m", 2 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        g_Session.settings.difficulty = rank;
-        g_Session.settings.difficulty = rank;
+        p_Session->settings.difficulty = rank;
+        p_Session->settings.difficulty = rank;
         g_BossYuugenMagan.init();
         M_BossSetup(&f.assets, &f.miko);
         const size_t used = arena.used;
@@ -237,8 +237,8 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         Arena_Init(&arena, "b10m", 2 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        g_Session.settings.difficulty = rank;
-        g_Session.settings.difficulty = rank;
+        p_Session->settings.difficulty = rank;
+        p_Session->settings.difficulty = rank;
         g_BossYuugenMagan.init();
         M_BossSetup(&f.assets, &f.miko);
         VSyncIrq_Reset();
@@ -249,7 +249,7 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         int16_t previous_star_phase = -1;
         for (int32_t frame = 0; frame < 18000 && loops < 2; frame++) {
             m_Player.left = (int16_t)(40 + (frame * 7) % 550);
-            g_Session.frame_rand++;
+            p_Session->frame_rand++;
             phases |= (uint16_t)(1u << m_B10M.status.phase);
             if (m_B10M.status.phase == B10M_PHASE_STAR_ATTACK) {
                 star_phases |= (uint16_t)(1u << m_B10M.pentagram.phase);

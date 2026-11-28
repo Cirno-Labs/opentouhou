@@ -148,7 +148,7 @@ static void M_Add(
     const int16_t speed, const PELLET_MOTION motion, const int16_t motion_speed)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, left, top, angle, speed, motion,
+        g_Session->settings.difficulty, left, top, angle, speed, motion,
         motion_speed, 0, 0);
 }
 

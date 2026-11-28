@@ -424,7 +424,7 @@ static void M_GroupSoul(
     const PELLET_GROUP group, const int16_t speed, const int16_t dy)
 {
     Pellets_AddGroup(
-        g_Session.settings.difficulty, Math16_Wrap(m_B15J.souls[i].left + 12),
+        g_Session->settings.difficulty, Math16_Wrap(m_B15J.souls[i].left + 12),
         Math16_Wrap(m_B15J.souls[i].top + dy), group, speed);
 }
 
@@ -435,8 +435,8 @@ static void M_Single(
     const int16_t cy)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, x, y, angle, speed, motion, motion_speed,
-        cx, cy);
+        g_Session->settings.difficulty, x, y, angle, speed, motion,
+        motion_speed, cx, cy);
 }
 
 static void M_SymmetricSpiral(

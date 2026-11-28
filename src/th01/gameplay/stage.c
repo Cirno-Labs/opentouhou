@@ -97,7 +97,7 @@ static void M_StageBackground(void)
         Sprite_PtnPut(&a->miko, 0, -1, g_Player->left, PLAYER_TOP);
     }
     Scene_BeginStage(
-        g_Session.stage_id, g_Stage->first_stage, Gameplay_StageSprites());
+        g_Session->stage_id, g_Stage->first_stage, Gameplay_StageSprites());
     m_StagePhase = GP_STAGE_OBJECT_ENTRANCE;
 }
 
@@ -105,9 +105,9 @@ static void M_StageBegin(const uint64_t host_tick)
 {
     Pellets_EraseAndResetMoving();
     Shots_EraseAndReset();
-    const int16_t stage = g_Session.stage_id;
+    const int16_t stage = g_Session->stage_id;
     p_Gameplay->boss_stage = stage % 5 == 4;
-    Stage_SetBoss(BossStrategy_ForStage(stage, g_Session.route));
+    Stage_SetBoss(BossStrategy_ForStage(stage, g_Session->route));
     Hud_Load(
         &g_GameplayAssets->hud, Gameplay_StageSprites(),
         &g_GameplayAssets->hud_font);
@@ -131,13 +131,13 @@ static void M_StageBegin(const uint64_t host_tick)
 static void M_StageReady(void)
 {
     StageTimer_Redraw(
-        g_Stage->first_stage, g_Stage->timer_initialized, g_Session.route);
+        g_Stage->first_stage, g_Stage->timer_initialized, g_Session->route);
     Stage_SetMaximumCombo(0);
     Orb_LeavePortal();
     Player_SetBombFrame(0);
     Stage_SetFrame(0);
     Orb_ResetFlight();
-    if (g_Session.stage_id % 5 == 0 || g_Gameplay->boss_stage) {
+    if (g_Session->stage_id % 5 == 0 || g_Gameplay->boss_stage) {
         Player_Center();
     }
     Player_StopActions();
@@ -189,7 +189,7 @@ bool GameplayStage_Step(const uint64_t host_tick)
             Gameplay_Boss()->finish_entrance();
         }
         p_Gameplay->animation_frame = 0;
-        if (g_Session.stage_id % 5 == 0 || g_Gameplay->boss_stage) {
+        if (g_Session->stage_id % 5 == 0 || g_Gameplay->boss_stage) {
             M_TitleChar();
             m_StagePhase = GP_STAGE_TITLE;
         } else {
@@ -213,7 +213,7 @@ bool GameplayStage_Step(const uint64_t host_tick)
             return false;
         }
         {
-            const uint32_t number = (uint32_t)(g_Session.stage_id + 1);
+            const uint32_t number = (uint32_t)(g_Session->stage_id + 1);
             const GAME_TEXT_GLYPH *glyphs[] = {
                 GameText_Find(&g_GameplayAssets->menu_font, '0' + number / 10),
                 GameText_Find(&g_GameplayAssets->menu_font, '0' + number % 10),

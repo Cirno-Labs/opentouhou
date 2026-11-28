@@ -517,23 +517,23 @@ static void M_Group(
     const B20M_ASSETS *const assets, const int16_t x, const int16_t y,
     const int16_t group, const int16_t speed)
 {
-    Pellets_AddGroup(g_Session.settings.difficulty, x, y, group, speed);
+    Pellets_AddGroup(g_Session->settings.difficulty, x, y, group, speed);
 }
 static void M_Single(
     const B20M_ASSETS *const assets, const int16_t x, const int16_t y,
     const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, x, y, angle, speed, PELLET_REGULAR, 0, 0,
-        0);
+        g_Session->settings.difficulty, x, y, angle, speed, PELLET_REGULAR, 0,
+        0, 0);
 }
 static void M_Rain(
     const B20M_ASSETS *const assets, const int16_t x, const int16_t y,
     const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
-        g_Session.settings.difficulty, x, y, angle, speed, PELLET_GRAVITY, 1, 0,
-        0);
+        g_Session->settings.difficulty, x, y, angle, speed, PELLET_GRAVITY, 1,
+        0, 0);
 }
 static void M_Laser(
     const B20M_ASSETS *const assets, const int32_t index, const int16_t x,
@@ -1365,7 +1365,7 @@ static void M_Sling(const B20M_ASSETS *const assets)
         && m_B20M.status.frame % m_B20M.pattern_state == 0) {
         const uint8_t angle = (uint8_t)M_Random(assets);
         Pellets_AddSingle(
-            g_Session.settings.difficulty, Math16_PolarY(320, 40, angle),
+            g_Session->settings.difficulty, Math16_PolarY(320, 40, angle),
             Math16_PolarX(180, 40, angle), 0, 0, PELLET_SLING_AIMED, 72, 0, 0);
     }
     if (m_B20M.status.frame >= 299) {
@@ -1450,8 +1450,8 @@ static void M_TopRain(const B20M_ASSETS *const assets)
     if (m_B20M.status.frame % 8 == 0) {
         M_Group(
             assets, M_Random(assets) % 640, 64,
-            g_Session.settings.difficulty == 3 ? PELLET_GROUP_RANDOM_WIDE
-                                               : PELLET_GROUP_SINGLE,
+            g_Session->settings.difficulty == 3 ? PELLET_GROUP_RANDOM_WIDE
+                                                : PELLET_GROUP_SINGLE,
             44);
     }
 }
@@ -1494,10 +1494,10 @@ static void M_Radial(const B20M_ASSETS *const assets)
         }
         M_Single(assets, 320, 160, (uint8_t)(m_B20M.radial_angle - 4), 96);
         M_Single(assets, 320, 160, (uint8_t)(m_B20M.radial_angle + 4), 96);
-        if (g_Session.settings.difficulty >= 2) {
+        if (g_Session->settings.difficulty >= 2) {
             M_Single(assets, 320, 160, (uint8_t)(m_B20M.radial_angle - 4), 64);
             M_Single(assets, 320, 160, (uint8_t)(m_B20M.radial_angle + 4), 64);
-            if (g_Session.settings.difficulty == 3) {
+            if (g_Session->settings.difficulty == 3) {
                 M_Single(assets, 320, 160, m_B20M.radial_angle, 64);
                 M_Single(assets, 320, 160, m_B20M.radial_angle, 48);
             }
@@ -1993,7 +1993,7 @@ static bool M_ResumeEntrance(
                     M_TransitionTarget(false), assets->interleave, tick)) {
                 return false;
             }
-            Rng_Seed(g_Session.frame_rand);
+            Rng_Seed(g_Session->frame_rand);
             m_B20M.entrance_active = false;
             Palette_SetStage(&m_B20M.stage_palette);
             m_B20M.sequence_stage = B20M_ENTRANCE_DONE;
@@ -2063,9 +2063,9 @@ static void M_BeginTransform(const B20M_ASSETS *const assets)
     Orb_Relaunch();
     Player_Center();
     Player_StopActions();
-    Player_Reset(g_Session.settings.difficulty);
+    Player_Reset(g_Session->settings.difficulty);
     m_B20M.hit.invincible = false;
-    Rng_Seed(g_Session.frame_rand);
+    Rng_Seed(g_Session->frame_rand);
     Sound_Fade();
     Video_SelectDrawingPage(1);
     // The absent BOSS6.GRP leaves the previous image and palette intact.
@@ -2471,7 +2471,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         m_B20M.hit.invincible = false;
         m_B20M.boss_palette = g_Palette->saved;
         m_B20M.stage_palette = m_B20M.boss_palette;
-        Rng_Seed(g_Session.frame_rand);
+        Rng_Seed(g_Session->frame_rand);
         m_B20M.sequence = B20M_SEQUENCE_RINGS;
         return M_RingEntrance(assets, tick);
     }

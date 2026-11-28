@@ -6,16 +6,16 @@
 
 void Ending_Snapshot(END_RESULT *const result)
 {
-    ASSERT(g_Session.ending != SESSION_END_NONE);
+    ASSERT(g_Session->ending != SESSION_END_NONE);
     *result =
-        (END_RESULT) { .score = g_Session.score,
-                       .highest_score = g_Session.highest_score,
-                       .random = g_Session.exit_rand,
-                       .extra_lives = (int8_t)g_Session.settings.lives_extra,
-                       .rank = (uint8_t)g_Session.settings.difficulty,
-                       .route = g_Session.ending };
+        (END_RESULT) { .score = g_Session->score,
+                       .highest_score = g_Session->highest_score,
+                       .random = g_Session->exit_rand,
+                       .extra_lives = (int8_t)g_Session->settings.lives_extra,
+                       .rank = (uint8_t)g_Session->settings.difficulty,
+                       .route = g_Session->ending };
     for (int32_t i = 0; i < 4; i++) {
-        result->continues[i] = g_Session.continues_per_scene[i];
+        result->continues[i] = g_Session->continues_per_scene[i];
         result->total += result->continues[i];
     }
     Session_ClearHistory();

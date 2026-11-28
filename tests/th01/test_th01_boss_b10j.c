@@ -12,7 +12,7 @@
 #include "th01/player.h"
 #include "th01/rng.h"
 #include "th01/scene.c"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shootout_lasers.c"
 #include "th01/shots.h"
 #include "th01/sound.h"
@@ -101,14 +101,14 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     memset(f->stage.pixels, PTN_TRANSPARENT, 4096);
     f->miko = (PTN) { .count = 1, .pixels = Allocator_Alloc(a, 1024) };
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
-    g_Session.lives = 3;
+    p_Session->lives = 3;
     g_Rng = 0xb10b0000;
     m_Player.invincible = true;
     m_Player.left = 300;
     m_Orb.top = 64;
     m_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
@@ -267,8 +267,8 @@ TEST(all_ranks_complete_eight_patterns_without_allocating)
         Arena_Init(&arena, "b10j", 2 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        g_Session.settings.difficulty = rank;
-        g_Session.settings.difficulty = rank;
+        p_Session->settings.difficulty = rank;
+        p_Session->settings.difficulty = rank;
         VSyncIrq_Reset();
         M_SetupFixture(&f);
         M_Enter(&f);
@@ -288,7 +288,7 @@ TEST(all_ranks_complete_eight_patterns_without_allocating)
             if ((patterns & 15) == 15) {
                 m_B10J.status.hp = 6;
             }
-            g_Session.frame_rand++;
+            p_Session->frame_rand++;
             CHECK(M_BossUpdate(&f.assets, &f.miko));
             if (phase == B10J_PHASE_SECOND && pattern == 3
                 && m_B10J.pattern == 0) {
@@ -317,7 +317,7 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
     const size_t used = arena.used;
     bool saw_gate = false;
     for (int32_t step = 0; step < 5000 && !m_B10J.defeating; step++) {
-        g_Session.frame_rand++;
+        p_Session->frame_rand++;
         const bool colliding = step % 50 == 20
             && (m_B10J.status.phase == B10J_PHASE_SECOND
                 || (m_B10J.status.phase == B10J_PHASE_FIRST

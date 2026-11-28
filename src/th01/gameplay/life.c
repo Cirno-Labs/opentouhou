@@ -58,7 +58,7 @@ static bool M_BossTick(const TH01_INPUT *const raw, const uint64_t host_tick)
 
 static void M_LifeBegin(const TH01_INPUT *const raw, const uint64_t host_tick)
 {
-    Player_Reset(g_Session.settings.difficulty);
+    Player_Reset(g_Session->settings.difficulty);
     M_DefaultActors();
     GameInput_ResetMenu();
     GameInput_Consume(GAME_INPUT_PRESS_PAUSE);
@@ -92,7 +92,7 @@ static void M_StartFrames(void)
     p_Gameplay->wait_for_shot = false;
     GameInput_Consume(GAME_INPUT_PRESS_SHOT);
     Stage_SetTimerInitialized(true);
-    Rng_Seed(g_Session.frame_rand);
+    Rng_Seed(g_Session->frame_rand);
     GameInput_OpenBombWindow();
     Stage_SetFirstStage(false);
     m_LifePhase = GP_LIFE_FRAME_BEGIN;
@@ -162,11 +162,11 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
             GameplayExit_Begin();
             return true;
         }
-        g_Session.frame_rand++;
+        Session_AdvanceFrameRand();
         {
             const int32_t period =
-                1800 - g_Session.lives * 200 - g_Player->remaining_bombs * 50;
-            if (period != 0 && g_Session.frame_rand % (uint32_t)period == 0) {
+                1800 - g_Session->lives * 200 - g_Player->remaining_bombs * 50;
+            if (period != 0 && g_Session->frame_rand % (uint32_t)period == 0) {
                 Pellets_SpeedRaise(1);
             }
         }
@@ -192,7 +192,7 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         Player_AdvanceBombFrame();
         GameInput_AdvanceBombFrame();
         m_LifePhase =
-            (g_Session.frame_rand & 3) == 0 ? GP_LIFE_TIMER : GP_LIFE_BOSS;
+            (g_Session->frame_rand & 3) == 0 ? GP_LIFE_TIMER : GP_LIFE_BOSS;
         return true;
     case GP_LIFE_TIMER:
         if (!StageTimer_TickAndPut()) {

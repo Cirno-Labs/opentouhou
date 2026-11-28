@@ -9,7 +9,7 @@
 #include "th01/player.c"
 #include "th01/player.h"
 #include "th01/rng.h"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shots.h"
 #include "th01/stage/private.h"
 
@@ -48,7 +48,7 @@ static void M_Init(FIXTURE *const f)
     }
     f->mask.coverage = Allocator_AllocZ(a, 640 * 66);
     Hud_Load(&f->mask, &f->sprites, &f->font);
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
     CHECK(Result_Ignore(Hud_ValidateAssets(&f->mask, &f->sprites, &f->font)));
 }
 
@@ -74,17 +74,17 @@ TEST(resources_snap_before_selection_and_restore_opaque_color15)
     M_Init(&f);
     memset(g_Video->pages[0], 15, VIDEO_PAGE_SIZE);
     memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
-    g_Session.lives = 2;
+    p_Session->lives = 2;
     m_Player.remaining_bombs = 1;
     Hud_SnapResources();
     CHECK_EQ_INT(Th01Test_Pixel(1, 128, 0), 3);
     CHECK_EQ_INT(Th01Test_Pixel(1, 129, 0), 15);
-    g_Session.lives = 1;
+    p_Session->lives = 1;
     Hud_LivesPut(2);
     CHECK_EQ_INT(Th01Test_Pixel(0, 144, 0), 15);
     CHECK_EQ_INT(Th01Test_Pixel(1, 144, 0), 15);
     Video_SelectDrawingPage(1);
-    g_Session.lives = 2;
+    p_Session->lives = 2;
     Hud_LivesPut(1);
     CHECK_EQ_INT(m_Hud.lives[256], 15);
     CHECK_EQ_INT(g_Video->drawing_page, 0);
@@ -120,19 +120,19 @@ TEST(force_draws_leading_zeroes_and_preserves_resident_high_score)
 {
     FIXTURE f;
     M_Init(&f);
-    g_Session.high_score = 100;
+    p_Session->high_score = 100;
     Hud_SnapNumbers(true);
     p_Stage->score = 1;
     m_Hud.force_numbers = true;
     Hud_ScoreAndCombo();
-    CHECK_EQ_INT(g_Session.high_score, 100);
+    CHECK_EQ_INT(p_Session->high_score, 100);
     CHECK_EQ_INT(Th01Test_Pixel(0, 256, 16), 7);
     CHECK_EQ_INT(Th01Test_Pixel(1, 256, 16), 7);
     m_Hud.force_numbers = false;
     p_Stage->score = 101;
     p_Stage->combo = 257;
     Hud_ScoreAndCombo();
-    CHECK_EQ_INT(g_Session.high_score, 101);
+    CHECK_EQ_INT(p_Session->high_score, 101);
     CHECK_EQ_INT(m_Hud.maximum_combo, 1);
     CHECK_EQ_INT(m_Hud.max_previous, 257);
     Hud_SnapNumbers(false);

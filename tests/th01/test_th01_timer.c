@@ -7,7 +7,7 @@
 #include "th01/pellets/pellets.c"
 #include "th01/player.h"
 #include "th01/rng.h"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shots.h"
 #include "th01/stage/private.h"
 #include "th01/timer.c"
@@ -48,8 +48,8 @@ static void M_Init(FIXTURE *const f)
     f->mask.coverage = Allocator_AllocZ(a, 640 * 66);
     f->sprites = (PTN) { .count = 1, .pixels = Allocator_AllocZ(a, 1024) };
     Hud_Load(&f->mask, &f->sprites, &f->font);
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
-    g_Session.stage_id = 0;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
+    p_Session->stage_id = 0;
     Hud_SnapTimer(1000);
 }
 
@@ -67,7 +67,7 @@ TEST(route_table_and_reinitialization_keep_cycle)
     for (int16_t route = 0; route < 2; route++) {
         for (int16_t stage = 0; stage < 20; stage++) {
             m_Timer.frames_since_hurry = 555;
-            g_Session.stage_id = stage;
+            p_Session->stage_id = stage;
             StageTimer_Redraw(false, false, route);
             CHECK_EQ_INT(g_Stage->time, expected[route][stage]);
             CHECK_EQ_INT(m_Timer.hurry_cycle, 255);
@@ -141,7 +141,7 @@ TEST(full_pool_consumes_x_only_and_cycle_and_frame_wrap)
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
         m_Pellets.slots[i].moving = true;
     }
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_LUNATIC;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_LUNATIC;
     uint32_t expected = g_Rng;
     m_Timer.hurry_cycle = 255;
     m_Timer.frames_since_hurry = 65535;
@@ -168,7 +168,7 @@ TEST(redraw_does_not_claim_world_timer_initialization)
     FIXTURE f;
     M_Init(&f);
     m_Timer.hurry_cycle = 97;
-    g_Session.stage_id = 19;
+    p_Session->stage_id = 19;
     StageTimer_Redraw(true, false, 1);
     CHECK_EQ_INT(g_Stage->time, 8000);
     CHECK_EQ_INT(m_Timer.hurry_cycle, 97);

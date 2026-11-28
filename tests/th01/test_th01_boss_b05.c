@@ -13,7 +13,7 @@
 #include "th01/player.h"
 #include "th01/rng.h"
 #include "th01/scene.c"
-#include "th01/session.h"
+#include "th01/session_private.h"
 #include "th01/shots.h"
 #include "th01/sound.h"
 #include "th01/vsync_irq.c"
@@ -114,8 +114,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
         Reader_Close(&reader);
     }
     Scene_Activate(&f->cache[0]);
-    g_Session.route = 1;
-    g_Session.lives = 3;
+    p_Session->route = 1;
+    p_Session->lives = 3;
     g_Rng = 0xb0500000;
     m_Player.invincible = true;
     m_Player.left = 300;
@@ -128,7 +128,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
         &f->cache[2],
     };
 
-    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
+    p_Session->settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 static void M_Enter(FIXTURE *const f)
@@ -275,8 +275,8 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         Arena_Init(&arena, "b05", 2 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        g_Session.settings.difficulty = rank;
-        g_Session.settings.difficulty = rank;
+        p_Session->settings.difficulty = rank;
+        p_Session->settings.difficulty = rank;
         g_BossSingyoku.init();
         M_BossSetup(&f.assets);
         VSyncIrq_Reset();
@@ -290,7 +290,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
                 step == 20 || step == 70 || (step >= 1620 && step % 50 == 20);
             m_Orb.previous_left = hit ? (int16_t)(m_B05.sphere.left + 32) : 0;
             m_Orb.previous_top = hit ? (int16_t)(m_B05.sphere.top + 32) : 64;
-            g_Session.frame_rand = (uint32_t)step;
+            p_Session->frame_rand = (uint32_t)step;
             CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
             phase_two |= m_B05.status.phase == B05_PHASE_TRANSFORMS;
         }
@@ -317,7 +317,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK(!M_BossUpdate(&f.miko, &f.route_assets, &raw));
         CHECK(memcmp(&m_B05, &frozen, sizeof(m_B05)) == 0);
         const uint32_t rng = g_Rng;
-        const uint32_t frame_rand = g_Session.frame_rand;
+        const uint32_t frame_rand = p_Session->frame_rand;
         for (int32_t edge = 0; edge < 1000 && m_B05.pending != B05_FINISHED;
              edge++) {
             const TH01_INPUT held = { .shot = true, .down = rank % 2 == 1 };
@@ -325,11 +325,11 @@ TEST(real_hit_controller_reaches_both_cached_routes)
             M_BossUpdate(&f.miko, &f.route_assets, &held);
         }
         CHECK_EQ_INT(m_B05.pending, B05_FINISHED);
-        CHECK_EQ_INT(g_Session.route, rank % 2);
+        CHECK_EQ_INT(p_Session->route, rank % 2);
         CHECK(m_Scene.active == &f.cache[1 + rank % 2]);
         CHECK(g_Stage->cleared && m_Player.is_hit);
         CHECK_EQ_INT(g_Rng, rng);
-        CHECK_EQ_INT(g_Session.frame_rand, frame_rand);
+        CHECK_EQ_INT(p_Session->frame_rand, frame_rand);
         CHECK_EQ_INT(arena.used, used);
         const B05 finished = m_B05;
         CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
