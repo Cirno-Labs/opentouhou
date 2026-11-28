@@ -1,5 +1,7 @@
 #pragma once
+
 #include "th02/high_score_view/logic.h"
+
 typedef struct {
     void (*begin)(void *context);
     void (*frame)(void *context, int16_t frame);
