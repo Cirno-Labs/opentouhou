@@ -1,11 +1,24 @@
 #pragma once
 
 #include "th02/entity.h"
-#include "th02/map.h"
 #include "th02/mpn.h"
 
 #define TILE_COLUMNS 24
 #define TILE_ROWS 25
+
+#define MAP_SECTION_COUNT 16
+#define MAP_SECTION_ROWS 8
+#define MAP_COLUMNS 24
+
+// A stage map: the tile numbers of its sections, each eight rows of 24
+// tiles, which the stage chains into its scrolling background.
+typedef struct {
+    uint8_t tiles[MAP_SECTION_ROWS][MAP_COLUMNS];
+} MAP_SECTION;
+
+typedef struct {
+    const MAP_SECTION *sections;
+} MAP;
 
 typedef enum {
     TILE_BLACK,

@@ -1,6 +1,6 @@
 #include "th02/stage/data.h"
 
-#include "th02/map.h"
+#include "th02/background/background.h"
 
 #include <string.h>
 

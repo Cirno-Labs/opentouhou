@@ -1,8 +1,9 @@
 #pragma once
 
-#include "th02/map.h"
+#include "th02/background/background.h"
 #include "th02/mpn.h"
 
+#include "core/io/reader.h"
 #include "core/vfs.h"
 
 typedef struct {
@@ -10,6 +11,10 @@ typedef struct {
     MPN tiles;
     ALLOCATOR allocator;
 } BACKGROUND_ASSETS;
+
+// Loads a map, skipping its unchecked ten-byte header.
+RESULT BackgroundAssets_LoadMap(
+    READER *reader, const ALLOCATOR *allocator, MAP *out);
 
 // Loads stage N's map and tiles; the allocator must free individually.
 RESULT BackgroundAssets_Load(

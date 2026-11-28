@@ -279,7 +279,7 @@ foreach part : ['wait']
     suite: 'unit',
   )
 endforeach
-foreach part : ['tram_text', 'gaiji', 'palette', 'map', 'mpn']
+foreach part : ['tram_text', 'gaiji', 'palette', 'mpn']
   test(
     'th02/' + part,
     executable(
@@ -380,6 +380,17 @@ test(
   executable(
     'test_th02_high_scores_format',
     'test_th02_high_scores_format.c',
+    implicit_include_directories: false,
+    link_with: [th02_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3],
+  ),
+  suite: 'unit',
+)
+test(
+  'th02/background_map',
+  executable(
+    'test_th02_background_map',
+    'test_th02_background_map.c',
     implicit_include_directories: false,
     link_with: [th02_lib, core_io_lib, core_base_lib],
     dependencies: [sdl3],

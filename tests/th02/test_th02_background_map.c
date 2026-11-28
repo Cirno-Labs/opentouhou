@@ -1,5 +1,5 @@
 #include "tests/test.h"
-#include "th02/map.h"
+#include "th02/background/assets.h"
 
 #include "core/base/arena.h"
 #include "core/io/reader.h"
@@ -31,7 +31,8 @@ TEST(loads_all_sections_in_row_order_and_preserves_all_tile_indices)
     Arena_Init(&arena, "map test", 8192);
     MAP map;
     const bool loaded = Result_Log(
-        Map_Load(&reader, Arena_Allocator(&arena), &map), LOG_LEVEL_ERROR);
+        BackgroundAssets_LoadMap(&reader, Arena_Allocator(&arena), &map),
+        LOG_LEVEL_ERROR);
     CHECK(loaded);
     if (loaded) {
         for (size_t section = 0; section < MAP_SECTION_COUNT; section++) {
@@ -67,7 +68,8 @@ TEST(skips_the_unchecked_header_at_the_current_position)
     Arena_Init(&arena, "map test", 8192);
     MAP map;
     const bool loaded = Result_Log(
-        Map_Load(&reader, Arena_Allocator(&arena), &map), LOG_LEVEL_ERROR);
+        BackgroundAssets_LoadMap(&reader, Arena_Allocator(&arena), &map),
+        LOG_LEVEL_ERROR);
     CHECK(loaded);
     if (loaded) {
         CHECK_EQ_INT(map.sections[0].tiles[0][1], 1);
@@ -88,7 +90,8 @@ TEST(rejects_every_truncated_prefix_without_arena_allocations)
         READER reader;
         Reader_OpenBuffer(&reader, bytes, size, nullptr);
         MAP map;
-        CHECK(!Result_Ignore(Map_Load(&reader, Arena_Allocator(&arena), &map)));
+        CHECK(!Result_Ignore(
+            BackgroundAssets_LoadMap(&reader, Arena_Allocator(&arena), &map)));
         CHECK(map.sections == nullptr);
         CHECK_EQ_INT(arena.used, 0);
         Reader_Close(&reader);
@@ -107,7 +110,8 @@ TEST(read_failures_leave_the_output_empty)
     Arena_Init(&arena, "map test", 8192);
     MAP_SECTION old_section = {};
     MAP map = { .sections = &old_section };
-    CHECK(!Result_Ignore(Map_Load(&reader, Arena_Allocator(&arena), &map)));
+    CHECK(!Result_Ignore(
+        BackgroundAssets_LoadMap(&reader, Arena_Allocator(&arena), &map)));
     CHECK(map.sections == nullptr);
     CHECK_EQ_INT(arena.used, 0);
     Reader_Close(&reader);

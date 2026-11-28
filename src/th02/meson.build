@@ -88,7 +88,6 @@ th02_lib = static_library(
   'input.c',
   'main_menu/logic.c',
   'main_menu/render.c',
-  'map.c',
   'menu.c',
   'mpn.c',
   'music.c',
