@@ -2,6 +2,7 @@
 #include "th02/boss/explosion.h"
 #include "th02/boss/marisa.h"
 #include "th02/boss/marisa/assets.h"
+#include "th02/boss/marisa/private.h"
 #include "th02/boss/private.h"
 #include "th02/boss/scene.h"
 #include "th02/boss/strategy.h"
@@ -29,17 +30,6 @@
 
 #include <string.h>
 
-#define MARISA_BIT_COUNT 4
-#define MARISA_DOT_COUNT 30
-
-typedef struct {
-    uint8_t flag;
-    uint8_t angle;
-    ENTITY_POINT position[2];
-    uint8_t size;
-    uint8_t speed;
-} MARISA_DOT;
-
 typedef enum {
     MARISA_MIDBOSS_ENTER,
     MARISA_MIDBOSS_TRAVERSE,
@@ -59,47 +49,6 @@ typedef enum {
     MARISA_OPEN_ORBS,
     MARISA_COMBAT,
 } MARISA_PHASE;
-
-typedef struct {
-    MARISA_DOT dots[MARISA_DOT_COUNT];
-    ENTITY_POINT position;
-    int16_t phase;
-    int16_t direction;
-    int16_t midboss_bullet_top;
-    int16_t midboss_kill_frame;
-    uint8_t midboss_pattern;
-    uint8_t midboss_patterns_done;
-    uint8_t midboss_page;
-    bool midboss_active;
-    ENTITY_POINT bit_position[2][MARISA_BIT_COUNT];
-    ENTITY_POINT orbit_center;
-    int16_t bit_hits[MARISA_BIT_COUNT];
-    int16_t bit_state[MARISA_BIT_COUNT];
-    int16_t bit_hit[MARISA_BIT_COUNT];
-    int16_t bit_flash[MARISA_BIT_COUNT];
-    int16_t bit_radius[MARISA_BIT_COUNT];
-    int16_t bit_speed[MARISA_BIT_COUNT];
-    int16_t bit_state_sum;
-    int16_t defeat_frame;
-    int16_t move_x;
-    int16_t move_y;
-    uint8_t bit_angle[MARISA_BIT_COUNT];
-    uint8_t bit_spin[MARISA_BIT_COUNT];
-    uint8_t damage_enable;
-    uint8_t drift_toggle;
-    uint8_t double_fire;
-    uint8_t double_angle;
-    uint8_t drift_angle;
-    uint8_t orbit_angle, expand_angle, spin_angle, ring_toggle,
-        background_color;
-    uint8_t fan, second_fan, unused_fan, edge_count, pattern_rounds,
-        bit_patterns_seen, bomb_mask;
-    int8_t edge_direction;
-    int8_t orbit_direction;
-    int8_t color_index;
-    int8_t pattern;
-    int8_t pattern_cycle;
-} MARISA;
 
 typedef enum {
     MARISA_PATTERN_DRIFT = -3,
@@ -121,6 +70,7 @@ typedef struct {
 } MARISA_ATTACK;
 
 static MARISA m_Marisa;
+MARISA *const p_Marisa = &m_Marisa;
 static const uint8_t m_BackgroundColors[] = { 10, 12, 13, 13, 12, 10 };
 
 static void M_DotsInit(void)
@@ -1228,7 +1178,7 @@ static void M_Init(void)
     m_Marisa.bomb_mask = 1;
 }
 
-static bool M_MidbossInvalidateCore(BOSS_STATE *const boss)
+bool Marisa_MidbossInvalidate(BOSS_STATE *const boss)
 {
     m_Marisa.midboss_page = g_Stage->scroll.back;
     ENTITY_POINT *const position = M_Position(boss);
@@ -1237,7 +1187,7 @@ static bool M_MidbossInvalidateCore(BOSS_STATE *const boss)
     return m_Marisa.midboss_active;
 }
 
-static void M_MidbossUpdateCore(
+void Marisa_MidbossUpdate(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns,
     const uint8_t rank)
 {
@@ -1331,8 +1281,7 @@ void Marisa_Place(BOSS_STATE *const boss)
     boss->sprite = 128;
 }
 
-static void M_DrawBody(
-    BOSS_STATE *const boss, const PATTERN_BANK *const patterns)
+void Marisa_DrawBody(BOSS_STATE *const boss, const PATTERN_BANK *const patterns)
 {
     if (boss->hit_flash != 0) {
         boss->hit_flash = 0;
@@ -1348,11 +1297,11 @@ static void M_DrawBody(
 void Marisa_DrawScene(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns)
 {
-    M_DrawBody(boss, patterns);
+    Marisa_DrawBody(boss, patterns);
     BossScene_DrawPlayer(patterns);
 }
 
-static void M_BeginCore(BOSS_STATE *const boss, const uint8_t rank)
+void Marisa_Begin(BOSS_STATE *const boss, const uint8_t rank)
 {
     MARISA *const marisa = &m_Marisa;
     Background_SetMode(TILE_DISABLED);
@@ -1379,7 +1328,7 @@ static void M_BeginCore(BOSS_STATE *const boss, const uint8_t rank)
     M_Rank(rank);
 }
 
-static void M_InvalidateCore(BOSS_STATE *const boss, const bool reduce_effects)
+void Marisa_Invalidate(BOSS_STATE *const boss, const bool reduce_effects)
 {
     const CLIP full = { 0, 0, 639, 399 };
     Grcg_SetColor(0);
@@ -1395,7 +1344,7 @@ static void M_InvalidateCore(BOSS_STATE *const boss, const bool reduce_effects)
     Grcg_Off();
 }
 
-static BOSS_RESULT M_UpdateCore(
+BOSS_RESULT Marisa_Update(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns,
     const uint8_t rank, const bool reduce_effects)
 {
@@ -1494,7 +1443,7 @@ static BOSS_RESULT M_UpdateCore(
             return BOSS_FINISHED;
         }
     } else {
-        M_DrawBody(boss, patterns);
+        Marisa_DrawBody(boss, patterns);
     }
     for (i = 0; i < MARISA_BIT_COUNT; i++) {
         if (marisa->bit_state[i] == 1) {
@@ -1708,12 +1657,12 @@ static void M_Begin(
             assets->marisa.combat.next != 0 ? &assets->marisa : nullptr, true);
         Marisa_Place(p_BossState);
     }
-    M_BeginCore(p_BossState, (uint8_t)session->rank);
+    Marisa_Begin(p_BossState, (uint8_t)session->rank);
 }
 
 static void M_Invalidate(const bool reduce_effects)
 {
-    M_InvalidateCore(p_BossState, reduce_effects);
+    Marisa_Invalidate(p_BossState, reduce_effects);
 }
 
 static BOSS_RESULT M_Update(
@@ -1721,19 +1670,19 @@ static BOSS_RESULT M_Update(
     const BOSS_MUSIC *const music, TH02_SESSION *const session,
     const TH02_INPUT *const input)
 {
-    return M_UpdateCore(
+    return Marisa_Update(
         p_BossState, patterns, (uint8_t)session->rank, session->reduce_effects);
 }
 
 static bool M_MidbossInvalidate(void)
 {
-    return M_MidbossInvalidateCore(p_BossState);
+    return Marisa_MidbossInvalidate(p_BossState);
 }
 
 static void M_MidbossUpdate(
     const PATTERN_BANK *const patterns, const uint8_t rank)
 {
-    M_MidbossUpdateCore(p_BossState, patterns, rank);
+    Marisa_MidbossUpdate(p_BossState, patterns, rank);
 }
 
 const BOSS_STRATEGY g_BossMarisa = {
