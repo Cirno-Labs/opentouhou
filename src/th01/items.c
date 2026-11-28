@@ -38,6 +38,7 @@ typedef struct {
 } ITEMS;
 
 static ITEMS m_Items;
+const ITEMS *const g_Items = &m_Items;
 
 static const char m_Characters[] = " BombExtend!!0123456789１萬";
 static const GAME_TEXT_STYLE m_Style = { .weight = GAME_TEXT_NORMAL };
