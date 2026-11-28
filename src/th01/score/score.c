@@ -247,7 +247,7 @@ static bool M_Shot(const int32_t row, const int32_t column)
     return false;
 }
 
-RESULT Score_LoadAssets(
+RESULT ScoreAssets_Load(
     VFS *const vfs, VFS *const user_files, const FONT_ROM *const rom,
     const ALLOCATOR *const allocator, SCORE_ASSETS *const out)
 {

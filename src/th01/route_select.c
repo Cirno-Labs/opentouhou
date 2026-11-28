@@ -74,7 +74,7 @@ static void M_Draw(const ROUTE_SELECT_ASSETS *const assets)
     Sprite_PtnPut(assets->stage, ORB_FIRST_IMAGE, -1, 128, 250);
 }
 
-RESULT RouteSelect_LoadFont(
+RESULT RouteSelectAssets_LoadFont(
     const FONT_ROM *const rom, const ALLOCATOR *const allocator,
     GAME_TEXT_FONT *const out)
 {

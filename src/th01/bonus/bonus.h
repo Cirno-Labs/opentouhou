@@ -37,11 +37,11 @@ void Bonus_Init(void);
 
 // Loads the stage box mask from bonusbox.bmp into caller asset storage;
 // leaves out null on error.
-RESULT Bonus_LoadStageAssets(
+RESULT BonusAssets_LoadStage(
     VFS *vfs, const ALLOCATOR *allocator, BONUS_STAGE_ASSETS **out);
 
 // Caches stage labels and fullwidth numerals from rom.
-RESULT Bonus_LoadFont(
+RESULT BonusAssets_LoadFont(
     const FONT_ROM *rom, const ALLOCATOR *allocator, GAME_TEXT_FONT *out);
 RESULT Bonus_ValidateStageAssets(
     const BONUS_STAGE_ASSETS *assets, const GAME_TEXT_FONT *font);
@@ -59,7 +59,7 @@ bool Bonus_Resume(
     const TH01_INPUT *raw);
 
 // Loads CLEAR3.GRP and NUMB.PTN into the caller's grouped allocator.
-RESULT Bonus_LoadTotalAssets(
+RESULT BonusAssets_LoadTotal(
     VFS *vfs, const ALLOCATOR *allocator, BONUS_TOTAL_ASSETS *out);
 RESULT Bonus_ValidateTotalAssets(const BONUS_TOTAL_ASSETS *assets);
 

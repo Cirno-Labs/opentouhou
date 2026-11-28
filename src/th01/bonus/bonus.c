@@ -242,7 +242,7 @@ void Bonus_Init(void)
     Bonus_InitTotal();
 }
 
-RESULT Bonus_LoadStageAssets(
+RESULT BonusAssets_LoadStage(
     VFS *const vfs, const ALLOCATOR *const allocator,
     BONUS_STAGE_ASSETS **const out)
 {
@@ -255,7 +255,7 @@ RESULT Bonus_LoadStageAssets(
     return OK;
 }
 
-RESULT Bonus_LoadFont(
+RESULT BonusAssets_LoadFont(
     const FONT_ROM *const rom, const ALLOCATOR *const allocator,
     GAME_TEXT_FONT *const out)
 {
@@ -352,7 +352,7 @@ RESULT Bonus_ValidateTotalAssets(const BONUS_TOTAL_ASSETS *const a)
     return OK;
 }
 
-RESULT Bonus_LoadTotalAssets(
+RESULT BonusAssets_LoadTotal(
     VFS *const vfs, const ALLOCATOR *const allocator,
     BONUS_TOTAL_ASSETS *const out)
 {

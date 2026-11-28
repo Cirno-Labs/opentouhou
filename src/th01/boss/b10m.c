@@ -87,16 +87,6 @@ typedef struct {
 
 static B10M m_B10M;
 
-static RESULT M_LoadMissiles(
-    VFS *const vfs, const ALLOCATOR *const a, PTN *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, "BOSS3_M.PTN", VFS_IN_MEMORY, &reader));
-    RESULT result = Ptn_Load(&reader, a, out);
-    Reader_Close(&reader);
-    return result;
-}
-
 static RESULT M_ValidateAssets(const B10M_ASSETS *const a)
 {
     FAIL_IF(
@@ -121,9 +111,9 @@ static RESULT M_LoadAssets(
     B10M_ASSETS *const out = data;
     *out = (B10M_ASSETS) {};
     B10M_ASSETS loaded = {};
-    MUST(Boss_LoadBos(vfs, "BOSS2.BOS", a, &loaded.eyes));
-    MUST(Boss_LoadBackground(vfs, "BOSS2.GRP", a, &loaded.background));
-    MUST(M_LoadMissiles(vfs, a, &loaded.missiles));
+    MUST(BossAssets_LoadBos(vfs, "BOSS2.BOS", a, &loaded.eyes));
+    MUST(BossAssets_LoadBackground(vfs, "BOSS2.GRP", a, &loaded.background));
+    MUST(BossAssets_LoadMissiles(vfs, a, &loaded.missiles));
     MUST(Scene_Load(vfs, 3, a, &loaded.next_scene));
     MUST(M_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);

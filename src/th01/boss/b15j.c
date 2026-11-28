@@ -97,10 +97,10 @@ static RESULT M_LoadAssets(
     B15J_ASSETS *const out = data;
     *out = (B15J_ASSETS) {};
     B15J_ASSETS loaded = {};
-    MUST(Boss_LoadBos(vfs, "TAMASII.BOS", a, &loaded.souls));
-    MUST(Boss_LoadBos(vfs, "TAMASII2.BOS", a, &loaded.tears));
+    MUST(BossAssets_LoadBos(vfs, "TAMASII.BOS", a, &loaded.souls));
+    MUST(BossAssets_LoadBos(vfs, "TAMASII2.BOS", a, &loaded.tears));
     MUST(M_LoadRipples(vfs, a, &loaded.ripples));
-    MUST(Boss_LoadBackground(vfs, "BOSS4.GRP", a, &loaded.background));
+    MUST(BossAssets_LoadBackground(vfs, "BOSS4.GRP", a, &loaded.background));
     MUST(Scene_Load(vfs, 6, a, &loaded.next_scene));
     MUST(M_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);

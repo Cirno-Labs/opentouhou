@@ -397,10 +397,11 @@ static RESULT M_LoadAssets(
     B05_ASSETS *const out = data;
     *out = (B05_ASSETS) {};
     B05_ASSETS loaded = {};
-    MUST(Boss_LoadBos(vfs, "BOSS1.BOS", allocator, &loaded.sphere));
-    MUST(Boss_LoadBos(vfs, "BOSS1_2.BOS", allocator, &loaded.flash));
-    MUST(Boss_LoadBos(vfs, "BOSS1_3.BOS", allocator, &loaded.person));
-    MUST(Boss_LoadBackground(vfs, "BOSS1.GRP", allocator, &loaded.background));
+    MUST(BossAssets_LoadBos(vfs, "BOSS1.BOS", allocator, &loaded.sphere));
+    MUST(BossAssets_LoadBos(vfs, "BOSS1_2.BOS", allocator, &loaded.flash));
+    MUST(BossAssets_LoadBos(vfs, "BOSS1_3.BOS", allocator, &loaded.person));
+    MUST(BossAssets_LoadBackground(
+        vfs, "BOSS1.GRP", allocator, &loaded.background));
     MUST(M_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;

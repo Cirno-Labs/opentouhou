@@ -1,5 +1,6 @@
 #include "th01/boss/boss.h"
 
+#include "th01/ptn.h"
 #include "th01/session.h"
 
 #include "core/vfs/open.h"
@@ -31,7 +32,7 @@ int16_t Boss_Rank(
     }
 }
 
-RESULT Boss_LoadBos(
+RESULT BossAssets_LoadBos(
     VFS *const vfs, const char *const name, const ALLOCATOR *const allocator,
     BOS *const out)
 {
@@ -42,13 +43,23 @@ RESULT Boss_LoadBos(
     return result;
 }
 
-RESULT Boss_LoadBackground(
+RESULT BossAssets_LoadBackground(
     VFS *const vfs, const char *const name, const ALLOCATOR *const allocator,
     PI_IMAGE *const out)
 {
     READER reader;
     MUST(Vfs_Open(vfs, name, VFS_IN_MEMORY, &reader));
     const RESULT result = Pi_Load(&reader, allocator, out);
+    Reader_Close(&reader);
+    return result;
+}
+
+RESULT BossAssets_LoadMissiles(
+    VFS *const vfs, const ALLOCATOR *const allocator, PTN *const out)
+{
+    READER reader;
+    MUST(Vfs_Open(vfs, "BOSS3_M.PTN", VFS_IN_MEMORY, &reader));
+    const RESULT result = Ptn_Load(&reader, allocator, out);
     Reader_Close(&reader);
     return result;
 }

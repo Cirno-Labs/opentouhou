@@ -107,7 +107,7 @@ void ShootoutLasers_Init(void)
     memset(&m_Lasers, 0, sizeof(m_Lasers));
 }
 
-RESULT ShootoutLasers_LoadAssets(
+RESULT ShootoutLasersAssets_Load(
     VFS *const vfs, const ALLOCATOR *const allocator,
     SHOOTOUT_LASERS_ASSETS **const out)
 {

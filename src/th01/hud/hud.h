@@ -5,7 +5,7 @@
 
 // Caches fullwidth numerals and separate ASCII stage, rank and timer glyphs
 // from rom.
-RESULT Hud_LoadFont(
+RESULT HudAssets_LoadFont(
     const FONT_ROM *rom, const ALLOCATOR *allocator, GAME_TEXT_FONT *out);
 RESULT Hud_ValidateAssets(
     const GRF *mask, const PTN *sprites, const GAME_TEXT_FONT *font);

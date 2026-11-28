@@ -437,7 +437,7 @@ TEST(resource_validation_rejects_missing_inputs)
 {
     VFS *const vfs = Vfs_Create(&g_HeapAllocator);
     BONUS_STAGE_ASSETS *stage = nullptr;
-    CHECK(!Result_Ignore(Bonus_LoadStageAssets(vfs, nullptr, &stage)));
+    CHECK(!Result_Ignore(BonusAssets_LoadStage(vfs, nullptr, &stage)));
     CHECK(stage == nullptr);
     Vfs_Destroy(vfs);
     CHECK(!Result_Ignore(Bonus_ValidateStageAssets(nullptr, nullptr)));
@@ -450,7 +450,7 @@ TEST(loads_the_stage_box_from_the_built_in_sheet)
 {
     VFS *const vfs = Th01Test_Sprites();
     BONUS_STAGE_ASSETS *stage = nullptr;
-    CHECK(IS_OK(Bonus_LoadStageAssets(vfs, &g_HeapAllocator, &stage)));
+    CHECK(IS_OK(BonusAssets_LoadStage(vfs, &g_HeapAllocator, &stage)));
     const uint8_t box[4] = { 0xee, 0xff, 0xbb, 0xff };
     CHECK(memcmp(stage->box, box, sizeof(box)) == 0);
     Mem_Free(stage);

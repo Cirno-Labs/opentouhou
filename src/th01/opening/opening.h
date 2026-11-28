@@ -67,7 +67,7 @@ RESULT Opening_MountArchive(VFS *vfs);
 
 // Decodes all images and caches every menu glyph from rom into allocator.
 // Discard the whole allocation group on failure.
-RESULT Opening_LoadAssets(
+RESULT OpeningAssets_Load(
     VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
     OPENING_ASSETS *out);
 

@@ -8,7 +8,7 @@
 
 #include <string.h>
 
-RESULT Invincibility_LoadAssets(VFS *const vfs, INVINCIBILITY_ASSETS *const out)
+RESULT InvincibilityAssets_Load(VFS *const vfs, INVINCIBILITY_ASSETS *const out)
 {
     memset(out, 0, sizeof(*out));
     uint8_t *shapes;

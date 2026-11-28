@@ -15,7 +15,7 @@ void ShootoutLasers_Init(void);
 
 // Loads all eight widths and pre-shifts from laser_s.bmp into the caller's
 // grouped asset allocator; leaves out null on error.
-RESULT ShootoutLasers_LoadAssets(
+RESULT ShootoutLasersAssets_Load(
     VFS *vfs, const ALLOCATOR *allocator, SHOOTOUT_LASERS_ASSETS **out);
 
 // Spawns a laser of width 1..8 in free slot 0..9, in Q24.8 positions.

@@ -19,10 +19,10 @@ static RESULT M_Fonts(
     const FONT_ROM *const rom, const ALLOCATOR *const allocator,
     GAMEPLAY_ASSETS *const out)
 {
-    MUST(Hud_LoadFont(rom, allocator, &out->hud_font));
-    MUST(Items_LoadFont(rom, allocator, &out->item_font));
-    MUST(Bonus_LoadFont(rom, allocator, &out->bonus_font));
-    MUST(RouteSelect_LoadFont(rom, allocator, &out->route_font));
+    MUST(HudAssets_LoadFont(rom, allocator, &out->hud_font));
+    MUST(ItemsAssets_LoadFont(rom, allocator, &out->item_font));
+    MUST(BonusAssets_LoadFont(rom, allocator, &out->bonus_font));
+    MUST(RouteSelectAssets_LoadFont(rom, allocator, &out->route_font));
     return GameText_Load(
         rom,
         "0123456789０１２３４５６７８９ "
@@ -46,18 +46,18 @@ RESULT GameplayAssets_Load(
     M_LOAD("MIKO_AC.BOS", Bos_Load, &out->miko_ac);
     M_LOAD("MIKO_AC2.BOS", Bos_Load, &out->miko_ac2);
     M_LOAD("MASK.GRF", Grf_Load, &out->hud);
-    MUST(Bomb_LoadAssets(vfs, allocator, &out->bomb));
+    MUST(BombAssets_Load(vfs, allocator, &out->bomb));
     for (BOSS boss = BOSS_SINGYOKU; boss < BOSS_COUNT; boss++) {
         const BOSS_STRATEGY *const strategy = BossStrategy_Get(boss);
         void *const assets = Allocator_AllocZ(allocator, strategy->assets_size);
         MUST(strategy->load_assets(vfs, allocator, assets));
         out->bosses[boss] = assets;
     }
-    MUST(Bonus_LoadTotalAssets(vfs, allocator, &out->total));
+    MUST(BonusAssets_LoadTotal(vfs, allocator, &out->total));
     MUST(PelletAssets_Load(vfs, allocator, &out->pellets));
-    MUST(ShootoutLasers_LoadAssets(vfs, allocator, &out->lasers));
-    MUST(Bonus_LoadStageAssets(vfs, allocator, &out->bonus));
-    MUST(Invincibility_LoadAssets(vfs, &out->invincibility));
+    MUST(ShootoutLasersAssets_Load(vfs, allocator, &out->lasers));
+    MUST(BonusAssets_LoadStage(vfs, allocator, &out->bonus));
+    MUST(InvincibilityAssets_Load(vfs, &out->invincibility));
     MUST(M_Fonts(rom, allocator, out));
     const char *const songs[GAMEPLAY_SONG_COUNT] = {
         "ST0.MDT",   "ST1.MDT",     "ST2.MDT",      "ST3.MDT",    "ST4.MDT",

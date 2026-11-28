@@ -7,7 +7,7 @@ void Items_Init(void);
 
 // Caches all popup characters from rom in caller-owned asset storage before
 // ticks.
-RESULT Items_LoadFont(
+RESULT ItemsAssets_LoadFont(
     const FONT_ROM *rom, const ALLOCATOR *allocator, GAME_TEXT_FONT *out);
 
 // Validates immutable sprites and every required glyph before updates.

@@ -190,16 +190,16 @@ static RESULT M_LoadAssets(
     B20J_ASSETS *const out = data;
     *out = (B20J_ASSETS) {};
     B20J_ASSETS loaded = {};
-    MUST(Boss_LoadBos(vfs, "BOSS8_1.BOS", a, &loaded.head));
-    MUST(Boss_LoadBos(vfs, "BOSS8_E1.BOS", a, &loaded.face));
-    MUST(Boss_LoadBos(vfs, "BOSS8_E2.BOS", a, &loaded.aim));
+    MUST(BossAssets_LoadBos(vfs, "BOSS8_1.BOS", a, &loaded.head));
+    MUST(BossAssets_LoadBos(vfs, "BOSS8_E1.BOS", a, &loaded.face));
+    MUST(BossAssets_LoadBos(vfs, "BOSS8_E2.BOS", a, &loaded.aim));
     MUST(M_LoadBody(vfs, a, &loaded.body));
-    MUST(Boss_LoadBackground(vfs, "BOSS7_D1.GRP", a, &loaded.scroll));
-    MUST(Boss_LoadBackground(vfs, "BOSS8_A1.GRP", a, &loaded.upper));
+    MUST(BossAssets_LoadBackground(vfs, "BOSS7_D1.GRP", a, &loaded.scroll));
+    MUST(BossAssets_LoadBackground(vfs, "BOSS8_A1.GRP", a, &loaded.upper));
     const char *const names[] = { "BOSS8_D1.GRP", "BOSS8_D2.GRP",
                                   "BOSS8_D3.GRP", "BOSS8_D4.GRP" };
     for (int32_t i = 0; i < 4; i++) {
-        MUST(Boss_LoadBackground(vfs, names[i], a, &loaded.layers[i]));
+        MUST(BossAssets_LoadBackground(vfs, names[i], a, &loaded.layers[i]));
     }
     MUST(M_LoadMasks(vfs, a, &loaded));
     MUST(M_ValidateAssets(&loaded));

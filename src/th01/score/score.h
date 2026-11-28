@@ -20,7 +20,7 @@ typedef struct {
 
 // Loads score tables, GAME_O.GRP and their static and imported glyphs from rom
 // before ticks. Storage belongs to allocator and must outlive the score scene.
-RESULT Score_LoadAssets(
+RESULT ScoreAssets_Load(
     VFS *vfs, VFS *user_files, const FONT_ROM *rom, const ALLOCATOR *allocator,
     SCORE_ASSETS *out);
 

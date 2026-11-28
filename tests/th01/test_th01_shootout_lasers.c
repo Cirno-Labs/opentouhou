@@ -15,7 +15,7 @@ TEST(asset_errors_do_not_publish)
     Th01Test_ResetWorld();
     VFS *const vfs = Vfs_Create(&g_HeapAllocator);
     SHOOTOUT_LASERS_ASSETS *assets = nullptr;
-    CHECK(!Result_Ignore(ShootoutLasers_LoadAssets(vfs, nullptr, &assets)));
+    CHECK(!Result_Ignore(ShootoutLasersAssets_Load(vfs, nullptr, &assets)));
     CHECK(assets == nullptr);
     Vfs_Destroy(vfs);
 }
@@ -24,7 +24,7 @@ TEST(loads_each_width_as_a_cel_of_eight_shifts)
 {
     VFS *const vfs = Th01Test_Sprites();
     SHOOTOUT_LASERS_ASSETS *assets = nullptr;
-    CHECK(IS_OK(ShootoutLasers_LoadAssets(vfs, &g_HeapAllocator, &assets)));
+    CHECK(IS_OK(ShootoutLasersAssets_Load(vfs, &g_HeapAllocator, &assets)));
     CHECK(memcmp(assets->masks[0][0], (uint8_t[2]) { 0x80, 0x00 }, 2) == 0);
     CHECK(memcmp(assets->masks[0][7], (uint8_t[2]) { 0x01, 0x00 }, 2) == 0);
     CHECK(memcmp(assets->masks[7][0], (uint8_t[2]) { 0xff, 0x00 }, 2) == 0);

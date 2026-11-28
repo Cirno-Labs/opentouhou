@@ -39,7 +39,7 @@ void Ending_Clear(void);
 
 // Loads all ending sheets, the score background and glyphs from rom.
 // Discard the allocator group on failure.
-RESULT Ending_LoadAssets(
+RESULT EndingAssets_Load(
     VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
     ENDING_ASSETS *out);
 

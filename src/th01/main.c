@@ -93,7 +93,7 @@ static RESULT M_LoadAssets(void)
         result = M_OpenFont(&rom);
     }
     if (IS_OK(result)) {
-        result = Opening_LoadAssets(
+        result = OpeningAssets_Load(
             vfs, rom, Arena_Allocator(&m_Assets), &m_OpeningAssets);
     }
     if (IS_OK(result)) {
@@ -101,12 +101,12 @@ static RESULT M_LoadAssets(void)
             vfs, rom, Arena_Allocator(&m_Assets), &m_GameplayAssets);
     }
     if (IS_OK(result)) {
-        result = Score_LoadAssets(
+        result = ScoreAssets_Load(
             vfs, Shell_GetUserFiles(), rom, Arena_Allocator(&m_Assets),
             &m_ScoreAssets);
     }
     if (IS_OK(result)) {
-        result = Ending_LoadAssets(
+        result = EndingAssets_Load(
             vfs, rom, Arena_Allocator(&m_Assets), &m_EndingAssets);
     }
     FontRom_Free(rom);

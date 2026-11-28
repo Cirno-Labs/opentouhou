@@ -1,6 +1,6 @@
 #include "th01/ending/ending.h"
 
-RESULT Ending_LoadAssets(
+RESULT EndingAssets_Load(
     VFS *const vfs, const FONT_ROM *const rom, const ALLOCATOR *const allocator,
     ENDING_ASSETS *const out)
 {

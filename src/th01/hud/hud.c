@@ -153,7 +153,7 @@ static void M_Resource(
     }
 }
 
-RESULT Hud_LoadFont(
+RESULT HudAssets_LoadFont(
     const FONT_ROM *const rom, const ALLOCATOR *const allocator,
     GAME_TEXT_FONT *const out)
 {

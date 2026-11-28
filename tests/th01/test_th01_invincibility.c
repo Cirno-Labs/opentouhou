@@ -14,10 +14,10 @@ TEST(loads_the_last_four_cels_of_the_shape_sheet)
 {
     VFS *const vfs = Vfs_Create(&g_HeapAllocator);
     INVINCIBILITY_ASSETS assets;
-    CHECK(!Result_Ignore(Invincibility_LoadAssets(vfs, &assets)));
+    CHECK(!Result_Ignore(InvincibilityAssets_Load(vfs, &assets)));
     Vfs_Destroy(vfs);
     VFS *const sprites = Th01Test_Sprites();
-    CHECK(IS_OK(Invincibility_LoadAssets(sprites, &assets)));
+    CHECK(IS_OK(InvincibilityAssets_Load(sprites, &assets)));
     const uint8_t first[8] = { 0x00, 0x00, 0x18, 0x2c, 0x2c, 0x18, 0x00, 0x00 };
     const uint8_t last[8] = { 0x18, 0x2c, 0x5a, 0xff, 0xff, 0x5a, 0x2c, 0x18 };
     CHECK(memcmp(assets.masks[0], first, 8) == 0);

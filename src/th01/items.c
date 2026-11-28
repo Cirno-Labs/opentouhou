@@ -187,7 +187,7 @@ void Items_Init(void)
     memset(&m_Items, 0, sizeof(m_Items));
 }
 
-RESULT Items_LoadFont(
+RESULT ItemsAssets_LoadFont(
     const FONT_ROM *const rom, const ALLOCATOR *const allocator,
     GAME_TEXT_FONT *const out)
 {

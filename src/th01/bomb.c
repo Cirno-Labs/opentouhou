@@ -110,7 +110,7 @@ RESULT Bomb_ValidateAssets(const BOMB_ASSETS *const assets)
     return OK;
 }
 
-RESULT Bomb_LoadAssets(
+RESULT BombAssets_Load(
     VFS *const vfs, const ALLOCATOR *const allocator, BOMB_ASSETS *const out)
 {
     *out = (BOMB_ASSETS) {};

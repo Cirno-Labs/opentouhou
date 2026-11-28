@@ -181,12 +181,12 @@ static RESULT M_LoadAssets(
     B15M_ASSETS *const out = data;
     *out = (B15M_ASSETS) {};
     B15M_ASSETS loaded = {};
-    MUST(Boss_LoadBos(vfs, "BOSS5.BOS", a, &loaded.girl));
-    MUST(Boss_LoadBos(vfs, "BOSS5_2.BOS", a, &loaded.attack));
-    MUST(Boss_LoadBos(vfs, "BOSS5_3.BOS", a, &loaded.bat));
+    MUST(BossAssets_LoadBos(vfs, "BOSS5.BOS", a, &loaded.girl));
+    MUST(BossAssets_LoadBos(vfs, "BOSS5_2.BOS", a, &loaded.attack));
+    MUST(BossAssets_LoadBos(vfs, "BOSS5_3.BOS", a, &loaded.bat));
     MUST(M_LoadGrc(vfs, a, &loaded.spheres));
     MUST(M_LoadMissiles(vfs, a, &loaded.missiles));
-    MUST(Boss_LoadBackground(vfs, "BOSS5.GRP", a, &loaded.background));
+    MUST(BossAssets_LoadBackground(vfs, "BOSS5.GRP", a, &loaded.background));
     MUST(Scene_Load(vfs, 5, a, &loaded.next_scene));
     MUST(M_LoadStar(vfs, a, &loaded.star));
     MUST(M_ValidateAssets(&loaded));

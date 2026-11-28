@@ -35,7 +35,7 @@ RESULT Opening_MountArchive(VFS *const vfs)
     return OK;
 }
 
-RESULT Opening_LoadAssets(
+RESULT OpeningAssets_Load(
     VFS *const vfs, const FONT_ROM *const rom, const ALLOCATOR *const allocator,
     OPENING_ASSETS *const out)
 {

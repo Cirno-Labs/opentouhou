@@ -21,7 +21,7 @@ typedef enum {
 } ROUTE_SELECT_PHASE;
 
 // Caches the five route labels from rom into allocator.
-RESULT RouteSelect_LoadFont(
+RESULT RouteSelectAssets_LoadFont(
     const FONT_ROM *rom, const ALLOCATOR *allocator, GAME_TEXT_FONT *out);
 RESULT RouteSelect_ValidateAssets(const ROUTE_SELECT_ASSETS *assets);
 

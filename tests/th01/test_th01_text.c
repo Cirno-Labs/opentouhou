@@ -553,13 +553,13 @@ TEST(built_in_shinonome_inks_every_character_that_th01_draws)
     Arena_Init(&arena, "drawn glyphs", 1024 * 1024);
     const ALLOCATOR *const allocator = Arena_Allocator(&arena);
     GAME_TEXT_FONT font;
-    CHECK(IS_OK(Hud_LoadFont(rom, allocator, &font)));
+    CHECK(IS_OK(HudAssets_LoadFont(rom, allocator, &font)));
     M_CheckInked(&font);
-    CHECK(IS_OK(Items_LoadFont(rom, allocator, &font)));
+    CHECK(IS_OK(ItemsAssets_LoadFont(rom, allocator, &font)));
     M_CheckInked(&font);
-    CHECK(IS_OK(Bonus_LoadFont(rom, allocator, &font)));
+    CHECK(IS_OK(BonusAssets_LoadFont(rom, allocator, &font)));
     M_CheckInked(&font);
-    CHECK(IS_OK(RouteSelect_LoadFont(rom, allocator, &font)));
+    CHECK(IS_OK(RouteSelectAssets_LoadFont(rom, allocator, &font)));
     M_CheckInked(&font);
     const char *const *const groups[] = {
         g_OpeningMainMenuItems,  g_OpeningOptionMenuItems,

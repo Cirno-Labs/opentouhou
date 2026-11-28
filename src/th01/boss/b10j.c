@@ -81,16 +81,6 @@ typedef struct {
 
 static B10J m_B10J;
 
-static RESULT M_LoadMissiles(
-    VFS *const vfs, const ALLOCATOR *const a, PTN *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, "BOSS3_M.PTN", VFS_IN_MEMORY, &reader));
-    const RESULT result = Ptn_Load(&reader, a, out);
-    Reader_Close(&reader);
-    return result;
-}
-
 static RESULT M_LoadPillars(VFS *const vfs, B10J_PILLARS *const out)
 {
     uint8_t *masks;
@@ -135,10 +125,10 @@ static RESULT M_LoadAssets(
     B10J_ASSETS *const out = data;
     *out = (B10J_ASSETS) {};
     B10J_ASSETS loaded = {};
-    MUST(Boss_LoadBos(vfs, "BOSS3_1.BOS", a, &loaded.still));
-    MUST(Boss_LoadBos(vfs, "BOSS3_2.BOS", a, &loaded.animation));
-    MUST(Boss_LoadBackground(vfs, "BOSS3.GRP", a, &loaded.background));
-    MUST(M_LoadMissiles(vfs, a, &loaded.missiles));
+    MUST(BossAssets_LoadBos(vfs, "BOSS3_1.BOS", a, &loaded.still));
+    MUST(BossAssets_LoadBos(vfs, "BOSS3_2.BOS", a, &loaded.animation));
+    MUST(BossAssets_LoadBackground(vfs, "BOSS3.GRP", a, &loaded.background));
+    MUST(BossAssets_LoadMissiles(vfs, a, &loaded.missiles));
     MUST(Scene_Load(vfs, 4, a, &loaded.next_scene));
     MUST(M_LoadPillars(vfs, &loaded.pillars));
     MUST(M_ValidateAssets(&loaded));

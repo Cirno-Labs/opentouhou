@@ -125,7 +125,7 @@ RESULT Opening_MountArchive(VFS *vfs)
     return M_Asset();
 }
 
-RESULT Opening_LoadAssets(
+RESULT OpeningAssets_Load(
     VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
     OPENING_ASSETS *out)
 {
@@ -165,7 +165,7 @@ RESULT ScoreData_WriteSaves(SCORE_SAVES *saves)
     return OK;
 }
 
-RESULT Score_LoadAssets(
+RESULT ScoreAssets_Load(
     VFS *vfs, VFS *user_files, const FONT_ROM *rom, const ALLOCATOR *allocator,
     SCORE_ASSETS *out)
 {
@@ -186,7 +186,7 @@ RESULT Score_FlushSaves(void)
     return ScoreData_WriteSaves(&m_Saves);
 }
 
-RESULT Ending_LoadAssets(
+RESULT EndingAssets_Load(
     VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
     ENDING_ASSETS *out)
 {
