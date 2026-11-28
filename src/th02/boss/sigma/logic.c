@@ -2,6 +2,7 @@
 #include "th02/boss/private.h"
 #include "th02/boss/sigma.h"
 #include "th02/boss/sigma/assets.h"
+#include "th02/boss/sigma/private.h"
 #include "th02/boss/strategy.h"
 #include "th02/bullets.h"
 #include "th02/clip.h"
@@ -21,85 +22,10 @@
 
 #include <string.h>
 
-// Forward declared: M_Phases draws Sigma's own body on every live phase,
-// ahead of its definition near the public API below.
-void Sigma_DrawBody(const BOSS_STATE *boss, const PATTERN_BANK *patterns);
-
-#define SIGMA_MIDBOSS_TILE_COUNT 30
-#define SIGMA_CIRCLE_COUNT 16
-
-typedef enum {
-    SIGMA_ATTACK_NONE,
-    SIGMA_ATTACK_SWEEP,
-    SIGMA_ATTACK_LOWER_CIRCLES,
-    SIGMA_ATTACK_RING_DRIFT,
-    SIGMA_ATTACK_ORBIT_CIRCLES,
-    SIGMA_ATTACK_RAPID_DRIFT,
-    SIGMA_ATTACK_BOUNCE_STREAM,
-    SIGMA_ATTACK_PILLAR_FAN,
-    SIGMA_ATTACK_TRACKING_CIRCLES,
-    SIGMA_ATTACK_AIMED_CIRCLES,
-    SIGMA_ATTACK_FAN_SWEEP,
-    SIGMA_ATTACK_BALL_SWEEP,
-    SIGMA_ATTACK_ALTERNATE_CIRCLES,
-} SIGMA_ATTACK;
-
-typedef enum {
-    SIGMA_APPEAR,
-    SIGMA_OPENING,
-    SIGMA_PREPARE_ORBIT,
-    SIGMA_ORBIT,
-    SIGMA_PREPARE_BOUNCE,
-    SIGMA_BOUNCE,
-    SIGMA_PREPARE_TRACKING,
-    SIGMA_TRACKING,
-    SIGMA_PREPARE_FINAL,
-    SIGMA_FINAL,
-} SIGMA_PHASE;
-
-typedef struct {
-    uint8_t flag;
-    uint8_t frame;
-    ENTITY_POINT center;
-    int16_t radius_max;
-    uint8_t cel;
-    uint8_t radius;
-} SIGMA_CIRCLE;
-
-typedef struct {
-    uint8_t flag;
-    uint8_t frame;
-    ENTITY_POINT position;
-    uint8_t group;
-    uint8_t angle;
-    uint8_t speed;
-    int8_t padding;
-} SIGMA_MIDBOSS_TILE;
-
-typedef struct {
-    SIGMA_MIDBOSS_TILE tiles[SIGMA_MIDBOSS_TILE_COUNT];
-    bool midboss_active;
-    uint8_t midboss_spread;
-    ENTITY_POINT position;
-    uint8_t phase;
-    uint8_t circle_frame_mask;
-    SIGMA_CIRCLE circles[SIGMA_CIRCLE_COUNT];
-    ENTITY_POINT bullet_origin;
-    ENTITY_POINT orbit_center;
-    ENTITY_POINT tracking_velocity;
-    int16_t beam_left, beam_right, bounce_left, tracking_left, tracking_top,
-        tracking_other_velocity, tracking_other_left, phase_damage;
-    uint8_t beam_width, beam_byte_left, beam_byte_right, sweep_frames,
-        orbit_angle, bounce_round, ball_angle, patterns_done, pattern,
-        ring_angle;
-    int8_t circle_hitbox_shrink, sweep_velocity, drift_velocity, pillar_index,
-        wide_velocity;
-    SIGMA_ATTACK attacks[3];
-} SIGMA;
-
 typedef void (*SIGMA_ATTACK_UPDATE)(BOSS_STATE *boss);
 
 static SIGMA m_Sigma;
+SIGMA *const p_Sigma = &m_Sigma;
 
 static void M_Add(const int16_t x, int16_t y, const uint8_t group)
 {
@@ -984,7 +910,7 @@ static void M_StartPhase(
     m_Sigma.attacks[1] = second;
 }
 
-static void M_Phases(BOSS_STATE *const boss)
+void Sigma_Phases(BOSS_STATE *const boss)
 {
     switch (m_Sigma.phase) {
     case SIGMA_APPEAR:
@@ -1063,12 +989,12 @@ static void M_Init(void)
     memset(&m_Sigma, 0, sizeof(m_Sigma));
 }
 
-static bool M_MidbossInvalidateCore(void)
+bool Sigma_MidbossInvalidate(void)
 {
     return m_Sigma.midboss_active;
 }
 
-static void M_MidbossUpdateCore(BOSS_STATE *const boss)
+void Sigma_MidbossUpdate(BOSS_STATE *const boss)
 {
     boss->phase_frame = Math16_Wrap((int32_t)boss->phase_frame + 1);
     const int16_t frame = boss->phase_frame;
@@ -1135,7 +1061,7 @@ void Sigma_DrawBody(
     }
 }
 
-static void M_InvalidateCore(BOSS_STATE *const boss)
+void Sigma_Invalidate(BOSS_STATE *const boss)
 {
     boss->position[g_Stage->scroll.back] =
         boss->position[g_Stage->scroll.front];
@@ -1150,7 +1076,7 @@ static void M_InvalidateCore(BOSS_STATE *const boss)
     }
 }
 
-static BOSS_RESULT M_UpdateCore(
+BOSS_RESULT Sigma_Update(
     BOSS_STATE *const boss, const PATTERN_BANK *const patterns,
     const bool reduce_effects)
 {
@@ -1169,7 +1095,7 @@ static BOSS_RESULT M_UpdateCore(
             return BOSS_FINISHED;
         }
     } else {
-        M_Phases(boss);
+        Sigma_Phases(boss);
         m_Sigma.position = *M_Position(boss);
         M_BodyHit(boss, patterns);
         Stage_CountExtraBossFrame();
@@ -1204,7 +1130,7 @@ static void M_Begin(
 
 static void M_Invalidate(const bool reduce_effects)
 {
-    M_InvalidateCore(p_BossState);
+    Sigma_Invalidate(p_BossState);
 }
 
 static BOSS_RESULT M_Update(
@@ -1212,18 +1138,18 @@ static BOSS_RESULT M_Update(
     const BOSS_MUSIC *const music, TH02_SESSION *const session,
     const TH02_INPUT *const input)
 {
-    return M_UpdateCore(p_BossState, patterns, session->reduce_effects);
+    return Sigma_Update(p_BossState, patterns, session->reduce_effects);
 }
 
 static bool M_MidbossInvalidate(void)
 {
-    return M_MidbossInvalidateCore();
+    return Sigma_MidbossInvalidate();
 }
 
 static void M_MidbossUpdate(
     const PATTERN_BANK *const patterns, const uint8_t rank)
 {
-    M_MidbossUpdateCore(p_BossState);
+    Sigma_MidbossUpdate(p_BossState);
 }
 
 const BOSS_STRATEGY g_BossSigma = {
