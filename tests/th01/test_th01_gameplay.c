@@ -18,7 +18,7 @@
 #include "th01/rng.h"
 #include "th01/scene_private.h"
 #include "th01/score.h"
-#include "th01/score/score.c"
+#include "th01/score/private.h"
 #include "th01/session_private.h"
 #include "th01/shots.h"
 #include "th01/sound_private.h"
@@ -505,8 +505,8 @@ TEST(real_gameover_score_registration_precedes_continue)
         SCORE_SAVES loaded;
         CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &loaded)));
         Vfs_Destroy(user_files);
-        memset(&m_Saves, 0, sizeof(m_Saves));
-        memcpy(m_Saves.tables, loaded.tables, sizeof(loaded.tables));
+        memset(p_Saves, 0, sizeof(*p_Saves));
+        memcpy(p_Saves->tables, loaded.tables, sizeof(loaded.tables));
         SCORE_ASSETS assets = {
             .gameover = { .pixels = f.assets->backgrounds[0].pixels },
             .font = f.assets->menu_font
@@ -532,11 +532,11 @@ TEST(real_gameover_score_registration_precedes_continue)
         CHECK_EQ_INT(p_Session->continues_total, 0);
         tick++;
         CHECK(Score_Tick(&(TH01_INPUT) { .ok = true }, true));
-        CHECK(m_Saves.pending[1]);
-        CHECK_EQ_INT(m_Saves.tables[1].entries[0].score, 2345);
-        CHECK_EQ_INT(m_Saves.tables[1].entries[0].stage, 8);
+        CHECK(p_Saves->pending[1]);
+        CHECK_EQ_INT(p_Saves->tables[1].entries[0].score, 2345);
+        CHECK_EQ_INT(p_Saves->tables[1].entries[0].stage, 8);
         CHECK_EQ_STR(
-            m_Saves.tables[1].entries[0].route, route == 0 ? "魔" : "地");
+            p_Saves->tables[1].entries[0].route, route == 0 ? "魔" : "地");
         Score_SyncSession();
         CHECK_EQ_INT(p_Session->table_high_score, 2345);
         Gameplay_ResumeAfterScore(&(TH01_INPUT) {}, tick);

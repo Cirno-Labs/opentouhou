@@ -1,37 +1,15 @@
-#include "th01/score/score.h"
-
 #include "th01/scale2x.h"
+#include "th01/score/private.h"
 #include "th01/session.h"
 
 #include "core/base/log.h"
 
 #include <string.h>
 
-typedef enum {
-    SCORE_FADE_WAIT,
-    SCORE_ENTRY_INPUT,
-    SCORE_ENTRY_DELAY,
-    SCORE_RELEASE,
-    SCORE_DONE,
-} SCORE_PHASE;
-
-typedef struct {
-    PALETTE_STATE palette;
-    PALETTE_FADE fade;
-    VSYNC_WAIT wait;
-    SCORE_CONTEXT context;
-    SCORE_PHASE phase;
-    int32_t rank;
-    int32_t place;
-    int32_t row;
-    int32_t column;
-    int32_t cursor;
-    int32_t inputs;
-    char slots[8][9];
-} SCORE_SCENE;
-
 static SCORE_SAVES m_Saves;
+SCORE_SAVES *const p_Saves = &m_Saves;
 static SCORE_SCENE m_Registration;
+SCORE_SCENE *const p_Registration = &m_Registration;
 
 static const SCORE_ASSETS *m_ScoreAssets;
 
