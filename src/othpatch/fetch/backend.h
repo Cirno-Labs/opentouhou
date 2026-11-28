@@ -1,6 +1,7 @@
 #pragma once
 
-// Finds the CA certificates of the platform for HTTPS.
+// Finds the CA certificates of the platform for HTTPS, since the
+// fetch backend otherwise has no way to verify a server's certificate.
 
 // Holds the CA certificates: a file with every certificate, a directory
 // with one file per certificate, or neither when the TLS library finds
