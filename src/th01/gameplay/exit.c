@@ -9,12 +9,8 @@
 #include "th01/video.h"
 #include "th01/vsync_irq.h"
 
-typedef enum {
-    GP_EXIT_WAIT,
-    GP_EXIT_MISS,
-} GAMEPLAY_EXIT_PHASE;
-
 static GAMEPLAY_EXIT_PHASE m_ExitPhase;
+GAMEPLAY_EXIT_PHASE *const p_ExitPhase = &m_ExitPhase;
 
 void GameplayExit_Begin(void)
 {

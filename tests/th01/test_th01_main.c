@@ -2,12 +2,7 @@
 #include "tests/th01/th01_assets.h"
 #include "tests/th01/th01_world.h"
 #include "th01/ending.h"
-#include "th01/gameplay/end.c"
-#include "th01/gameplay/exit.c"
-#include "th01/gameplay/gameplay.c"
-#include "th01/gameplay/life.c"
-#include "th01/gameplay/pause.c"
-#include "th01/gameplay/stage.c"
+#include "th01/gameplay/private.h"
 #include "th01/hud/hp_private.h"
 #include "th01/hud/hud_private.h"
 #include "th01/main.h"
@@ -463,7 +458,7 @@ TEST(gameover_registration_saves_before_returning_to_continue)
     CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_GAMEPLAY);
     CHECK_EQ_INT(g_Gameplay->request, GAMEPLAY_REQUEST_NONE);
     CHECK_EQ_INT(g_Gameplay->sequence, GAMEPLAY_SEQUENCE_END);
-    CHECK_EQ_INT(m_EndPhase, GP_END_CONTINUE_DELAY);
+    CHECK_EQ_INT(*p_EndPhase, GP_END_CONTINUE_DELAY);
     CHECK(!m_Fixture.saves->pending[0]);
     CHECK_EQ_INT(m_Fixture.written, 1);
     CHECK_EQ_INT(m_Fixture.switch_begins, 0);

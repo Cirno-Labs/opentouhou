@@ -17,22 +17,10 @@
 #include "th01/timer.h"
 #include "th01/vsync_irq.h"
 
-typedef enum {
-    GP_LIFE_BEGIN,
-    GP_LIFE_BOSS_BEGIN,
-    GP_LIFE_WAIT_SHOT,
-    GP_LIFE_WAIT_SHOT_DELAY,
-    GP_LIFE_FRAME_BEGIN,
-    GP_LIFE_PLAYER_BOMB,
-    GP_LIFE_ITEMS,
-    GP_LIFE_TIMER,
-    GP_LIFE_BOSS,
-    GP_LIFE_ORB,
-    GP_LIFE_AFTER_ORB,
-} GAMEPLAY_LIFE_PHASE;
-
 static GAMEPLAY_LIFE_PHASE m_LifePhase;
+GAMEPLAY_LIFE_PHASE *const p_LifePhase = &m_LifePhase;
 static GAMEPLAY_LIFE_PHASE m_AfterPlayer;
+GAMEPLAY_LIFE_PHASE *const p_AfterPlayer = &m_AfterPlayer;
 
 static PLAYER_SPRITES M_PlayerSprites(void)
 {

@@ -4,13 +4,8 @@
 #include "th01/sprite.h"
 #include "th01/vsync_irq.h"
 
-typedef enum {
-    GP_PAUSE_MENU,
-    GP_PAUSE_DELAY,
-    GP_PAUSE_QUIT_CONFIRM,
-} GAMEPLAY_PAUSE_PHASE;
-
 static GAMEPLAY_PAUSE_PHASE m_PausePhase;
+GAMEPLAY_PAUSE_PHASE *const p_PausePhase = &m_PausePhase;
 
 static void M_PauseDraw(const bool quit)
 {

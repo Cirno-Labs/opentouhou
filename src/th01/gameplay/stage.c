@@ -25,17 +25,8 @@
 
 #include <string.h>
 
-typedef enum {
-    GP_STAGE_BEGIN,
-    GP_STAGE_BOSS_SETUP,
-    GP_STAGE_FINAL_ENTRANCE,
-    GP_STAGE_OBJECT_ENTRANCE,
-    GP_STAGE_TITLE,
-    GP_STAGE_LABEL,
-    GP_STAGE_NUMBER,
-} GAMEPLAY_STAGE_PHASE;
-
 static GAMEPLAY_STAGE_PHASE m_StagePhase;
+GAMEPLAY_STAGE_PHASE *const p_StagePhase = &m_StagePhase;
 
 static void M_HookBossHp(void)
 {

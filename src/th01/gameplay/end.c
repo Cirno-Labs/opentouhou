@@ -19,29 +19,10 @@
 
 #include "pc98/zun/master_rng.h"
 
-typedef enum {
-    GP_END_STAGE_BONUS,
-    GP_END_TOTAL_BONUS,
-    GP_END_GAMEOVER,
-    GP_END_GAMEOVER_DELAY,
-    GP_END_GAMEOVER_FINISH,
-    GP_END_CONTINUE,
-    GP_END_CONTINUE_DELAY,
-    GP_END_VICTORY_DELAY,
-    GP_END_SWITCH,
-} GAMEPLAY_END_PHASE;
-
-// Names the program that game_switch_binary's black-out leads to: REIIDEN
-// again for a boss stage or a Continue, OP or FUUIN.
-typedef enum {
-    GAMEPLAY_SWITCH_STAGE,
-    GAMEPLAY_SWITCH_CONTINUE,
-    GAMEPLAY_SWITCH_OPENING,
-    GAMEPLAY_SWITCH_ENDING,
-} GAMEPLAY_SWITCH;
-
 static GAMEPLAY_END_PHASE m_EndPhase;
+GAMEPLAY_END_PHASE *const p_EndPhase = &m_EndPhase;
 static GAMEPLAY_SWITCH m_SwitchTo;
+GAMEPLAY_SWITCH *const p_SwitchTo = &m_SwitchTo;
 
 static void M_BeginSwitch(const GAMEPLAY_SWITCH to)
 {

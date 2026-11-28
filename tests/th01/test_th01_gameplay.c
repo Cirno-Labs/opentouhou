@@ -2,12 +2,7 @@
 #include "tests/th01/th01_assets.h"
 #include "tests/th01/th01_world.h"
 #include "th01/boss/private_boss.h"
-#include "th01/gameplay/end.c"
-#include "th01/gameplay/exit.c"
-#include "th01/gameplay/gameplay.c"
-#include "th01/gameplay/life.c"
-#include "th01/gameplay/pause.c"
-#include "th01/gameplay/stage.c"
+#include "th01/gameplay/private.h"
 #include "th01/hud/hp_private.h"
 #include "th01/hud/hud_private.h"
 #include "th01/miss_private.h"
@@ -24,6 +19,7 @@
 #include "th01/sound_private.h"
 #include "th01/stage/private.h"
 #include "th01/timer_private.h"
+#include "th01/tram.h"
 
 #include "core/audio.h"
 #include "core/audio/backend.h"
@@ -48,42 +44,43 @@ typedef struct {
 static bool M_InStage(const GAMEPLAY_STAGE_PHASE phase)
 {
     return g_Gameplay->sequence == GAMEPLAY_SEQUENCE_STAGE
-        && m_StagePhase == phase;
+        && *p_StagePhase == phase;
 }
 
 static bool M_InLife(const GAMEPLAY_LIFE_PHASE phase)
 {
     return g_Gameplay->sequence == GAMEPLAY_SEQUENCE_LIFE
-        && m_LifePhase == phase;
+        && *p_LifePhase == phase;
 }
 
 static bool M_InExit(const GAMEPLAY_EXIT_PHASE phase)
 {
     return g_Gameplay->sequence == GAMEPLAY_SEQUENCE_EXIT
-        && m_ExitPhase == phase;
+        && *p_ExitPhase == phase;
 }
 
 static bool M_InEnd(const GAMEPLAY_END_PHASE phase)
 {
-    return g_Gameplay->sequence == GAMEPLAY_SEQUENCE_END && m_EndPhase == phase;
+    return g_Gameplay->sequence == GAMEPLAY_SEQUENCE_END
+        && *p_EndPhase == phase;
 }
 
 static void M_EnterLife(const GAMEPLAY_LIFE_PHASE phase)
 {
     p_Gameplay->sequence = GAMEPLAY_SEQUENCE_LIFE;
-    m_LifePhase = phase;
+    *p_LifePhase = phase;
 }
 
 static void M_EnterExit(const GAMEPLAY_EXIT_PHASE phase)
 {
     p_Gameplay->sequence = GAMEPLAY_SEQUENCE_EXIT;
-    m_ExitPhase = phase;
+    *p_ExitPhase = phase;
 }
 
 static void M_EnterEnd(const GAMEPLAY_END_PHASE phase)
 {
     p_Gameplay->sequence = GAMEPLAY_SEQUENCE_END;
-    m_EndPhase = phase;
+    *p_EndPhase = phase;
 }
 
 // Renders a while and reports whether an effect sounded.
