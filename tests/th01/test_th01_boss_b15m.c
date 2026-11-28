@@ -6,8 +6,7 @@
 #include "th01/hud/hp.c"
 #include "th01/missiles.c"
 #include "th01/orb_private.h"
-#include "th01/pellets.h"
-#include "th01/pellets/pellets.c"
+#include "th01/pellets/private.h"
 #include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/scene.c"
@@ -104,7 +103,7 @@ TEST(setup_reseeds_without_resetting_actor_or_missile_history)
     CHECK_EQ_INT(m_Health.first_white, 10);
     CHECK_EQ_INT(m_Health.first_redwhite, 6);
     CHECK_EQ_INT(g_Rng, 0x12345678);
-    CHECK(m_Pellets.interlace);
+    CHECK(p_Pellets->interlace);
     CHECK(memcmp(&m_Missiles, &missiles, sizeof(missiles)) == 0);
     CHECK(memcmp(&g_Palette->saved, &saved, sizeof(saved)) == 0);
     CHECK_EQ_INT(m_B15M.girl.left, 256);
@@ -317,7 +316,7 @@ TEST(safety_circle_delays_hit_and_preserves_later_source_effects)
     CHECK(p_Player->is_hit);
     CHECK_EQ_INT(m_B15M.safety_circle.frame, 200);
     CHECK_EQ_INT(m_B15M.status.frame, 141);
-    CHECK(m_Pellets.slots[0].moving);
+    CHECK(p_Pellets->slots[0].moving);
     CHECK_EQ_INT(m_B15M.girl_subphase, 1);
     CHECK_EQ_INT(m_B15M.phase5_subphase, 0);
     Arena_Free(&arena);
@@ -439,7 +438,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
                                       .previous_left = -1,
                                       .velocity = { 16, 0 },
                                       .flag = MISSILE_MOVING };
-    m_Pellets.slots[1].cloud_frame = 10;
+    p_Pellets->slots[1].cloud_frame = 10;
     for (int32_t i = 0; i < 10; i++) {
         m_Lasers.slots[i].alive = true;
     }
@@ -463,7 +462,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     CHECK_EQ_INT(g_Rng, rng);
     CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
     CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
-    CHECK_EQ_INT(m_Pellets.slots[1].cloud_frame, 10);
+    CHECK_EQ_INT(p_Pellets->slots[1].cloud_frame, 10);
     for (int32_t i = 0; i < 10; i++) {
         CHECK(!m_Lasers.slots[i].alive);
     }
@@ -531,18 +530,18 @@ TEST(circle_groups_keep_the_callers_cloud_policy)
         m_B15M.circle.angle = 64;
         m_B15M.pattern_state = PELLET_GROUP_SINGLE_AIMED;
         m_B15M.hp_bar_filled = true;
-        m_Pellets.spawn_with_cloud = cloud != 0;
+        p_Pellets->spawn_with_cloud = cloud != 0;
         VSyncIrq_Reset();
         const size_t used = arena.used;
         CHECK(M_BossUpdate(&f.assets, &f.miko, 0));
         int32_t count = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-            count += cloud ? m_Pellets.slots[i].cloud_frame != 0
-                           : m_Pellets.slots[i].moving;
+            count += cloud ? p_Pellets->slots[i].cloud_frame != 0
+                           : p_Pellets->slots[i].moving;
         }
         CHECK_EQ_INT(count, 23);
-        CHECK_EQ_INT(m_Pellets.spawn_with_cloud, cloud != 0);
-        CHECK(m_Pellets.interlace);
+        CHECK_EQ_INT(p_Pellets->spawn_with_cloud, cloud != 0);
+        CHECK(p_Pellets->interlace);
         CHECK_EQ_INT(arena.used, used);
         Arena_Free(&arena);
     }

@@ -5,8 +5,7 @@
 #include "th01/gameplay.h"
 #include "th01/hud/hp.c"
 #include "th01/orb_private.h"
-#include "th01/pellets.h"
-#include "th01/pellets/pellets.c"
+#include "th01/pellets/private.h"
 #include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/session_private.h"
@@ -235,7 +234,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             do {
                 CHECK(M_BossUpdate(&f.assets));
                 for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-                    m_Pellets.slots[i].moving = false;
+                    p_Pellets->slots[i].moving = false;
                 }
                 for (int32_t i = 0; i < 10; i++) {
                     m_Lasers.slots[i].alive = false;

@@ -5,8 +5,7 @@
 #include "th01/hud/hp.c"
 #include "th01/missiles.c"
 #include "th01/orb_private.h"
-#include "th01/pellets.h"
-#include "th01/pellets/pellets.c"
+#include "th01/pellets/private.h"
 #include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/scene.c"
@@ -369,9 +368,9 @@ TEST(two_squares_preserve_cloud_spawns_and_laser_slots)
     m_B10J.squares[2] = (B10J_SQUARE) { .angle = 32, .radius = 112 };
     CHECK(M_BossUpdate(&f.assets, &f.miko));
     for (int32_t i = 0; i < 8; i++) {
-        CHECK(m_Pellets.slots[i].cloud_frame != 0);
+        CHECK(p_Pellets->slots[i].cloud_frame != 0);
     }
-    CHECK(!m_Pellets.spawn_with_cloud);
+    CHECK(!p_Pellets->spawn_with_cloud);
     m_B10J.status.phase = B10J_PHASE_SECOND;
     m_B10J.pattern = 3;
     m_B10J.status.frame = 180;
@@ -439,9 +438,9 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
                                       .previous_left = -1,
                                       .previous_top = 88,
                                       .velocity = { 16, 0 } };
-    m_Pellets.slots[0] =
+    p_Pellets->slots[0] =
         (PELLET) { .moving = true, .left = 200 * 16, .top = 200 * 16 };
-    m_Pellets.slots[1].cloud_frame = 10;
+    p_Pellets->slots[1].cloud_frame = 10;
     for (int32_t i = 0; i < 10; i++) {
         m_Lasers.slots[i].alive = true;
     }
@@ -449,8 +448,8 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
     CHECK(m_B10J.defeating);
     CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
     CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
-    CHECK(!m_Pellets.slots[0].moving);
-    CHECK_EQ_INT(m_Pellets.slots[1].cloud_frame, 10);
+    CHECK(!p_Pellets->slots[0].moving);
+    CHECK_EQ_INT(p_Pellets->slots[1].cloud_frame, 10);
     for (int32_t i = 0; i < 10; i++) {
         CHECK(m_Lasers.slots[i].alive == (i >= 5));
     }

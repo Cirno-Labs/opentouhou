@@ -1,5 +1,4 @@
-#include "th01/pellets.h"
-
+#include "th01/pellets/private.h"
 #include "th01/rng.h"
 #include "th01/shots.h"
 #include "th01/sprite.h"
@@ -10,6 +9,7 @@
 #include <string.h>
 
 static PELLETS m_Pellets;
+PELLETS *const p_Pellets = &m_Pellets;
 const PELLETS *const g_Pellets = &m_Pellets;
 
 void Pellets_Init(void)

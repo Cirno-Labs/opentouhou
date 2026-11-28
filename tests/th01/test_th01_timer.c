@@ -3,8 +3,7 @@
 #include "tests/th01/th01_world.h"
 #include "th01/hud/hud.c"
 #include "th01/orb.h"
-#include "th01/pellets.h"
-#include "th01/pellets/pellets.c"
+#include "th01/pellets/private.h"
 #include "th01/player.h"
 #include "th01/rng.h"
 #include "th01/session_private.h"
@@ -99,7 +98,7 @@ TEST(transition_waits_suspend_without_replaying_side_effects)
         VSyncIrq_Edge();
     }
     CHECK(StageTimer_TickAndPut());
-    CHECK_EQ_INT(m_Pellets.speed, 2);
+    CHECK_EQ_INT(p_Pellets->speed, 2);
     CHECK_EQ_INT(m_Timer.frames_since_hurry, 0);
     CHECK_EQ_INT(m_Timer.hurry_cycle, 0);
     CHECK_EQ_INT(g_Tram->pixels[80 * 640 + 192], 0);
@@ -139,7 +138,7 @@ TEST(full_pool_consumes_x_only_and_cycle_and_frame_wrap)
     FIXTURE f;
     M_Init(&f);
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        m_Pellets.slots[i].moving = true;
+        p_Pellets->slots[i].moving = true;
     }
     p_Session->settings.difficulty = SETTINGS_DIFFICULTY_LUNATIC;
     uint32_t expected = g_Rng;

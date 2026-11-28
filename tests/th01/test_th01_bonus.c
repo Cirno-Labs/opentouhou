@@ -8,8 +8,7 @@
 #include "th01/hud/hud.c"
 #include "th01/input.c"
 #include "th01/orb.h"
-#include "th01/pellets.h"
-#include "th01/pellets/pellets.c"
+#include "th01/pellets/private.h"
 #include "th01/player_private.h"
 #include "th01/rng.h"
 #include "th01/session_private.h"
@@ -161,7 +160,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(m_Bonus.score_bonus, 17000);
     CHECK_EQ_INT(p_Session->bonus_per_stage[3], 17000);
     CHECK_EQ_INT(p_Session->high_score, 410000);
-    CHECK_EQ_INT(m_Pellets.speed, 1);
+    CHECK_EQ_INT(p_Pellets->speed, 1);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 41), 0);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 319), 0);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 40), 6);
@@ -265,8 +264,8 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     p_Session->continues_total = 65539;
     m_Shots.slots[0] = (SHOT) { .moving = true, .left = 100, .top = 100 };
     m_Shots.slots[1] = (SHOT) { .decay_frame = 2, .left = 200, .top = 100 };
-    m_Pellets.slots[0] = (PELLET) { .moving = true, .not_rendered = true };
-    m_Pellets.slots[1] = (PELLET) { .cloud_frame = 5 };
+    p_Pellets->slots[0] = (PELLET) { .moving = true, .not_rendered = true };
+    p_Pellets->slots[1] = (PELLET) { .cloud_frame = 5 };
     memset(g_Video->pages[0], 5, VIDEO_PAGE_SIZE);
     memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
     VSyncIrq_Reset();
@@ -274,8 +273,8 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK(!Bonus_BeginTotal(&f.assets, 5, &raw, 0));
     CHECK(!m_Shots.slots[0].moving);
     CHECK_EQ_INT(m_Shots.slots[1].decay_frame, 0);
-    CHECK(!m_Pellets.slots[0].moving);
-    CHECK_EQ_INT(m_Pellets.slots[1].cloud_frame, 5);
+    CHECK(!p_Pellets->slots[0].moving);
+    CHECK_EQ_INT(p_Pellets->slots[1].cloud_frame, 5);
     CHECK_EQ_INT(m_Total.phase, BONUS_TOTAL_INITIAL_WAIT);
     CHECK_EQ_INT(Th01Test_Pixel(1, 0, 0), 6);
     p_VSync->count1 = 50;
