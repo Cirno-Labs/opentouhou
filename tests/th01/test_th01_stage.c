@@ -3,7 +3,7 @@
 #include "tests/th01/th01_video.h"
 #include "tests/th01/th01_world.h"
 #include "th01/hud/hud_private.h"
-#include "th01/items.c"
+#include "th01/items_private.h"
 #include "th01/orb_private.h"
 #include "th01/pellets.h"
 #include "th01/player_private.h"
@@ -108,7 +108,7 @@ TEST(card_scores_caps_widths_and_synchronous_order)
             CHECK(memcmp(&orb, p_Orb, sizeof(ORB)) == 0);
             CHECK_EQ_INT(g_Rng, rng);
             CHECK_EQ_INT(p_Hud->score_previous, expected);
-            CHECK_EQ_INT(M_Items(m_Items.points, ITEMS_POINT_COUNT), 1);
+            CHECK_EQ_INT(M_Items(p_Items->points, ITEMS_POINT_COUNT), 1);
             Arena_Free(&state.arena);
         }
     }
@@ -129,9 +129,9 @@ TEST(all_postfix_drop_cycles_and_bomb_short_circuit)
             const bool reset = drop && next >= 140;
             CHECK_EQ_INT(g_Stage->flip_cycle, reset ? 1 : next);
             CHECK_EQ_INT(
-                M_Items(m_Items.bombs, ITEMS_BOMB_COUNT), reset && !damaging);
+                M_Items(p_Items->bombs, ITEMS_BOMB_COUNT), reset && !damaging);
             CHECK_EQ_INT(
-                M_Items(m_Items.points, ITEMS_POINT_COUNT),
+                M_Items(p_Items->points, ITEMS_POINT_COUNT),
                 drop && (!reset || damaging));
             CHECK_EQ_INT(g_Rng, rng);
             Arena_Free(&state.arena);

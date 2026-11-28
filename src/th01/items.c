@@ -1,7 +1,6 @@
-#include "th01/items.h"
-
 #include "th01/hud.h"
-#include "th01/session.h"
+#include "th01/items_private.h"
+#include "th01/session_private.h"
 #include "th01/shape.h"
 #include "th01/sound.h"
 
@@ -9,36 +8,12 @@
 
 #include <string.h>
 
-#define ITEMS_BOMB_COUNT 4
-#define ITEMS_POINT_COUNT 10
 #define ITEM_BOMB_IMAGE 32
 #define ITEM_POINT_IMAGE 33
 
-typedef enum {
-    ITEM_FREE = 0,
-    ITEM_SPLASH = 1,
-    ITEM_FALL = 2,
-    ITEM_BOUNCE = 3,
-    ITEM_COLLECTED = 99,
-    ITEM_COLLECTED_OVER_CAP = 100,
-} ITEM_FLAG;
-
-typedef struct {
-    int16_t left;
-    int16_t top;
-    int16_t reserved;
-    int16_t velocity_y;
-    uint8_t flag;
-    uint8_t radius_or_time;
-} ITEM;
-
-typedef struct {
-    ITEM bombs[ITEMS_BOMB_COUNT];
-    ITEM points[ITEMS_POINT_COUNT];
-} ITEMS;
-
 static ITEMS m_Items;
 const ITEMS *const g_Items = &m_Items;
+ITEMS *const p_Items = &m_Items;
 
 static const char m_Characters[] = " BombExtend!!0123456789１萬";
 static const GAME_TEXT_STYLE m_Style = { .weight = GAME_TEXT_NORMAL };
@@ -81,7 +56,14 @@ static void M_Collect(ITEM *const item, const bool bomb)
         if (bomb) {
             Stage_AddScore(10000);
         } else {
-            Stage_AddScore(Session_RaisePointValue());
+            uint16_t *const value = &p_Session->point_value;
+            if (*value < 59999) {
+                *value = (uint16_t)(*value + (*value < 10000 ? 1000 : 10000));
+            }
+            if (*value >= 60000) {
+                *value = 65530;
+            }
+            Stage_AddScore(*value);
         }
         Hud_ScoreAndCombo();
         item->flag = ITEM_COLLECTED_OVER_CAP;
@@ -119,7 +101,7 @@ static void M_Popup(
         }
     } else {
         char text[6] = "     ";
-        uint16_t value = g_Session->point_value;
+        uint16_t value = p_Session->point_value;
         int32_t i = 4;
         while (value != 0) {
             text[i--] = (char)('0' + value % 10);
@@ -165,7 +147,7 @@ static void M_Update(
             if (item->top >= 400) {
                 item->flag = ITEM_FREE;
                 if (!bomb) {
-                    Session_ResetPointValue();
+                    p_Session->point_value = 0;
                 }
                 return;
             }
