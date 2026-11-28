@@ -1,3 +1,4 @@
+#include "tests/test.h"
 #include "tests/th02/th02_clip_fixture.h"
 #include "tests/th02/th02_high_score_view.c"
 #include "tests/th02/th02_menu.c"
@@ -5,12 +6,8 @@
 #include "tests/th02/th02_palette_fixture.h"
 #include "th02/high_score_view/private.h"
 #include "th02/music_room/private.h"
-#include "th02/opening/logic.c"
-#define M_Audio M_TitleAudio
-#include "th02/title.c"
-#undef M_Audio
-
-#include "tests/test.h"
+#include "th02/opening/private.h"
+#include "th02/title_private.h"
 
 #include "core/base/arena.h"
 
@@ -55,8 +52,8 @@ static void M_RecordAudio(
     CHECK(fixture->audio_count < ARRAY_SIZE(fixture->audio));
     fixture->audio[fixture->audio_count++] = *request;
     if (request->action == TITLE_FORCE_EFFECT && request->effect == 6) {
-        CHECK_EQ_INT(m_Flash.frame, 0);
-        CHECK_EQ_INT(m_Title.phase, TITLE_FLASHING);
+        CHECK_EQ_INT(p_TitleFlash->frame, 0);
+        CHECK_EQ_INT(p_Title->phase, TITLE_FLASHING);
     }
 }
 
@@ -112,15 +109,15 @@ static MAIN_MENU_EVENTS M_Edge(FIXTURE *const fixture, const uint16_t keys)
 
 static void M_Menu(FIXTURE *const fixture)
 {
-    for (size_t i = 0; i < 250 && m_Opening.program.phase != OPENING_MENU;
+    for (size_t i = 0; i < 250 && p_Opening->program.phase != OPENING_MENU;
          i++) {
         VSyncIrq_VSync();
         const MAIN_MENU_EVENTS events =
-            Opening_Update(true, 0, m_Opening.program.phase == OPENING_LOGO)
+            Opening_Update(true, 0, p_Opening->program.phase == OPENING_LOGO)
                 .menu;
         CHECK_EQ_INT(events.action, MAIN_MENU_NONE);
     }
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_MENU);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_MENU);
 }
 
 TEST(logo_title_and_menu_follow_the_clock_and_emit_audio_before_drawing)
@@ -129,7 +126,7 @@ TEST(logo_title_and_menu_follow_the_clock_and_emit_audio_before_drawing)
     M_Init(&fixture);
     VSYNC_CLOCK clock = {};
     uint64_t ticks = 0;
-    while (m_Opening.program.phase != OPENING_MENU && ticks < 800) {
+    while (p_Opening->program.phase != OPENING_MENU && ticks < 800) {
         ticks++;
         const bool edge = VSync_Advance(&clock);
         if (edge) {
@@ -138,7 +135,7 @@ TEST(logo_title_and_menu_follow_the_clock_and_emit_audio_before_drawing)
         const OPENING_EVENTS opening = Opening_Update(edge, 0, false);
         const MAIN_MENU_EVENTS events = opening.menu;
         CHECK_EQ_INT(
-            opening.hide_text, m_Opening.program.phase == OPENING_LOGO);
+            opening.hide_text, p_Opening->program.phase == OPENING_LOGO);
         CHECK_EQ_INT(events.action, MAIN_MENU_NONE);
         CHECK(!events.quit);
     }
@@ -153,7 +150,7 @@ TEST(logo_title_and_menu_follow_the_clock_and_emit_audio_before_drawing)
     }
     CHECK_EQ_INT(fixture.audio[3].effect, 6);
     CHECK_EQ_INT(p_MainMenu->nav.selection, 0);
-    CHECK(m_Opening.program.wait.kind == WAIT_DELAY);
+    CHECK(p_Opening->program.wait.kind == WAIT_DELAY);
     CHECK_EQ_INT(g_VSync.count1, 0);
     Arena_Free(&fixture.arena);
 }
@@ -164,21 +161,21 @@ TEST(logo_skip_polls_after_two_waits_and_quit_observes_its_last_wait)
     M_Init(&fixture);
     Opening_Update(false, 0, true);
     Opening_Update(false, 0, false);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_LOGO);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_LOGO);
     VSyncIrq_VSync();
     Opening_Update(true, 0, true);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_LOGO);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_LOGO);
     M_Edge(&fixture, 0);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_LOGO);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_LOGO);
     M_Menu(&fixture);
     const MAIN_MENU_EVENTS pending = M_Edge(&fixture, GAME_KEY_CANCEL);
     CHECK(pending.wait_frame);
     CHECK(!pending.quit);
-    CHECK(m_Opening.program.quit_pending);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_MENU);
+    CHECK(p_Opening->program.quit_pending);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_MENU);
     CHECK(!Opening_Update(false, 0, false).menu.quit);
     CHECK(M_Edge(&fixture, 0).quit);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_DONE);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_DONE);
     CHECK(Opening_Update(false, 0, false).menu.quit);
     Arena_Free(&fixture.arena);
 }
@@ -192,7 +189,7 @@ TEST(logo_skip_resets_the_visible_page_for_title)
     }
     VSyncIrq_VSync();
     Opening_Update(true, 0, true);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_TITLE);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_TITLE);
     CHECK_EQ_INT(g_Video.visible_page, 0);
     Arena_Free(&fixture.arena);
 }
@@ -221,13 +218,13 @@ TEST(external_menu_actions_suspend_once_and_resume_before_the_outer_wait)
     M_Edge(&fixture, 0);
     const int32_t before = fixture.session.frame;
     CHECK_EQ_INT(M_Edge(&fixture, GAME_KEY_OK).action, MAIN_MENU_SCORES);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_SUSPENDED);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_SUSPENDED);
     CHECK_EQ_INT(M_Edge(&fixture, 0).action, MAIN_MENU_NONE);
     CHECK_EQ_INT(fixture.session.frame, before);
     const MAIN_MENU_EVENTS resumed = Opening_Resume(0);
     CHECK(resumed.wait_frame);
     CHECK_EQ_INT(fixture.session.frame, before + 1);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_MENU);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_MENU);
     CHECK(!p_MainMenu->initialized);
     Opening_Update(false, 0, false);
     CHECK(!p_MainMenu->initialized);
@@ -276,13 +273,13 @@ TEST(score_viewer_holds_twenty_frames_then_resumes_with_zero_keys)
 {
     FIXTURE fixture;
     M_Init(&fixture);
-    m_Opening.scores = &fixture.scores;
+    p_Opening->scores = &fixture.scores;
     M_Menu(&fixture);
     M_Edge(&fixture, GAME_KEY_DOWN);
     M_Edge(&fixture, 0);
     const int32_t before = fixture.session.frame;
     CHECK_EQ_INT(M_Edge(&fixture, GAME_KEY_OK).action, MAIN_MENU_NONE);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_SCORES);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_SCORES);
     CHECK_EQ_INT(p_Viewer->frame, 1);
     CHECK(!p_Viewer->input_allowed);
     CHECK_EQ_INT(fixture.session.frame, before);
@@ -292,14 +289,14 @@ TEST(score_viewer_holds_twenty_frames_then_resumes_with_zero_keys)
     CHECK(p_Viewer->input_allowed);
     M_Edge(&fixture, GAME_KEY_CANCEL);
     CHECK_EQ_INT(p_Viewer->phase, HIGH_SCORE_VIEW_HOLD);
-    CHECK_EQ_INT(m_Opening.program.wait.count, 20);
+    CHECK_EQ_INT(p_Opening->program.wait.count, 20);
     for (int frame = 0; frame < 19; frame++) {
         CHECK(!M_Edge(&fixture, GAME_KEY_CANCEL).quit);
-        CHECK_EQ_INT(m_Opening.program.phase, OPENING_SCORES);
+        CHECK_EQ_INT(p_Opening->program.phase, OPENING_SCORES);
         CHECK_EQ_INT(fixture.session.frame, before);
     }
     CHECK(!M_Edge(&fixture, GAME_KEY_CANCEL).quit);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_MENU);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_MENU);
     CHECK_EQ_INT(p_Viewer->phase, HIGH_SCORE_VIEW_DONE);
     CHECK_EQ_INT(fixture.session.frame, before + 1);
     CHECK(!p_MainMenu->initialized);
@@ -322,7 +319,7 @@ TEST(music_room_waits_for_release_and_keeps_playing_track_across_visits)
     M_Init(&fixture);
     fixture.assets.music.background.view.pixels = fixture.assets.logo.pixels;
 
-    m_Opening.audio.music = M_MusicAudio;
+    p_Opening->audio.music = M_MusicAudio;
     fixture.sound.midi_possible = true;
     fixture.sound.midi_active = true;
     M_Menu(&fixture);
@@ -333,9 +330,9 @@ TEST(music_room_waits_for_release_and_keeps_playing_track_across_visits)
     CHECK_EQ_INT(p_MainMenu->nav.selection, 4);
     const int32_t before = fixture.session.frame;
     CHECK_EQ_INT(M_Edge(&fixture, GAME_KEY_OK).action, MAIN_MENU_NONE);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_MUSIC);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_MUSIC);
     CHECK_EQ_INT(p_Room->phase, MUSIC_ROOM_RELEASE);
-    CHECK_EQ_INT(m_Opening.program.wait.count, 1);
+    CHECK_EQ_INT(p_Opening->program.wait.count, 1);
     CHECK_EQ_INT(fixture.music_audio_count, 0);
     CHECK_EQ_INT(fixture.session.frame, before);
     Opening_Update(false, 0, false);
@@ -356,17 +353,17 @@ TEST(music_room_waits_for_release_and_keeps_playing_track_across_visits)
     CHECK_EQ_INT(p_Room->phase, MUSIC_ROOM_COMMENT);
     M_Edge(&fixture, 0);
     M_Edge(&fixture, GAME_KEY_CANCEL);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_MUSIC);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_MUSIC);
     CHECK_EQ_INT(fixture.session.frame, before);
     M_Edge(&fixture, 0);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_MENU);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_MENU);
     CHECK_EQ_INT(fixture.session.frame, before + 1);
     CHECK(!p_MainMenu->initialized);
     CHECK(!p_MainMenu->quit);
     M_Edge(&fixture, 0);
     fixture.sound.midi_active = false;
     M_Edge(&fixture, GAME_KEY_OK);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_MUSIC);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_MUSIC);
     CHECK_EQ_INT(p_Room->selection, 1);
     CHECK(!p_Room->midi_active);
     CHECK_EQ_INT(fixture.music_audio_count, 3);
@@ -390,24 +387,24 @@ TEST(start_and_extra_apply_the_delay_before_saving_and_observe_both_fades)
             M_Edge(&fixture, 0);
         }
         const SHOT_SELECT_ASSETS assets = {};
-        m_Opening.shots = &assets;
-        m_Opening.audio.save_settings = M_SaveSettings;
+        p_Opening->shots = &assets;
+        p_Opening->audio.save_settings = M_SaveSettings;
         fixture.session.stage = 7;
         fixture.session.score = 123;
         fixture.session.shot_type = 2;
         const int32_t frame = fixture.session.frame;
         CHECK_EQ_INT(M_Edge(&fixture, GAME_KEY_OK).action, MAIN_MENU_NONE);
-        CHECK_EQ_INT(m_Opening.program.phase, OPENING_START);
+        CHECK_EQ_INT(p_Opening->program.phase, OPENING_START);
         CHECK_EQ_INT(fixture.audio[fixture.audio_count - 1].effect, 13);
         CHECK_EQ_INT(fixture.session.stage, 7);
-        CHECK_EQ_INT(m_Opening.program.wait.count, 20);
+        CHECK_EQ_INT(p_Opening->program.wait.count, 20);
         for (int i = 0; i < 19; i++) {
             M_Edge(&fixture, GAME_KEY_OK);
-            CHECK_EQ_INT(m_Opening.program.phase, OPENING_START);
+            CHECK_EQ_INT(p_Opening->program.phase, OPENING_START);
             CHECK_EQ_INT(fixture.saves, 0);
         }
         M_Edge(&fixture, 0);
-        CHECK_EQ_INT(m_Opening.program.phase, OPENING_SHOT_FADE_IN);
+        CHECK_EQ_INT(p_Opening->program.phase, OPENING_SHOT_FADE_IN);
         CHECK_EQ_INT(fixture.saves, 1);
         CHECK_EQ_INT(fixture.session.stage, extra != 0 ? 5 : 0);
         CHECK_EQ_INT(fixture.session.rank, extra != 0 ? 4 : 1);
@@ -417,22 +414,22 @@ TEST(start_and_extra_apply_the_delay_before_saving_and_observe_both_fades)
         CHECK_EQ_INT(fixture.session.lives, 2);
         for (int i = 0; i < 34; i++) {
             M_Edge(&fixture, 0);
-            CHECK_EQ_INT(m_Opening.program.phase, OPENING_SHOT_FADE_IN);
+            CHECK_EQ_INT(p_Opening->program.phase, OPENING_SHOT_FADE_IN);
         }
         M_Edge(&fixture, 0);
-        CHECK_EQ_INT(m_Opening.program.phase, OPENING_SHOTS);
+        CHECK_EQ_INT(p_Opening->program.phase, OPENING_SHOTS);
         CHECK_EQ_INT(p_Palette->tone, 100);
         M_Edge(&fixture, GAME_KEY_OK);
-        CHECK_EQ_INT(m_Opening.program.phase, OPENING_SHOT_FADE_OUT);
+        CHECK_EQ_INT(p_Opening->program.phase, OPENING_SHOT_FADE_OUT);
         CHECK_EQ_INT(fixture.session.frame, frame);
         for (int i = 0; i < 17; i++) {
             CHECK_EQ_INT(M_Edge(&fixture, 0).action, MAIN_MENU_NONE);
-            CHECK_EQ_INT(m_Opening.program.phase, OPENING_SHOT_FADE_OUT);
+            CHECK_EQ_INT(p_Opening->program.phase, OPENING_SHOT_FADE_OUT);
         }
         CHECK_EQ_INT(
             M_Edge(&fixture, 0).action,
             extra != 0 ? MAIN_MENU_EXTRA : MAIN_MENU_START);
-        CHECK_EQ_INT(m_Opening.program.phase, OPENING_SUSPENDED);
+        CHECK_EQ_INT(p_Opening->program.phase, OPENING_SUSPENDED);
         CHECK_EQ_INT(p_Palette->tone, 0);
         CHECK_EQ_INT(fixture.saves, 1);
         Arena_Free(&fixture.arena);
@@ -445,7 +442,7 @@ TEST(program_return_uses_cached_title_without_replaying_launcher_logo)
     M_Init(&f);
     f.sound.midi_possible = true;
     f.sound.midi_active = true;
-    m_Opening.logo = nullptr;
+    p_Opening->logo = nullptr;
     g_VSync.edges = 735;
     g_VSync.count1 = 900;
     g_VSync.count2 = 901;
@@ -456,11 +453,11 @@ TEST(program_return_uses_cached_title_without_replaying_launcher_logo)
     Video_SetSplit(23, 15080, 8);
     Title_Begin(&f.assets.title, 0, true, true);
     Opening_BeginProgram();
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_TITLE);
-    CHECK_EQ_INT(m_Title.phase, TITLE_PREPARE);
-    CHECK(m_Title.midi_possible);
-    CHECK(m_Title.midi_active);
-    CHECK(m_Title.assets == &f.assets.title);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_TITLE);
+    CHECK_EQ_INT(p_Title->phase, TITLE_PREPARE);
+    CHECK(p_Title->midi_possible);
+    CHECK(p_Title->midi_active);
+    CHECK(p_Title->assets == &f.assets.title);
     CHECK_EQ_INT(g_VSync.count1, 0);
     CHECK_EQ_INT(g_VSync.count2, 0);
     CHECK_EQ_INT(g_VSync.edges, 735);
@@ -481,24 +478,24 @@ TEST(
 {
     FIXTURE f;
     M_Init(&f);
-    m_Opening.scores = &f.scores;
+    p_Opening->scores = &f.scores;
     Opening_DemoStarted(2);
     g_VSync.edges = 400;
     Palette_SetTone(0);
     Opening_BeginDemoReturn(0);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_RETURN_SCORES);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_RETURN_SCORES);
     CHECK_EQ_INT(p_Viewer->duration, 350);
     CHECK_EQ_INT(p_Viewer->frame, 1);
     CHECK_EQ_INT(p_Palette->tone, 100);
     CHECK_EQ_INT(f.audio_count, 0);
     for (unsigned edge = 0; edge < 370; edge++) {
         M_Edge(&f, 0);
-        CHECK_EQ_INT(m_Opening.program.phase, OPENING_RETURN_SCORES);
+        CHECK_EQ_INT(p_Opening->program.phase, OPENING_RETURN_SCORES);
         CHECK_EQ_INT(f.audio_count, 0);
     }
     M_Edge(&f, 0);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_TITLE);
-    CHECK_EQ_INT(m_Title.door_step, 1);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_TITLE);
+    CHECK_EQ_INT(p_Title->door_step, 1);
     CHECK_EQ_INT(g_VSync.count2, 371);
     CHECK_EQ_INT(g_VSync.edges, 771);
     CHECK_EQ_INT(g_Video.visible_page, 0);
@@ -506,7 +503,7 @@ TEST(
     CHECK_EQ_INT(f.audio_count, 1);
     M_Menu(&f);
     CHECK_EQ_INT(p_MainMenu->demo, 3);
-    CHECK_EQ_INT(m_Title.demo_num, 0);
+    CHECK_EQ_INT(p_Title->demo_num, 0);
     CHECK(!p_MainMenu->quit);
     CHECK_EQ_INT(f.audio_count, 2);
     CHECK_EQ_INT(f.audio[0].action, TITLE_LOAD_EFFECTS);
@@ -518,12 +515,12 @@ TEST(demo_return_keeps_held_keys_locked_until_release_and_discards_exit_key)
 {
     FIXTURE f;
     M_Init(&f);
-    m_Opening.scores = &f.scores;
+    p_Opening->scores = &f.scores;
     Opening_DemoStarted(1);
     Opening_BeginDemoReturn(GAME_KEY_CANCEL);
     for (unsigned edge = 0; edge < 3; edge++) {
         M_Edge(&f, GAME_KEY_CANCEL);
-        CHECK_EQ_INT(m_Opening.program.phase, OPENING_RETURN_SCORES);
+        CHECK_EQ_INT(p_Opening->program.phase, OPENING_RETURN_SCORES);
         CHECK(!p_Viewer->input_allowed);
     }
     M_Edge(&f, 0);
@@ -533,14 +530,14 @@ TEST(demo_return_keeps_held_keys_locked_until_release_and_discards_exit_key)
     CHECK_EQ_INT(f.audio_count, 0);
     for (unsigned edge = 0; edge < 19; edge++) {
         M_Edge(&f, GAME_KEY_CANCEL);
-        CHECK_EQ_INT(m_Opening.program.phase, OPENING_RETURN_SCORES);
+        CHECK_EQ_INT(p_Opening->program.phase, OPENING_RETURN_SCORES);
     }
     M_Edge(&f, GAME_KEY_CANCEL);
-    CHECK_EQ_INT(m_Opening.program.phase, OPENING_TITLE);
+    CHECK_EQ_INT(p_Opening->program.phase, OPENING_TITLE);
     CHECK_EQ_INT(g_VSync.count2, 25);
     M_Menu(&f);
     CHECK(!p_MainMenu->quit);
-    CHECK_EQ_INT(m_Title.demo_num, 0);
+    CHECK_EQ_INT(p_Title->demo_num, 0);
     Arena_Free(&f.arena);
 }
 
@@ -567,8 +564,8 @@ TEST(program_return_refreshes_unlock_from_exact_score_markers)
     M_Edge(&f, GAME_KEY_DOWN);
     CHECK_EQ_INT(MainMenu_Sample().selection, 1);
     for (size_t shot = 0; shot < 3; shot++) {
-        CHECK(m_Opening.clears.game[shot]);
-        CHECK(!m_Opening.clears.extra[shot]);
+        CHECK(p_Opening->clears.game[shot]);
+        CHECK(!p_Opening->clears.extra[shot]);
     }
     M_Edge(&f, 0);
     CHECK_EQ_INT(M_Edge(&f, GAME_KEY_OK).action, MAIN_MENU_EXTRA);
@@ -579,7 +576,7 @@ TEST(program_return_refreshes_unlock_from_exact_score_markers)
     M_Edge(&f, 0);
     M_Edge(&f, GAME_KEY_DOWN);
     CHECK_EQ_INT(MainMenu_Sample().selection, 2);
-    CHECK(!m_Opening.clears.game[1]);
-    CHECK(m_Opening.clears.extra[1]);
+    CHECK(!p_Opening->clears.game[1]);
+    CHECK(p_Opening->clears.extra[1]);
     Arena_Free(&f.arena);
 }
