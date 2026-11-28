@@ -1,5 +1,5 @@
 #include "tests/test.h"
-#include "th01/ending.c"
+#include "th01/ending/ending.c"
 #include "th01/music.h"
 #include "th01/session.h"
 #include "th01/vsync_irq.c"

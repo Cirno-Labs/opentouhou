@@ -1,4 +1,4 @@
-#include "th01/ending.h"
+#include "th01/ending/ending.h"
 
 RESULT Ending_LoadAssets(
     VFS *const vfs, const FONT_ROM *const rom, const ALLOCATOR *const allocator,

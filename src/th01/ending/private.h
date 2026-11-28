@@ -1,6 +1,6 @@
 #pragma once
 
-#include "th01/ending.h"
+#include "th01/ending/ending.h"
 
 #define ENDING_OPERATION_CAPACITY 4096
 

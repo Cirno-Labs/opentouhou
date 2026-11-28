@@ -1,4 +1,4 @@
-#include "th01/ending.h"
+#include "th01/ending/ending.h"
 
 #include "core/base/assert.h"
 
