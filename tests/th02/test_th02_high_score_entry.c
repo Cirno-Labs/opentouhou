@@ -1,6 +1,7 @@
 #include "tests/test.h"
 #include "tests/th02/th02_tram_fixture.h"
 #include "th02/high_score_entry/logic.c"
+#include "th02/high_score_entry/private.h"
 #include "th02/vsync_irq.h"
 
 #include <string.h>
@@ -24,6 +25,7 @@ static void M_Begin(
                             .year = 2026,
                             .day = 22,
                             .month = 11 };
+    HighScoreEntry_Init(&g_HighScoreEntryRender);
     HighScoreEntry_Begin(&f->scores.sections[1], &run, ending, input);
 }
 
@@ -39,8 +41,8 @@ TEST(qualified_entry_binds_text_and_date_and_requests_save_only_once)
         FIXTURE f;
         TH02_INPUT input = { .shot = true };
         M_Begin(&f, 123456, ending != 0, &input);
-        CHECK_EQ_INT(m_Menu.place, 0);
-        CHECK(m_Menu.section == &f.scores.sections[1]);
+        CHECK_EQ_INT(p_Menu->place, 0);
+        CHECK(p_Menu->section == &f.scores.sections[1]);
         HIGH_SCORE_RECORD *const record = &f.scores.sections[1].records[0];
         CHECK_EQ_INT(record->score, 123456);
         CHECK_EQ_INT(record->stage, ending != 0 ? 127 : 2);
@@ -50,13 +52,13 @@ TEST(qualified_entry_binds_text_and_date_and_requests_save_only_once)
         CHECK_EQ_INT(record->shot_type, 2);
         HIGH_SCORE_ENTRY_EVENTS event = HighScoreEntry_Update(&input);
         CHECK_EQ_INT(event.result, HIGH_SCORE_ENTRY_FRAME);
-        CHECK_EQ_INT(m_Menu.name_pos, 0);
-        const HIGH_SCORE_ENTRY held = m_Entry;
-        const HIGH_SCORE_ENTRY_MENU controls = m_Menu;
+        CHECK_EQ_INT(p_Menu->name_pos, 0);
+        const HIGH_SCORE_ENTRY held = *p_Entry;
+        const HIGH_SCORE_ENTRY_MENU controls = *p_Menu;
         CHECK_EQ_INT(
             HighScoreEntry_Update(&input).result, HIGH_SCORE_ENTRY_FRAME);
-        CHECK(memcmp(&held, &m_Entry, sizeof(held)) == 0);
-        CHECK(memcmp(&controls, &m_Menu, sizeof(controls)) == 0);
+        CHECK(memcmp(&held, p_Entry, sizeof(held)) == 0);
+        CHECK(memcmp(&controls, p_Menu, sizeof(controls)) == 0);
         input.shot = false;
         CHECK_EQ_INT(M_Frame(&input).result, HIGH_SCORE_ENTRY_FRAME);
         CHECK_EQ_INT(M_Frame(&input).result, HIGH_SCORE_ENTRY_FRAME);
@@ -64,7 +66,7 @@ TEST(qualified_entry_binds_text_and_date_and_requests_save_only_once)
         event = M_Frame(&input);
         CHECK_EQ_INT(event.result, HIGH_SCORE_ENTRY_FRAME);
         CHECK_EQ_INT(record->name_glyphs[0], HighScoreEntry_Alphabet(0, 0));
-        CHECK_EQ_INT(m_Menu.name_pos, 1);
+        CHECK_EQ_INT(p_Menu->name_pos, 1);
         input.shot = false;
         M_Frame(&input);
         M_Frame(&input);
@@ -185,10 +187,10 @@ TEST(controller_updates_the_rendered_name_and_alphabet_without_redrawing_table)
 
     Tram_Init();
     const SCORE_RUN run = { .score = 12345, .stage = 127 };
-    M_MenuBegin(&scores.sections[0], &run, true);
-    M_MenuStep(0);
-    M_MenuStep(0);
-    M_MenuStep(GAME_KEY_RIGHT | GAME_KEY_SHOT);
+    HighScoreEntryMenu_Begin(&scores.sections[0], &run, true);
+    HighScoreEntryMenu_Step(0);
+    HighScoreEntryMenu_Step(0);
+    HighScoreEntryMenu_Step(GAME_KEY_RIGHT | GAME_KEY_SHOT);
     CHECK_EQ_INT(scores.sections[0].records[0].name_glyphs[0], 0xab);
     CHECK_EQ_INT(p_Tram->codes[6 * 80 + 10], 0x2b57);
     CHECK_EQ_INT(p_Tram->attributes[6 * 80 + 12], 0x85);

@@ -243,7 +243,7 @@ static void M_Begin(void)
     p_Program->scenes.scene = TH02_SCENE_REGISTRATION;
     Arena_Init(&p_Program->assets.arena, "Tick save test", 1024);
     HighScores_Defaults(&p_Program->scenes.scores);
-    HighScoreEntry_Init();
+    HighScoreEntry_Init(&g_HighScoreEntryRender);
     VSyncIrq_BeginApplication(&p_Program->clock);
     m_Test.registration =
         (HIGH_SCORE_ENTRY_EVENTS) { HIGH_SCORE_ENTRY_COMPLETE, true };

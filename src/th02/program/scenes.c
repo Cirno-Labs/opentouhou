@@ -511,7 +511,7 @@ void Program_Shutdown(void)
         &p_Program->scenes.stage_leave, 0,
         sizeof(p_Program->scenes.stage_leave));
     Ending_Init();
-    HighScoreEntry_Init();
+    HighScoreEntry_Init(&g_HighScoreEntryRender);
     GameOver_Init();
     p_Program->scenes.save_scores = p_Program->scenes.save_settings = false;
     memset(&p_Program->assets.gameplay, 0, sizeof(p_Program->assets.gameplay));
