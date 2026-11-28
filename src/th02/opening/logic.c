@@ -357,7 +357,7 @@ void Opening_Begin(
     Title_Init();
     Session_CancelStart();
     MainMenu_Init();
-    ShotSelect_Init();
+    ShotSelect_Init(&g_ShotSelectRender);
     HighScoreView_Init();
     MusicRoom_Init(music_room_render);
     m_Opening.assets = assets;
@@ -387,7 +387,7 @@ void Opening_BeginProgram(void)
     memset(&m_Opening.program, 0, sizeof(m_Opening.program));
     Session_CancelStart();
     MainMenu_Init();
-    ShotSelect_Init();
+    ShotSelect_Init(&g_ShotSelectRender);
     HighScoreView_Init();
     MusicRoom_Reset();
     M_BeginProgram();
@@ -437,7 +437,7 @@ void Opening_Shutdown(void)
     Title_Init();
     Session_CancelStart();
     MainMenu_Init();
-    ShotSelect_Init();
+    ShotSelect_Init(&g_ShotSelectRender);
     HighScoreView_Init();
     MusicRoom_Init(&g_MusicRoomRender);
 }

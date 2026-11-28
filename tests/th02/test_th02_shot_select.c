@@ -1,5 +1,6 @@
 #include "tests/test.h"
 #include "tests/th02/th02_shot_select.c"
+#include "th02/shot_select/private.h"
 
 #include <string.h>
 
@@ -20,7 +21,7 @@ TEST(shot_confirmation_is_immediate_and_completion_requests_are_not_repeated)
     const TH02_SESSION before = session;
     TestShotSelect_Begin(&session, nullptr);
     CHECK(memcmp(&session, &before, sizeof(session)) == 0);
-    CHECK_EQ_INT(m_Select.selection, 1);
+    CHECK_EQ_INT(p_Select->selection, 1);
     const SHOT_SELECT_EVENTS events = ShotSelect_Update(GAME_KEY_SHOT);
     CHECK_EQ_INT(events.wait, SHOT_SELECT_FADE_OUT);
     CHECK_EQ_INT(events.release_images, 7);
@@ -70,12 +71,12 @@ TEST(shot_held_direction_repeats_after_thirty_loop_waits)
         CHECK_EQ_INT(events.wait, SHOT_SELECT_INPUT);
         CHECK_EQ_INT(frames, i == 0 || i == 31 ? 7 : 1);
     }
-    CHECK_EQ_INT(m_Select.selection, 0);
-    CHECK_EQ_INT(m_Select.input_delay, 32);
-    CHECK_EQ_INT(m_Select.input_locked, 0);
+    CHECK_EQ_INT(p_Select->selection, 0);
+    CHECK_EQ_INT(p_Select->input_delay, 32);
+    CHECK_EQ_INT(p_Select->input_locked, 0);
     CHECK_EQ_INT(session.shot_type, 1);
     CHECK_EQ_INT(M_Loop(0, &frames).wait, SHOT_SELECT_INPUT);
-    CHECK_EQ_INT(m_Select.input_delay, 0);
+    CHECK_EQ_INT(p_Select->input_delay, 0);
     CHECK_EQ_INT(ShotSelect_Update(GAME_KEY_OK).wait, SHOT_SELECT_FADE_OUT);
     CHECK_EQ_INT(session.shot_type, 0);
 }
@@ -84,17 +85,17 @@ TEST(shot_cancel_locks_input_and_repeat_counter_wrap_preserves_that_lock)
 {
     TH02_SESSION session = { .shot_type = 1, .frame = -1 };
     TestShotSelect_Begin(&session, nullptr);
-    m_Select.input_locked = 1;
-    m_Select.input_delay = UINT16_MAX;
+    p_Select->input_locked = 1;
+    p_Select->input_delay = UINT16_MAX;
     int frames;
     CHECK_EQ_INT(M_Loop(GAME_KEY_CANCEL, &frames).wait, SHOT_SELECT_INPUT);
     CHECK_EQ_INT(frames, 1);
-    CHECK_EQ_INT(m_Select.input_delay, 0);
-    CHECK_EQ_INT(m_Select.input_locked, GAME_KEY_CANCEL);
+    CHECK_EQ_INT(p_Select->input_delay, 0);
+    CHECK_EQ_INT(p_Select->input_locked, GAME_KEY_CANCEL);
     CHECK_EQ_INT(M_Loop(GAME_KEY_SHOT, &frames).wait, SHOT_SELECT_INPUT);
-    CHECK_EQ_INT(m_Select.input_delay, 1);
+    CHECK_EQ_INT(p_Select->input_delay, 1);
     CHECK_EQ_INT(M_Loop(0, &frames).wait, SHOT_SELECT_INPUT);
-    CHECK_EQ_INT(m_Select.input_locked, 0);
+    CHECK_EQ_INT(p_Select->input_locked, 0);
     CHECK_EQ_INT(ShotSelect_Update(GAME_KEY_OK).wait, SHOT_SELECT_FADE_OUT);
     CHECK_EQ_INT(session.frame, -1);
 }

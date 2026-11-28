@@ -40,6 +40,7 @@ static void M_Begin(FIXTURE *const fixture)
             (TITLE_FLASH_IMAGE) { fixture->portrait, 16, 2 };
     }
     const bool cleared[3] = {};
+    ShotSelect_Init(&g_ShotSelectRender);
     ShotSelect_Begin(&fixture->session, &fixture->assets, cleared);
 }
 

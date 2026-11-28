@@ -1,44 +1,23 @@
 #include "th02/shot_select/logic.h"
 
+#include "th02/shot_select/private.h"
+
 #include "core/base/assert.h"
 
 #include <string.h>
-
-typedef enum {
-    SHOT_SELECT_READ,
-    SHOT_SELECT_OLD_FIRST,
-    SHOT_SELECT_OLD_SECOND,
-    SHOT_SELECT_OLD_THIRD,
-    SHOT_SELECT_NEW_COPY,
-    SHOT_SELECT_NEW_DESCRIPTION,
-    SHOT_SELECT_NEW_PICTURE,
-    SHOT_SELECT_TAIL,
-    SHOT_SELECT_DONE,
-} SHOT_SELECT_PHASE;
-
-typedef struct {
-    TH02_SESSION *session;
-    const SHOT_SELECT_ASSETS *assets;
-    PALETTE_FADE fade;
-    uint16_t keys;
-    uint16_t input_locked;
-    uint16_t input_delay;
-    int8_t selection;
-    SHOT_SELECT_PHASE phase;
-    bool right_animation;
-} SHOT_SELECT;
 
 static const int16_t m_Left[3] = { 16, 224, 432 };
 static const int16_t m_Top[3] = { 128, 224, 128 };
 
 static SHOT_SELECT m_Select;
+SHOT_SELECT *const p_Select = &m_Select;
+static const SHOT_SELECT_RENDER *m_Render;
 
 static void M_Description(const uint8_t color)
 {
     if (m_Select.assets != nullptr) {
         ASSERT(!m_Select.fade.active);
-        ShotSelectRender_Description(
-            m_Select.assets, m_Select.selection, color);
+        m_Render->description(m_Select.assets, m_Select.selection, color);
     }
 }
 
@@ -46,7 +25,7 @@ static void M_Background(const bool highlight)
 {
     if (m_Select.assets != nullptr) {
         ASSERT(!m_Select.fade.active);
-        ShotSelectRender_Background(m_Select.selection, highlight);
+        m_Render->background(m_Select.selection, highlight);
     }
 }
 
@@ -54,7 +33,7 @@ static void M_Picture(const bool offset)
 {
     if (m_Select.assets != nullptr) {
         ASSERT(!m_Select.fade.active);
-        ShotSelectRender_Picture(
+        m_Render->picture(
             m_Select.assets, m_Select.selection,
             m_Left[m_Select.selection] + (offset ? 8 : 0),
             m_Top[m_Select.selection] + (offset ? 8 : 0));
@@ -65,7 +44,7 @@ static void M_Darken(const bool offset)
 {
     if (m_Select.assets != nullptr) {
         ASSERT(!m_Select.fade.active);
-        ShotSelectRender_Darken(
+        m_Render->darken(
             m_Left[m_Select.selection] + (offset ? 8 : 0),
             m_Top[m_Select.selection] + (offset ? 8 : 0));
     }
@@ -98,19 +77,20 @@ static SHOT_SELECT_EVENTS M_Finish(void)
     return M_Frame(SHOT_SELECT_TAIL);
 }
 
-void ShotSelect_Init(void)
+void ShotSelect_Init(const SHOT_SELECT_RENDER *const render)
 {
     memset(&m_Select, 0, sizeof(m_Select));
+    m_Render = render;
 }
 
 void ShotSelect_Begin(
     TH02_SESSION *const session, const SHOT_SELECT_ASSETS *const assets,
     const bool cleared[3])
 {
-    ShotSelect_Init();
+    ShotSelect_Init(m_Render);
     m_Select.session = session;
     m_Select.assets = assets;
-    ShotSelectRender_Begin(session, assets, cleared);
+    m_Render->begin(session, assets, cleared);
     Palette_BeginFade(&m_Select.fade, PALETTE_BLACK_IN, 2);
 }
 
