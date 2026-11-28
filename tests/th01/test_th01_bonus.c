@@ -3,8 +3,7 @@
 #include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_video.h"
 #include "tests/th01/th01_world.h"
-#include "th01/bonus/bonus.c"
-#include "th01/bonus/transition.c"
+#include "th01/bonus/private.h"
 #include "th01/hud/hud_private.h"
 #include "th01/input_private.h"
 #include "th01/orb.h"
@@ -68,19 +67,19 @@ TEST(row_transition_empty_scan_fades_and_final_delay)
     VSyncIrq_Reset();
     Bonus_BeginRowTransition();
     CHECK(!Bonus_ResumeRowTransition(&target));
-    CHECK_EQ_INT(m_Transition.activated, 0);
+    CHECK_EQ_INT(p_RowTransition->activated, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 639, 0), 3);
     for (int32_t step = 0; step < 70; step++) {
-        const BONUS_ROW_TRANSITION frozen = m_Transition;
+        const BONUS_ROW_TRANSITION frozen = *p_RowTransition;
         CHECK(!Bonus_ResumeRowTransition(&target));
-        CHECK(memcmp(&frozen, &m_Transition, sizeof(m_Transition)) == 0);
+        CHECK(memcmp(&frozen, p_RowTransition, sizeof(*p_RowTransition)) == 0);
         p_VSync->count1 = 2;
         p_VSync->count2 = g_VSync->count2;
         const bool ready = Bonus_ResumeRowTransition(&target);
         CHECK(ready == (step == 69));
         CHECK_EQ_INT(g_VSync->count1, 0);
     }
-    CHECK_EQ_INT(m_Transition.done, 400);
+    CHECK_EQ_INT(p_RowTransition->done, 400);
     CHECK(memcmp(g_Video->pages[0], g_Video->pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK_EQ_INT(g_Palette->saved.colors[0][0], 15);
     CHECK_EQ_INT(g_Video->palette[0].red, 255);
@@ -114,7 +113,7 @@ static void M_Init(FIXTURE *const f, const ALLOCATOR *const a)
     f->sprites = (PTN) { .count = 1, .pixels = Allocator_Alloc(a, 1024) };
     memset(f->sprites.pixels, 3, 1024);
     Hud_Load(nullptr, &f->sprites, &f->font);
-    m_Bonus.score_bonus = 0;
+    p_Bonus->score_bonus = 0;
     memset(p_Session->bonus_per_stage, 0, sizeof(p_Session->bonus_per_stage));
     CHECK(Result_Ignore(Bonus_ValidateStageAssets(&f->assets, &f->font)));
     memset(f->assets.box, 0xff, sizeof(f->assets.box));
@@ -147,16 +146,16 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(g_Video->drawing_page, 1);
     CHECK_EQ_INT(g_Palette->saved.colors[0][0], 11);
     for (int32_t delay = 0; delay < 24; delay++) {
-        const BONUS frozen = m_Bonus;
+        const BONUS frozen = *p_Bonus;
         CHECK(!Bonus_Resume(&f.assets, &f.font, &raw));
-        CHECK(memcmp(&frozen, &m_Bonus, sizeof(frozen)) == 0);
+        CHECK(memcmp(&frozen, p_Bonus, sizeof(frozen)) == 0);
         p_VSync->count1 = 1;
         p_VSync->count2 = g_VSync->count2;
         CHECK(!Bonus_Resume(&f.assets, &f.font, &raw));
     }
-    CHECK_EQ_INT(m_Bonus.run.phase, BONUS_CONFIRM);
+    CHECK_EQ_INT(p_Bonus->run.phase, BONUS_CONFIRM);
     CHECK_EQ_INT(g_Stage->score, 410000);
-    CHECK_EQ_INT(m_Bonus.score_bonus, 17000);
+    CHECK_EQ_INT(p_Bonus->score_bonus, 17000);
     CHECK_EQ_INT(p_Session->bonus_per_stage[3], 17000);
     CHECK_EQ_INT(p_Session->high_score, 410000);
     CHECK_EQ_INT(p_Pellets->speed, 1);
@@ -173,7 +172,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(g_GameInput->shot_presses, 1);
     raw.shot = false;
     CHECK(Bonus_Resume(&f.assets, &f.font, &raw));
-    CHECK_EQ_INT(m_Bonus.score_bonus, 0);
+    CHECK_EQ_INT(p_Bonus->score_bonus, 0);
     CHECK_EQ_INT(g_GameInput->bomb_frame, 0);
     CHECK(Bonus_Resume(&f.assets, &f.font, &raw));
     Arena_Free(&arena);
@@ -187,7 +186,7 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
     Th01Test_ResetWorld();
     M_Init(&f, Arena_Allocator(&arena));
     p_Session->lives = 6;
-    m_Bonus.score_bonus = UINT32_MAX - 100;
+    p_Bonus->score_bonus = UINT32_MAX - 100;
     p_Stage->score = UINT32_MAX - 1000;
     p_Stage->time = 20000;
     p_Stage->maximum_combo = 100;
@@ -204,10 +203,10 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
     // Signed timer product wraps to -5536; combo clamps to 6553.
     const uint32_t expected =
         UINT32_MAX - 100 + (uint32_t)(-5536 * 10) + 65530 + 12000 + 36000;
-    CHECK_EQ_INT(m_Bonus.score_bonus, expected);
+    CHECK_EQ_INT(p_Bonus->score_bonus, expected);
     CHECK_EQ_INT((uint32_t)p_Session->bonus_per_stage[3], expected);
     CHECK_EQ_INT(g_Stage->score, UINT32_MAX - 1000 + expected);
-    CHECK_EQ_INT(m_Bonus.run.phase, BONUS_CONFIRM);
+    CHECK_EQ_INT(p_Bonus->run.phase, BONUS_CONFIRM);
     CHECK_EQ_INT(g_GameInput->bomb_frame, 0);
     TH01_INPUT released = {};
     CHECK(Bonus_Resume(&f.assets, &f.font, &released));
@@ -274,12 +273,12 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK_EQ_INT(p_Shots->slots[1].decay_frame, 0);
     CHECK(!p_Pellets->slots[0].moving);
     CHECK_EQ_INT(p_Pellets->slots[1].cloud_frame, 5);
-    CHECK_EQ_INT(m_Total.phase, BONUS_TOTAL_INITIAL_WAIT);
+    CHECK_EQ_INT(p_Total->phase, BONUS_TOTAL_INITIAL_WAIT);
     CHECK_EQ_INT(Th01Test_Pixel(1, 0, 0), 6);
     p_VSync->count1 = 50;
     p_VSync->count2 = g_VSync->count2;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
-    CHECK_EQ_INT(m_Total.phase, BONUS_TOTAL_TRANSITION);
+    CHECK_EQ_INT(p_Total->phase, BONUS_TOTAL_TRANSITION);
     CHECK_EQ_INT(Th01Test_Pixel(1, 0, 0), 14);
     CHECK_EQ_INT(g_Palette->resource.colors[0][0], 13);
     for (int32_t i = 0; i < 70; i++) {
@@ -287,22 +286,22 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
         p_VSync->count2 = g_VSync->count2;
         CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     }
-    CHECK_EQ_INT(m_Total.phase, BONUS_TOTAL_STAGE_WAIT);
+    CHECK_EQ_INT(p_Total->phase, BONUS_TOTAL_STAGE_WAIT);
     CHECK_EQ_INT(Th01Test_Pixel(0, 224, 14), 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 256, 14), 5);
     CHECK_EQ_INT(g_Palette->saved.colors[0][0], 13);
     p_VSync->count1 = 30;
     p_VSync->count2 = g_VSync->count2;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
-    CHECK_EQ_INT(m_Bonus.score_bonus, 16050);
+    CHECK_EQ_INT(p_Bonus->score_bonus, 16050);
     CHECK_EQ_INT(g_Stage->score, 390000);
-    CHECK_EQ_INT(m_Total.phase, BONUS_TOTAL_DIGIT_WAIT);
+    CHECK_EQ_INT(p_Total->phase, BONUS_TOTAL_DIGIT_WAIT);
     VSYNC_CLOCK clock = {};
     int32_t ticks = 0;
-    while (m_Total.phase != BONUS_TOTAL_CONFIRM && ticks < 1000) {
-        const BONUS_TOTAL frozen = m_Total;
+    while (p_Total->phase != BONUS_TOTAL_CONFIRM && ticks < 1000) {
+        const BONUS_TOTAL frozen = *p_Total;
         CHECK(!Bonus_ResumeTotal(&f.assets, &raw, (uint64_t)ticks));
-        CHECK(memcmp(&frozen, &m_Total, sizeof(frozen)) == 0);
+        CHECK(memcmp(&frozen, p_Total, sizeof(frozen)) == 0);
         ticks++;
         if (VSync_Advance(&clock)) {
             VSyncIrq_Edge();
@@ -310,7 +309,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
         CHECK(!Bonus_ResumeTotal(&f.assets, &raw, (uint64_t)ticks));
     }
     CHECK(ticks < 1000);
-    CHECK_EQ_INT(m_Bonus.score_bonus, 96050);
+    CHECK_EQ_INT(p_Bonus->score_bonus, 96050);
     CHECK_EQ_INT(g_Stage->score, 486050);
     CHECK_EQ_INT(p_Session->lives, 2);
     CHECK_EQ_INT(p_Hud->score_previous, 0);
@@ -326,7 +325,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, (uint64_t)ticks));
     raw.ok = false;
     CHECK(Bonus_ResumeTotal(&f.assets, &raw, (uint64_t)ticks));
-    CHECK_EQ_INT(m_Bonus.score_bonus, 0);
+    CHECK_EQ_INT(p_Bonus->score_bonus, 0);
     CHECK(Bonus_ResumeTotal(&f.assets, &raw, (uint64_t)ticks));
     Arena_Free(&arena);
 }
@@ -341,24 +340,24 @@ TEST(total_second_loop_scrambles_then_restores_final_digit)
     const TH01_INPUT raw = {};
     VSyncIrq_Reset();
     Bonus_InitTotal();
-    m_Total.phase = BONUS_TOTAL_DIGIT;
-    m_Total.top = 86;
-    m_Total.digit_count = 1;
-    m_Total.digits[0] = 9;
-    m_Total.spin = 10;
+    p_Total->phase = BONUS_TOTAL_DIGIT;
+    p_Total->top = 86;
+    p_Total->digit_count = 1;
+    p_Total->digits[0] = 9;
+    p_Total->spin = 10;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(Th01Test_Pixel(0, 224, 86), 2);
-    m_Total.credit = 12;
+    p_Total->credit = 12;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(Th01Test_Pixel(0, 224, 86), 3);
-    m_Total.spin = 17;
-    m_Total.credit = 12;
+    p_Total->spin = 17;
+    p_Total->credit = 12;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(Th01Test_Pixel(0, 224, 86), 14);
-    m_Total.credit = 12;
+    p_Total->credit = 12;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(Th01Test_Pixel(0, 224, 86), 9);
-    CHECK_EQ_INT(m_Total.phase, BONUS_TOTAL_METRIC_WAIT);
+    CHECK_EQ_INT(p_Total->phase, BONUS_TOTAL_METRIC_WAIT);
     Arena_Free(&arena);
 }
 
@@ -373,20 +372,20 @@ TEST(total_millisecond_credit_crosses_digits_and_count1_can_satisfy_wait)
     p_VSync->count1 = 5;
     p_VSync->count2 = g_VSync->count2;
     Bonus_InitTotal();
-    m_Total.phase = BONUS_TOTAL_DIGIT;
-    m_Total.top = 196;
-    m_Total.metric = 4;
-    m_Total.digit_count = 2;
+    p_Total->phase = BONUS_TOTAL_DIGIT;
+    p_Total->top = 196;
+    p_Total->metric = 4;
+    p_Total->digit_count = 2;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     for (uint64_t tick = 1; tick <= 4; tick++) {
         CHECK(!Bonus_ResumeTotal(&f.assets, &raw, tick));
     }
-    CHECK_EQ_INT(m_Total.place, 1);
-    CHECK_EQ_INT(m_Total.credit, 8);
+    CHECK_EQ_INT(p_Total->place, 1);
+    CHECK_EQ_INT(p_Total->credit, 8);
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 5));
-    CHECK_EQ_INT(m_Total.phase, BONUS_TOTAL_CONFIRM);
+    CHECK_EQ_INT(p_Total->phase, BONUS_TOTAL_CONFIRM);
     CHECK_EQ_INT(g_VSync->count1, 0);
-    CHECK_EQ_INT(m_Total.credit, 10);
+    CHECK_EQ_INT(p_Total->credit, 10);
     Arena_Free(&arena);
 }
 
@@ -400,33 +399,33 @@ TEST(total_metric_widths_clamp_after_wrapping_and_sum_wraps)
     VSyncIrq_Reset();
     p_Stage->time = 13108;
     Bonus_InitTotal();
-    m_Total.phase = BONUS_TOTAL_PREPARE_METRIC;
+    p_Total->phase = BONUS_TOTAL_PREPARE_METRIC;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
-    CHECK_EQ_INT(m_Bonus.score_bonus, 40);
-    CHECK_EQ_INT(m_Total.digits[3], 4);
-    CHECK_EQ_INT(m_Total.credit, 1);
+    CHECK_EQ_INT(p_Bonus->score_bonus, 40);
+    CHECK_EQ_INT(p_Total->digits[3], 4);
+    CHECK_EQ_INT(p_Total->credit, 1);
     p_Stage->time = UINT16_MAX;
     Bonus_InitTotal();
-    m_Total.phase = BONUS_TOTAL_PREPARE_METRIC;
+    p_Total->phase = BONUS_TOTAL_PREPARE_METRIC;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
-    CHECK_EQ_INT(m_Bonus.score_bonus, 65570);
+    CHECK_EQ_INT(p_Bonus->score_bonus, 65570);
     p_Stage->maximum_combo = 200;
     Bonus_InitTotal();
-    m_Total.phase = BONUS_TOTAL_PREPARE_METRIC;
-    m_Total.metric = 1;
+    p_Total->phase = BONUS_TOTAL_PREPARE_METRIC;
+    p_Total->metric = 1;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
-    CHECK_EQ_INT(m_Bonus.score_bonus, (uint32_t)-189790);
-    m_Bonus.score_bonus = 123;
+    CHECK_EQ_INT(p_Bonus->score_bonus, (uint32_t)-189790);
+    p_Bonus->score_bonus = 123;
     p_Stage->score = UINT32_MAX - 100;
     Bonus_InitTotal();
-    m_Total.phase = BONUS_TOTAL_PREPARE_METRIC;
-    m_Total.metric = 4;
+    p_Total->phase = BONUS_TOTAL_PREPARE_METRIC;
+    p_Total->metric = 4;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(g_Stage->score, 22);
-    CHECK_EQ_INT(m_Bonus.score_bonus, 123);
-    CHECK_EQ_INT(m_Total.digits[3], 1);
-    CHECK_EQ_INT(m_Total.digits[4], 2);
-    CHECK_EQ_INT(m_Total.digits[5], 3);
+    CHECK_EQ_INT(p_Bonus->score_bonus, 123);
+    CHECK_EQ_INT(p_Total->digits[3], 1);
+    CHECK_EQ_INT(p_Total->digits[4], 2);
+    CHECK_EQ_INT(p_Total->digits[5], 3);
     Arena_Free(&arena);
 }
 

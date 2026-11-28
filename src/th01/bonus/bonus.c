@@ -1,5 +1,4 @@
-#include "th01/bonus/bonus.h"
-
+#include "th01/bonus/private.h"
 #include "th01/session.h"
 #include "th01/sound.h"
 
@@ -12,54 +11,10 @@
 #define M_STAGE_WIDTH 288
 #define M_PADDED_HEIGHT 280
 
-typedef enum {
-    BONUS_DONE,
-    BONUS_STAGE_BOX,
-    BONUS_CONFIRM,
-} BONUS_PHASE;
-
-typedef struct {
-    BONUS_PHASE phase;
-    int16_t stage_number;
-    int16_t row;
-    bool waiting;
-} BONUS_RUN;
-
-typedef struct {
-    BONUS_RUN run;
-    // Accumulates across the stage bonuses leading up to a total; Bonus_Resume
-    // and Bonus_ResumeTotal clear it on confirmation. Bonus_BeginStage resets
-    // only run, so this survives between stage bonus runs.
-    uint32_t score_bonus;
-} BONUS;
-
-typedef enum {
-    BONUS_TOTAL_DONE,
-    BONUS_TOTAL_INITIAL_WAIT,
-    BONUS_TOTAL_TRANSITION,
-    BONUS_TOTAL_STAGE_WAIT,
-    BONUS_TOTAL_PREPARE_METRIC,
-    BONUS_TOTAL_DIGIT,
-    BONUS_TOTAL_DIGIT_WAIT,
-    BONUS_TOTAL_METRIC_WAIT,
-    BONUS_TOTAL_CONFIRM,
-} BONUS_TOTAL_PHASE;
-
-typedef struct {
-    BONUS_TOTAL_PHASE phase;
-    uint64_t last_tick;
-    uint32_t credit;
-    int16_t stage_number;
-    int16_t digits[6];
-    int16_t top;
-    int16_t metric;
-    int16_t place;
-    int16_t digit_count;
-    int16_t spin;
-} BONUS_TOTAL;
-
 static BONUS m_Bonus;
 static BONUS_TOTAL m_Total;
+BONUS *const p_Bonus = &m_Bonus;
+BONUS_TOTAL *const p_Total = &m_Total;
 
 static const char *const m_Labels[] = {
     "　　ＢＯＮＵＳ",         "   　Ｔｉｍｅ　", "Ｃｏｎｔｉｎｕｏｕｓ",

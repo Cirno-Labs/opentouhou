@@ -1,20 +1,11 @@
-#include "th01/bonus/bonus.h"
+#include "th01/bonus/private.h"
 
 #include "core/base/assert.h"
 
 #include <string.h>
 
-typedef struct {
-    uint16_t transferred[VIDEO_HEIGHT];
-    bool active[VIDEO_HEIGHT];
-    uint16_t activated;
-    uint16_t done;
-    uint16_t previous_done;
-    bool pending;
-    bool waiting;
-} BONUS_ROW_TRANSITION;
-
 static BONUS_ROW_TRANSITION m_Transition;
+BONUS_ROW_TRANSITION *const p_RowTransition = &m_Transition;
 
 void Bonus_RowShift32(const uint16_t y, const uint16_t transferred)
 {
