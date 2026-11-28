@@ -3,6 +3,9 @@
 #include "core/gfx/types.h"
 #include "core/io/reader.h"
 
+// Decodes ZUN's BFNT glyph and sprite bank format, a strip of
+// fixed-size images sharing one palette.
+
 typedef struct {
     int32_t width;
     int32_t height;

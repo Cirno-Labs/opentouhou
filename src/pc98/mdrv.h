@@ -2,6 +2,9 @@
 
 #include "pc98/mdrv_data.h"
 
+// Ports the MDRV98 sound driver, playing its song and effect data on an
+// emulated YM2608, as pc98/pmd.h does for PMD.
+
 typedef struct MDRV MDRV;
 
 typedef struct {

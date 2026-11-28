@@ -2,6 +2,9 @@
 
 #include "pc98/pmd/random.h"
 
+// Generates PMD's per-note vibrato and tremolo sweep, delayed and
+// looping over a period.
+
 typedef struct {
     uint16_t value;
     uint8_t delay;

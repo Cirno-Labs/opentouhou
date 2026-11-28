@@ -3,6 +3,9 @@
 #include "core/base/result.h"
 #include "pc98/pmd/chip.h"
 
+// Plays PMD's SSG drum samples, the noise-channel percussion bank
+// separate from the FM rhythm part.
+
 #define SSG_EFFECT_LIMIT 128
 
 typedef struct {

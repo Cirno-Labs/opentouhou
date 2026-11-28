@@ -2,6 +2,9 @@
 
 #include "pc98/pmd/registers.h"
 
+// Tracks one channel's frequency and portamento glide between notes,
+// written to the FM or SSG pitch registers each tick.
+
 typedef struct {
     uint16_t frequency;
     uint16_t glide;

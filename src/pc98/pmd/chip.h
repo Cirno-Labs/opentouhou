@@ -2,6 +2,9 @@
 
 #include "pc98/opna.h"
 
+// Shares one YM2608 and its timer B between PMD's FM, SSG, rhythm and
+// effect parts.
+
 typedef struct {
     OPNA *opna;
     uint64_t next_b;

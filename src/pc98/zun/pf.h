@@ -2,6 +2,9 @@
 
 #include "core/vfs.h"
 
+// Reads ZUN's PF archive format, the th01-era precursor to PBG3, as a
+// VFS source.
+
 typedef enum {
     PF_TH01, // key 0x76
     PF_KEY_12, // key 0x12, tables and lookup as PF_TH01

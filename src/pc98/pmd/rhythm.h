@@ -2,6 +2,9 @@
 
 #include "pc98/pmd/part.h"
 
+// Plays PMD86's built-in percussion samples through the YM2608's rhythm
+// unit.
+
 typedef struct {
     PMD_CHIP *chip;
     PMD_CONTROL *control;

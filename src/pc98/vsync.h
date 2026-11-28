@@ -2,6 +2,9 @@
 
 #include "core/base/types.h"
 
+// Times the PC-98's 24 kHz-mode VSync against the host's 60 Hz tick
+// rate, since the two never line up evenly.
+
 typedef struct {
     uint32_t phase;
 } VSYNC_CLOCK;

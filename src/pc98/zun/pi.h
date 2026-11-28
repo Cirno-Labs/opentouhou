@@ -3,6 +3,9 @@
 #include "core/gfx/types.h"
 #include "core/io/reader.h"
 
+// Decodes ZUN's PI picture format: one indexed image with an optional
+// position and transparent index.
+
 typedef struct {
     int32_t width;
     int32_t height;

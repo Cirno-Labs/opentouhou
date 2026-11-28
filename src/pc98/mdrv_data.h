@@ -2,6 +2,9 @@
 
 #include "core/io/reader.h"
 
+// Loads MDRV98 song and instrument files into the structures mdrv.h
+// plays.
+
 #define MDRV_FM_INSTRUMENT_SIZE 32
 #define MDRV_SSG_ENVELOPE_SIZE 6
 #define MDRV_EFFECT_MAX_CHANNELS 3

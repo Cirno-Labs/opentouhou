@@ -2,6 +2,9 @@
 
 #include "pc98/pmd_data.h"
 
+// Holds the loaded PMD song and effect bank, as pmd_data.h's loaders
+// fill them and the driver's parts read them.
+
 #define PMD_TRACK_COUNT 11
 #define PMD_RHYTHM_LIMIT 128
 #define PMD_MEMO_LIMIT 134

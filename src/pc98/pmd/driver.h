@@ -10,6 +10,9 @@
 #include "pc98/pmd/types.h"
 #include "pc98/pmd_data.h"
 
+// Combines PMD's FM, SSG, rhythm and effect parts over one chip into the
+// whole driver pc98/pmd.h exposes.
+
 struct PMD {
     PMD_CHIP chip;
     PMD_BOARD board;

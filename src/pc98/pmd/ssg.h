@@ -2,6 +2,9 @@
 
 #include "pc98/pmd/part.h"
 
+// Drives PMD's three SSG noise-capable music channels, one part each,
+// sharing the chip's noise generator between them.
+
 typedef struct {
     PMD_PART channels[3];
     PMD_CONTROL *control;
