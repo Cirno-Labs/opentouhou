@@ -18,8 +18,8 @@ bool Missiles_Add(
     int8_t reserved);
 
 // Clears flags only, without restoring pixels or clearing history.
-void Missiles_Reset(void);
+void Missiles_ResetStage(void);
 
 // Moves, explodes, draws and hit-tests every missile in pool order.
 // frame_rand bit 0 selects the slots that draw and advance explosions.
-void Missiles_UpdateAndRender(uint16_t frame_rand, const PTN *sprites);
+void Missiles_Update(uint16_t frame_rand, const PTN *sprites);

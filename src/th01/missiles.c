@@ -82,15 +82,14 @@ bool Missiles_Add(
     return false;
 }
 
-void Missiles_Reset(void)
+void Missiles_ResetStage(void)
 {
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         m_Missiles.slots[i].flag = MISSILE_FREE;
     }
 }
 
-void Missiles_UpdateAndRender(
-    const uint16_t frame_rand, const PTN *const sprites)
+void Missiles_Update(const uint16_t frame_rand, const PTN *const sprites)
 {
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         MISSILE *const m = &m_Missiles.slots[i];

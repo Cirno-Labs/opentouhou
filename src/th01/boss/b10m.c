@@ -165,7 +165,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     m_B10M.finished = false;
     HudHp_Begin(8, 12);
     Particles_ResetStage();
-    Missiles_Reset();
+    Missiles_ResetStage();
 }
 
 static int8_t M_Byte(const int32_t value)
@@ -921,7 +921,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
     if (m_B10M.defeating) {
         return M_Death(assets, miko);
     }
-    Missiles_UpdateAndRender((uint16_t)g_Session.frame_rand, &assets->missiles);
+    Missiles_Update((uint16_t)g_Session.frame_rand, &assets->missiles);
     if (m_B10M.status.phase == B10M_PHASE_ENTRANCE) {
         M_Entrance(assets, miko);
     } else if (m_B10M.status.phase == B10M_PHASE_LATERAL) {
@@ -1021,7 +1021,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
             Sound_Fade();
             Pellets_EraseAndResetMoving();
             if (attack) {
-                Missiles_Reset();
+                Missiles_ResetStage();
             }
             ShootoutLasers_EraseAndReset(5);
             BossDefeat_Begin(&m_B10M.defeat, m_Defeat);

@@ -1533,7 +1533,7 @@ static bool M_Tail(const B15M_ASSETS *const assets, const PTN *const miko)
             Sound_Fade();
             Pellets_EraseAndResetMoving();
             M_Background(assets, miko);
-            Missiles_Reset();
+            Missiles_ResetStage();
             ShootoutLasers_EraseAndReset(10);
             BossDefeat_Begin(&m_B15M.defeat, m_Defeat);
             m_B15M.defeating = true;
@@ -1580,7 +1580,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         return M_Entrance(assets, miko);
     }
     m_B15M.call_phase = m_B15M.status.phase;
-    Missiles_UpdateAndRender((uint16_t)g_Session.frame_rand, &assets->missiles);
+    Missiles_Update((uint16_t)g_Session.frame_rand, &assets->missiles);
     if (m_B15M.status.phase == B15M_PHASE_ENTRANCE) {
         return M_Entrance(assets, miko);
     }

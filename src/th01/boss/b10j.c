@@ -196,7 +196,7 @@ static bool M_ResumeSetup(const void *const data, const BOSS_CONTEXT *const ctx)
     m_B10J.status.hp = 12;
     HudHp_Begin(2, 6);
     Particles_ResetStage();
-    Missiles_Reset();
+    Missiles_ResetStage();
     Palette_SetStage(&g_Palette->saved);
     m_B10J.setup_active = false;
     return true;
@@ -882,7 +882,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
     if (m_B10J.defeating) {
         return M_Death(assets, miko);
     }
-    Missiles_UpdateAndRender((uint16_t)g_Session.frame_rand, &assets->missiles);
+    Missiles_Update((uint16_t)g_Session.frame_rand, &assets->missiles);
     Particles_Update(PARTICLES_TOP_RIGHT, 7);
     if (m_B10J.status.phase == B10J_PHASE_START) {
         Video_SelectDrawingPage(0);
@@ -979,7 +979,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
             Video_SelectDrawingPage(0);
             Sound_Fade();
             Pellets_EraseAndResetMoving();
-            Missiles_Reset();
+            Missiles_ResetStage();
             ShootoutLasers_EraseAndReset(5);
             BossDefeat_Begin(&m_B10J.defeat, m_Defeat);
             m_B10J.defeating = true;

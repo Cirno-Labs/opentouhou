@@ -26,7 +26,7 @@ TEST(pool_and_spawn_history)
     CHECK(!Missiles_Add(0, 0, 0, 0, 0));
     CHECK_EQ_INT(m_Missiles.slots[0].previous_top, 123);
     CHECK_EQ_INT(m_Missiles.slots[0].unused, 456);
-    Missiles_Reset();
+    Missiles_ResetStage();
     CHECK_EQ_INT(m_Missiles.slots[0].left, 1600);
     for (int32_t i = 0; i < 50; i++) {
         CHECK_EQ_INT(m_Missiles.slots[i].flag, MISSILE_FREE);
@@ -44,16 +44,16 @@ TEST(interlace_motion_and_explosion_lifetime)
     m_Player.left = 300;
     CHECK(Missiles_Add(623, 100, 2, 0, 0));
     m_Missiles.slots[0].previous_top = 80 * 16;
-    Missiles_UpdateAndRender(1, &sprites);
+    Missiles_Update(1, &sprites);
     CHECK_EQ_INT(m_Missiles.slots[0].left, 625 * 16);
     CHECK_EQ_INT(m_Missiles.slots[0].previous_left, 624 * 16);
     CHECK_EQ_INT(m_Missiles.slots[0].previous_top, 80 * 16);
     CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_HIT);
-    Missiles_UpdateAndRender(0, &sprites);
+    Missiles_Update(0, &sprites);
     CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_HIT_LAST);
-    Missiles_UpdateAndRender(1, &sprites);
+    Missiles_Update(1, &sprites);
     CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_HIT_LAST);
-    Missiles_UpdateAndRender(0, &sprites);
+    Missiles_Update(0, &sprites);
     CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
     Mem_Free(g_Video->pages[0]);
 }
@@ -79,11 +79,11 @@ TEST(lethal_current_coordinates_ignore_field_and_sliding)
             memset(&m_Player, 0, sizeof(m_Player));
             m_Player.left = 300;
             m_Player.sliding = true;
-            Missiles_UpdateAndRender(1, &sprites);
+            Missiles_Update(1, &sprites);
             CHECK(m_Player.is_hit == (x > 0 && x < 3 && y > 0 && y < 3));
             m_Player.is_hit = false;
             m_Player.invincible = true;
-            Missiles_UpdateAndRender(1, &sprites);
+            Missiles_Update(1, &sprites);
             CHECK(!m_Player.is_hit);
         }
     }
@@ -110,13 +110,13 @@ TEST(unaligned_quarters_and_word_rounded_restore)
         .velocity = { 0, 0 },
         .flag = MISSILE_MOVING,
     };
-    Missiles_UpdateAndRender(0, &sprites);
+    Missiles_Update(0, &sprites);
     CHECK_EQ_INT(Th01Test_Pixel(0, 19, 100), 3);
     CHECK_EQ_INT(Th01Test_Pixel(0, 34, 100), 5);
     CHECK_EQ_INT(Th01Test_Pixel(0, 16, 100), 0);
     m_Missiles.slots[0].flag = MISSILE_HIT;
     memset(g_Video->pages[1], 9, VIDEO_PAGE_SIZE);
-    Missiles_UpdateAndRender(0, &sprites);
+    Missiles_Update(0, &sprites);
     CHECK_EQ_INT(Th01Test_Pixel(0, 16, 100), 9);
     CHECK_EQ_INT(Th01Test_Pixel(0, 63, 115), 9);
     CHECK_EQ_INT(Th01Test_Pixel(0, 64, 115), 0);
