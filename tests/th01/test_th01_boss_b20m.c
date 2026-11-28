@@ -4,7 +4,7 @@
 #include "th01/boss/b20m.c"
 #include "th01/gameplay.h"
 #include "th01/hud/hp_private.h"
-#include "th01/input.c"
+#include "th01/input_private.h"
 #include "th01/orb_private.h"
 #include "th01/pellets.h"
 #include "th01/player_private.h"
@@ -336,7 +336,7 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     p_Player->deflecting = true;
     p_Player->bomb_damaging = true;
     m_B20M.leaves.flag[7] = 6;
-    m_GameInput.bomb = true;
+    p_GameInput->bomb = true;
     VSyncIrq_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;

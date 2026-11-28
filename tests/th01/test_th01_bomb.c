@@ -4,7 +4,7 @@
 #include "th01/bomb.c"
 #include "th01/bomb.h"
 #include "th01/hud.h"
-#include "th01/input.c"
+#include "th01/input_private.h"
 #include "th01/orb_private.h"
 #include "th01/pellets/private.h"
 #include "th01/player_private.h"
@@ -157,9 +157,9 @@ TEST(player_continuation_spans_real_bomb_scroll_wait)
     p_Player->remaining_bombs = 2;
     p_Player->bomb_flag = PLAYER_BOMB_START;
     GameInput_Init();
-    m_GameInput.shot = true;
-    m_GameInput.strike = true;
-    m_GameInput.bomb = true;
+    p_GameInput->shot = true;
+    p_GameInput->strike = true;
+    p_GameInput->bomb = true;
     memset(p_Orb, 0, sizeof(*p_Orb));
     p_Orb->left = 500;
     p_Orb->top = 100;
@@ -173,7 +173,7 @@ TEST(player_continuation_spans_real_bomb_scroll_wait)
         Bomb_BeginUpdate(&state.miko, &state.assets, 0), BOMB_UPDATE_RUNNING);
     Player_FinishBombUpdate(&continuation, &sprites, false);
     p_Player->bomb_frame = 64;
-    m_GameInput.shot = m_GameInput.strike = true;
+    p_GameInput->shot = p_GameInput->strike = true;
     CHECK(Player_BeginUpdate(&continuation, &sprites));
     const int8_t dash = p_Player->dash_cycle;
     CHECK_EQ_INT(

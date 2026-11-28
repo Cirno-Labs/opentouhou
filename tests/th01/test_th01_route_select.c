@@ -1,7 +1,7 @@
 #include "tests/test.h"
 #include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_world.h"
-#include "th01/input.c"
+#include "th01/input_private.h"
 #include "th01/orb.h"
 #include "th01/pellets.h"
 #include "th01/player.h"
@@ -88,8 +88,8 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     Arena_Init(&arena, "route", 2 * 1024 * 1024);
     FIXTURE f;
     M_Init(&f, &arena);
-    m_GameInput.shot = m_GameInput.ok = m_GameInput.bomb = true;
-    m_GameInput.bomb_frame = 72;
+    p_GameInput->shot = p_GameInput->ok = p_GameInput->bomb = true;
+    p_GameInput->bomb_frame = 72;
     VSyncIrq_Reset();
     RouteSelect_Init();
     const TH01_INPUT raw = { .shot = true };

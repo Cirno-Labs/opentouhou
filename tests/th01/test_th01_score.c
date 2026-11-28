@@ -1,5 +1,5 @@
 #include "tests/test.h"
-#include "th01/input.c"
+#include "th01/input_private.h"
 #include "th01/score.h"
 #include "th01/score/score.c"
 #include "th01/vsync_irq_private.h"
@@ -86,7 +86,7 @@ TEST(name_slots_edit_and_gameover_last_slot_jumps_to_enter)
     M_Begin(&f, SCORE_ENDING, 9000);
     for (int32_t i = 0; i < 8; i++) {
         m_Registration.column = i;
-        m_GameInput.shot = true;
+        p_GameInput->shot = true;
         CHECK(!Score_OnInput());
     }
     CHECK_EQ_INT(m_Registration.cursor, 7);
@@ -94,23 +94,23 @@ TEST(name_slots_edit_and_gameover_last_slot_jumps_to_enter)
     CHECK_EQ_STR(m_Registration.slots[0], "ａ");
     CHECK_EQ_STR(m_Registration.slots[7], "ｈ");
     m_Registration.context = SCORE_GAMEOVER;
-    m_GameInput.shot = true;
+    p_GameInput->shot = true;
     CHECK(!Score_OnInput());
     CHECK_EQ_INT(m_Registration.row, 5);
     CHECK_EQ_INT(m_Registration.column, 17);
-    m_GameInput.strike = true;
+    p_GameInput->strike = true;
     CHECK(!Score_OnInput());
     CHECK_EQ_INT(m_Registration.cursor, 6);
     m_Registration.column = 10;
-    m_GameInput.shot = true;
+    p_GameInput->shot = true;
     CHECK(!Score_OnInput());
     CHECK_EQ_STR(m_Registration.slots[6], "　");
     m_Registration.column = 15;
-    m_GameInput.shot = true;
+    p_GameInput->shot = true;
     CHECK(!Score_OnInput());
     CHECK_EQ_INT(m_Registration.cursor, 6);
     m_Registration.column = 16;
-    m_GameInput.shot = true;
+    p_GameInput->shot = true;
     CHECK(!Score_OnInput());
     CHECK_EQ_INT(m_Registration.cursor, 7);
     m_Registration.column = 17;
@@ -134,11 +134,11 @@ TEST(grid_navigation_wraps_and_skips_every_hole)
                 m_Registration.row = row;
                 m_Registration.column = column;
                 GameInput_Init();
-                m_GameInput.up = direction == 0;
-                m_GameInput.down = direction == 1;
-                m_GameInput.horizontal = direction == 2 ? GAME_INPUT_LEFT
-                    : direction == 3                    ? GAME_INPUT_RIGHT
-                                                        : 0;
+                p_GameInput->up = direction == 0;
+                p_GameInput->down = direction == 1;
+                p_GameInput->horizontal = direction == 2 ? GAME_INPUT_LEFT
+                    : direction == 3                     ? GAME_INPUT_RIGHT
+                                                         : 0;
                 CHECK(!Score_OnInput());
                 CHECK(m_Registration.row >= 0 && m_Registration.row < 6);
                 CHECK(m_Registration.column >= 0 && m_Registration.column < 18);
@@ -157,14 +157,14 @@ TEST(grid_navigation_wraps_and_skips_every_hole)
     m_Registration.row = 0;
     m_Registration.column = 17;
     GameInput_Init();
-    m_GameInput.down = true;
-    m_GameInput.shot = true;
-    m_GameInput.strike = true;
+    p_GameInput->down = true;
+    p_GameInput->shot = true;
+    p_GameInput->strike = true;
     Score_OnInput();
     CHECK_EQ_INT(m_Registration.row, 2);
     CHECK(g_GameInput->shot && g_GameInput->strike);
     GameInput_Init();
-    m_GameInput.horizontal = GAME_INPUT_BOTH;
+    p_GameInput->horizontal = GAME_INPUT_BOTH;
     Score_OnInput();
     CHECK_EQ_INT(g_GameInput->horizontal, GAME_INPUT_BOTH);
     Arena_Free(&f.arena);

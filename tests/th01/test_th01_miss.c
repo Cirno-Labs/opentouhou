@@ -2,7 +2,7 @@
 #include "tests/th01/th01_video.h"
 #include "tests/th01/th01_world.h"
 #include "th01/hud.h"
-#include "th01/input.c"
+#include "th01/input_private.h"
 #include "th01/miss.c"
 #include "th01/miss.h"
 #include "th01/orb_private.h"
@@ -45,9 +45,9 @@ static void M_Init(CASE *const state, const int16_t left, const int16_t bombs)
     p_Orb->rotation_frame = 8;
     g_Rng = 1;
     GameInput_Init();
-    m_GameInput.bomb = true;
-    m_GameInput.shot = true;
-    m_GameInput.strike = true;
+    p_GameInput->bomb = true;
+    p_GameInput->shot = true;
+    p_GameInput->strike = true;
     Arena_Init(&state->arena, "miss", 1024 * 1024);
     Video_Init(Arena_Allocator(&state->arena));
     memset(g_Video->pages[0], 6, VIDEO_PAGE_SIZE);

@@ -6,7 +6,7 @@
 #include "th01/bonus/bonus.c"
 #include "th01/bonus/transition.c"
 #include "th01/hud/hud.c"
-#include "th01/input.c"
+#include "th01/input_private.h"
 #include "th01/orb.h"
 #include "th01/pellets/private.h"
 #include "th01/player_private.h"
@@ -134,7 +134,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     p_Stage->time = 100;
     p_Session->lives = 1;
     p_Player->remaining_bombs = 3;
-    m_GameInput.bomb_frame = 97;
+    p_GameInput->bomb_frame = 97;
     memset(g_Video->pages[0], 5, VIDEO_PAGE_SIZE);
     memset(g_Video->pages[1], 6, VIDEO_PAGE_SIZE);
     memset(p_StagePalette, 11, sizeof(*p_StagePalette));
@@ -260,7 +260,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     p_Stage->score = 390000;
     p_Session->lives = 2;
     p_Player->remaining_bombs = 3;
-    m_GameInput.bomb_frame = 123;
+    p_GameInput->bomb_frame = 123;
     p_Session->continues_total = 65539;
     m_Shots.slots[0] = (SHOT) { .moving = true, .left = 100, .top = 100 };
     m_Shots.slots[1] = (SHOT) { .decay_frame = 2, .left = 200, .top = 100 };

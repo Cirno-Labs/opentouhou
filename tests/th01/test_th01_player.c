@@ -3,7 +3,7 @@
 #include "tests/th01/th01_world.h"
 #include "th01/bomb.h"
 #include "th01/hud.h"
-#include "th01/input.c"
+#include "th01/input_private.h"
 #include "th01/orb_private.h"
 #include "th01/pellets.h"
 #include "th01/player_private.h"
@@ -95,9 +95,9 @@ TEST(reset_preserves_position_hits_and_shared_counters)
     p_Player->invincibility_time = 91;
     p_Player->bomb_frame = UINT32_MAX;
     p_Player->bomb_damaging = true;
-    m_GameInput.bomb = true;
-    m_GameInput.shot = true;
-    m_GameInput.strike = true;
+    p_GameInput->bomb = true;
+    p_GameInput->shot = true;
+    p_GameInput->strike = true;
     const int8_t expected[] = { 15, 12, 10, 8, 12 };
     for (int32_t rank = 0; rank < 5; rank++) {
         Player_Reset(rank);
@@ -125,8 +125,8 @@ TEST(stationary_draw_gap_and_simultaneous_actions)
     M_Case(&state);
     M_Tick(&state);
     M_Tick(&state);
-    m_GameInput.shot = true;
-    m_GameInput.strike = true;
+    p_GameInput->shot = true;
+    p_GameInput->strike = true;
     M_Tick(&state);
     CHECK_EQ_INT(p_Player->mode, PLAYER_MODE_SWING_OR_SLIDE);
     CHECK(p_Player->deflecting);
@@ -140,7 +140,7 @@ TEST(normal_shots_spawn_on_following_updates)
 {
     CASE state;
     M_Case(&state);
-    m_GameInput.shot = true;
+    p_GameInput->shot = true;
     M_Tick(&state);
     CHECK_EQ_INT(p_Player->mode, PLAYER_MODE_SHOOT);
     CHECK_EQ_INT(p_Player->mode_frame, 0);
@@ -159,8 +159,8 @@ TEST(normal_shots_spawn_on_following_updates)
     Mem_Free(g_Video->pages[0]);
     Arena_Free(&state.arena);
     M_Case(&state);
-    m_GameInput.horizontal = GAME_INPUT_RIGHT;
-    m_GameInput.shot = true;
+    p_GameInput->horizontal = GAME_INPUT_RIGHT;
+    p_GameInput->shot = true;
     M_Tick(&state);
     M_Tick(&state);
     CHECK(!g_Shots->slots[0].moving);
@@ -177,7 +177,7 @@ TEST(swing_retains_invisible_frames_and_deflection_window)
 {
     CASE state;
     M_Case(&state);
-    m_GameInput.strike = true;
+    p_GameInput->strike = true;
     M_Tick(&state);
     CHECK_EQ_INT(p_Player->mode_frame, 0);
     for (int32_t frame = 0; frame < 3; frame++) {
@@ -203,23 +203,23 @@ TEST(slide_requires_release_and_strike_has_combo_priority)
 {
     CASE state;
     M_Case(&state);
-    m_GameInput.horizontal = GAME_INPUT_RIGHT;
-    m_GameInput.strike = true;
+    p_GameInput->horizontal = GAME_INPUT_RIGHT;
+    p_GameInput->strike = true;
     M_Tick(&state);
     CHECK_EQ_INT(p_Player->left, 308);
     for (int32_t frame = 0; frame < 6; frame++) {
         M_Tick(&state);
     }
     CHECK(!p_Player->combo_enabled);
-    m_GameInput.strike = false;
+    p_GameInput->strike = false;
     M_Tick(&state);
     CHECK(p_Player->combo_enabled);
     while (p_Player->mode_frame < 12) {
         M_Tick(&state);
     }
-    m_GameInput.horizontal = GAME_INPUT_LEFT;
-    m_GameInput.strike = true;
-    m_GameInput.shot = true;
+    p_GameInput->horizontal = GAME_INPUT_LEFT;
+    p_GameInput->strike = true;
+    p_GameInput->shot = true;
     p_Orb->force_frame = 73;
     M_Tick(&state);
     CHECK_EQ_INT(p_Player->mode, PLAYER_MODE_SPECIAL_FIRST);
@@ -297,16 +297,16 @@ TEST(combo_continuation_stops_after_third_attack)
     p_Player->submode = 0;
     p_Player->mode_frame = 28;
     p_Player->combo_enabled = true;
-    m_GameInput.strike = true;
-    m_GameInput.horizontal = GAME_INPUT_LEFT;
+    p_GameInput->strike = true;
+    p_GameInput->horizontal = GAME_INPUT_LEFT;
     M_Tick(&state);
     CHECK_EQ_INT(p_Player->mode, PLAYER_MODE_SPECIAL_SECOND);
     CHECK_EQ_INT(p_Player->submode, 2);
     CHECK_EQ_INT(p_Player->mode_frame, 0);
     p_Player->mode_frame = 28;
     p_Player->combo_enabled = true;
-    m_GameInput.strike = false;
-    m_GameInput.shot = true;
+    p_GameInput->strike = false;
+    p_GameInput->shot = true;
     M_Tick(&state);
     CHECK_EQ_INT(p_Player->mode, PLAYER_MODE_SPECIAL_THIRD);
     CHECK_EQ_INT(p_Player->submode, 6);
@@ -323,9 +323,9 @@ TEST(bomb_boundary_preserves_deferred_start_and_operation_order)
 {
     CASE state;
     M_Case(&state);
-    m_GameInput.bomb = true;
-    m_GameInput.shot = true;
-    m_GameInput.strike = true;
+    p_GameInput->bomb = true;
+    p_GameInput->shot = true;
+    p_GameInput->strike = true;
     M_Tick(&state);
     CHECK_EQ_INT(p_Player->bomb_flag, 2);
     CHECK_EQ_INT(p_Player->remaining_bombs, 3);
@@ -354,7 +354,7 @@ TEST(bomb_exclusion_checks_only_first_special_mode)
         M_Case(&state);
         p_Player->mode = mode;
         p_Player->submode = 2;
-        m_GameInput.bomb = true;
+        p_GameInput->bomb = true;
         M_Tick(&state);
         CHECK_EQ_INT(
             p_Player->bomb_flag, mode == PLAYER_MODE_SPECIAL_FIRST ? 0 : 2);
