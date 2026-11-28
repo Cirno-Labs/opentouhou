@@ -3,7 +3,6 @@
 #include "tests/th02/th02_random_fixture.h"
 #include "th02/bullets.h"
 #include "th02/bullets/private.h"
-#include "th02/bullets/spawn.c"
 #include "th02/performance_private.h"
 #include "th02/player.h"
 #include "th02/random.h"
@@ -15,22 +14,22 @@ TEST(spawn_checks_keep_order_and_easy_slow_cycle)
     Bullets_Init();
     Player_Init();
     p_Performance->value = 0;
-    m_Spawn.slow_cycle = 255;
+    p_Spawn->slow_cycle = 255;
     BulletSpawn_Init(0);
-    CHECK_EQ_INT(m_Spawn.slow_cycle, 255);
+    CHECK_EQ_INT(p_Spawn->slow_cycle, 255);
     int16_t speed = 16;
     CHECK(!BulletSpawn_Tune(&speed));
-    CHECK_EQ_INT(m_Spawn.slow_cycle, 0);
+    CHECK_EQ_INT(p_Spawn->slow_cycle, 0);
     CHECK_EQ_INT(speed, 16);
     CHECK(BulletSpawn_Tune(&speed));
-    CHECK_EQ_INT(m_Spawn.slow_cycle, 1);
+    CHECK_EQ_INT(p_Spawn->slow_cycle, 1);
     CHECK_EQ_INT(speed, 6);
     CHECK(BulletSpawn_Skip(23, 10, false, &speed));
     p_Bomb->active = 1;
     CHECK(BulletSpawn_Skip(24, 10, false, &speed));
     p_Bomb->active = 0;
     CHECK(!BulletSpawn_Skip(24, 10, true, &speed));
-    CHECK_EQ_INT(m_Spawn.slow_cycle, 1);
+    CHECK_EQ_INT(p_Spawn->slow_cycle, 1);
     CHECK_EQ_INT(speed, 6);
     BulletSpawn_Init(1);
     speed = 256;
