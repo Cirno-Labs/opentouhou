@@ -139,8 +139,8 @@ static void M_StageCommit(const GAME_TEXT_FONT *const font)
     for (int32_t i = 0; i < 7; i++) {
         M_Text(font, m_Labels[i], i == 6 ? 112 : 0, rows[i], i == 6 ? 10 : 7);
     }
-    M_StageMetric(font, 3, Math16_Wrap(g_Stage.time * 3));
-    M_StageMetric(font, 5, Math16_Wrap(g_Stage.maximum_combo * 100));
+    M_StageMetric(font, 3, Math16_Wrap(g_Stage->time * 3));
+    M_StageMetric(font, 5, Math16_Wrap(g_Stage->maximum_combo * 100));
     M_StageMetric(
         font, 7,
         Math16_Wrap(g_Session.lives * 200 + g_Player->remaining_bombs * 100));
@@ -197,10 +197,10 @@ static void M_Prepare(const uint64_t host_tick)
     } else {
         switch (m_Total.metric) {
         case 0:
-            value = (uint16_t)(g_Stage.time * 5);
+            value = (uint16_t)(g_Stage->time * 5);
             break;
         case 1:
-            value = Math16_Wrap(g_Stage.maximum_combo * 200);
+            value = Math16_Wrap(g_Stage->maximum_combo * 200);
             break;
         case 2:
             value = Math16_Wrap(g_Session.lives * 500);

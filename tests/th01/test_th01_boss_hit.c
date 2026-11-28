@@ -8,6 +8,7 @@
 #include "th01/player.c"
 #include "th01/session.h"
 #include "th01/shots.c"
+#include "th01/stage/private.h"
 
 #include "core/base/arena.h"
 
@@ -54,11 +55,11 @@ TEST(real_hud_health_and_flash_follow_hit_order)
     FIXTURE f;
     M_Init(&f);
     const uint8_t colors[] = { 2 };
-    g_Stage.score = UINT32_MAX - 5;
+    p_Stage->score = UINT32_MAX - 5;
     m_Orb.left = 303;
     BossHit_UpdateAndRender(
         &f.hit, &f.hp, &f.baseline, colors, 1, 10, true, (BOSS_SHOT_HITBOX) {});
-    CHECK_EQ_INT(g_Stage.score, 4);
+    CHECK_EQ_INT(g_Stage->score, 4);
     CHECK_EQ_INT(g_Session.high_score, 4);
     CHECK_EQ_INT(m_Orb.velocity_x, ORB_X_RIGHT_4);
     CHECK_EQ_INT(f.hp, 7);
@@ -81,7 +82,7 @@ TEST(debug_damage_precedes_shot_collision_while_invincible)
         (BOSS_SHOT_HITBOX) { 100, 100, 40, 40 });
     CHECK(!m_TestDamage);
     CHECK_EQ_INT(f.hp, 7);
-    CHECK_EQ_INT(g_Stage.score, 0);
+    CHECK_EQ_INT(g_Stage->score, 0);
     CHECK(!m_Shots.slots[0].moving);
     CHECK_EQ_INT(m_Shots.slots[0].decay_frame, 1);
     CHECK_EQ_INT(f.hit.frame, 1);
@@ -107,7 +108,7 @@ TEST(bomb_damage_ignores_invincibility_on_its_real_cadence)
         &f.hit, &f.hp, &f.baseline, colors, 1, -1, false,
         (BOSS_SHOT_HITBOX) {});
     CHECK_EQ_INT(f.hp, 7);
-    CHECK_EQ_INT(g_Stage.score, UINT32_MAX);
+    CHECK_EQ_INT(g_Stage->score, UINT32_MAX);
     Arena_Free(&f.arena);
 }
 

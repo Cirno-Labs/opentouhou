@@ -165,7 +165,7 @@ bool RouteSelect_Resume(
                     m_Selection.selection == 0 ? assets->makai
                                                : assets->jigoku);
                 g_Session.route = m_Selection.selection;
-                g_Stage.cleared = true;
+                Stage_MarkCleared();
                 Player_Hit();
                 m_Selection.phase = ROUTE_SELECT_DONE;
                 return true;

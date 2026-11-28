@@ -89,7 +89,7 @@ static void M_AfterBonus(void)
         Pellets_SetSpeed(0);
     }
     Gameplay_SyncSession();
-    if (g_Session.stage_id % 5 == 4 || g_Stage.boss != BOSS_NONE) {
+    if (g_Session.stage_id % 5 == 4 || g_Stage->boss != BOSS_NONE) {
         Sound_Fade();
         M_BeginSwitch(GAMEPLAY_SWITCH_STAGE);
     } else {
@@ -113,7 +113,7 @@ void GameplayEnd_BeginBonus(
 {
     const GAMEPLAY_ASSETS *const a = g_GameplayAssets;
     g_Gameplay.sequence = GAMEPLAY_SEQUENCE_END;
-    if (g_Stage.boss != BOSS_NONE) {
+    if (g_Stage->boss != BOSS_NONE) {
         m_EndPhase = GP_END_TOTAL_BONUS;
         if (Bonus_BeginTotal(&a->total, finished, raw, host_tick)) {
             M_AfterBonus();
@@ -150,8 +150,8 @@ void GameplayEnd_BeginVictory(void)
     Gameplay_SyncSession();
     g_Session.ending =
         g_Session.route == 0 ? SESSION_END_MAKAI : SESSION_END_JIGOKU;
-    if (g_Stage.score > g_Session.highest_score) {
-        g_Session.highest_score = g_Stage.score;
+    if (g_Stage->score > g_Session.highest_score) {
+        g_Session.highest_score = g_Stage->score;
     }
     g_Gameplay.sequence = GAMEPLAY_SEQUENCE_END;
     m_EndPhase = GP_END_VICTORY_DELAY;
@@ -177,8 +177,8 @@ void GameplayEnd_BeginContinue(void)
     M_ContinueMenu();
     GameInput_ResetGame();
     Session_CountContinue();
-    if (g_Session.highest_score < g_Stage.score) {
-        g_Session.highest_score = g_Stage.score;
+    if (g_Session.highest_score < g_Stage->score) {
+        g_Session.highest_score = g_Stage->score;
     }
     g_Session.score = 0;
     // Restores the resident's lives; the live count stays until the re-exec.

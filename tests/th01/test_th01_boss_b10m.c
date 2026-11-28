@@ -209,7 +209,7 @@ TEST(ordinary_entrance_preserves_world_and_rank_fire)
         CHECK_EQ_INT(g_VSync->count1, 0);
         CHECK(memcmp(&orb, &m_Orb, sizeof(orb)) == 0);
         CHECK(!m_Player.is_hit);
-        CHECK_EQ_INT(g_Stage.score, 0);
+        CHECK_EQ_INT(g_Stage->score, 0);
         CHECK_EQ_INT(arena.used, used);
         CHECK_EQ_INT(
             m_B10M.pattern_interval,
@@ -344,7 +344,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         VSyncIrq_Reset();
         CHECK(!M_BossUpdate(&f.assets, &f.miko));
         CHECK(m_B10M.defeating);
-        CHECK(!g_Stage.cleared);
+        CHECK(!g_Stage->cleared);
         CHECK(m_Scene.active == nullptr);
         CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
         CHECK_EQ_INT(
@@ -362,7 +362,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
             M_BossUpdate(&f.assets, &f.miko);
         }
         CHECK(m_B10M.finished);
-        CHECK(g_Stage.cleared);
+        CHECK(g_Stage->cleared);
         CHECK(m_Player.is_hit);
         CHECK(m_Scene.active == &f.assets.next_scene);
         CHECK_EQ_INT(m_Scene.active->id, 3);
@@ -401,7 +401,7 @@ TEST(real_orb_hits_score_and_cross_every_hp_gate)
         CHECK(M_BossUpdate(&f.assets, &f.miko));
         CHECK_EQ_INT(m_B10M.status.hp, hp[i] - 1);
         CHECK_EQ_INT(m_B10M.status.phase, phases[i] + 1);
-        CHECK_EQ_INT(g_Stage.score, 5000);
+        CHECK_EQ_INT(g_Stage->score, 5000);
         CHECK_EQ_INT(m_Orb.velocity_x, ORB_X_RIGHT_4);
         CHECK(m_B10M.hit.invincible);
         CHECK_EQ_INT(m_B10M.status.frame, 0);
@@ -409,7 +409,7 @@ TEST(real_orb_hits_score_and_cross_every_hp_gate)
         const int16_t old_hp = m_B10M.status.hp;
         CHECK(M_BossUpdate(&f.assets, &f.miko));
         CHECK_EQ_INT(m_B10M.status.hp, old_hp);
-        CHECK_EQ_INT(g_Stage.score, 5000);
+        CHECK_EQ_INT(g_Stage->score, 5000);
         Arena_Free(&arena);
     }
 }

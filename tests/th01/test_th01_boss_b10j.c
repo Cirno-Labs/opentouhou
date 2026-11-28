@@ -333,7 +333,7 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
     CHECK(saw_gate);
     CHECK(m_B10J.defeating);
     CHECK_EQ_INT(m_B10J.status.hp, 0);
-    CHECK_EQ_INT(g_Stage.score, 60000);
+    CHECK_EQ_INT(g_Stage->score, 60000);
     const B10J frozen = m_B10J;
     const uint32_t rng = g_Rng;
     CHECK(!M_BossUpdate(&f.assets, &f.miko));
@@ -344,7 +344,7 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
         M_BossUpdate(&f.assets, &f.miko);
     }
     CHECK(m_B10J.finished);
-    CHECK(g_Stage.cleared);
+    CHECK(g_Stage->cleared);
     CHECK(m_Player.is_hit);
     CHECK(m_Scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(m_Scene.active->id, 4);
@@ -455,7 +455,7 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
     for (int32_t i = 0; i < 10; i++) {
         CHECK(m_Lasers.slots[i].alive == (i >= 5));
     }
-    CHECK(!g_Stage.cleared);
+    CHECK(!g_Stage->cleared);
     CHECK(m_Scene.active == nullptr);
     Arena_Free(&arena);
 }

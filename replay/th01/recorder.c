@@ -131,7 +131,7 @@ static RECORDER_SCORE M_Score(void)
     if (!m_InGameplay) {
         return score;
     }
-    if (g_Stage.boss != BOSS_NONE && (*g_Boss) != nullptr) {
+    if (g_Stage->boss != BOSS_NONE && (*g_Boss) != nullptr) {
         score.values[0] = (*g_Boss)->phase;
         score.values[1] = -(*g_Boss)->hp;
     } else {

@@ -324,7 +324,7 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     m_Orb.previous_left = 0;
     CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 13);
-    CHECK_EQ_INT(g_Stage.score, 7000);
+    CHECK_EQ_INT(g_Stage->score, 7000);
     m_Orb.top = 64;
     m_Pellets.slots[0].cloud_frame = 12;
     m_Lasers.slots[4].alive = true;
@@ -346,8 +346,8 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     }
     CHECK(m_B15J.finished);
     CHECK_EQ_INT(m_B15J.status.hp, 0);
-    CHECK_EQ_INT(g_Stage.score, 98000);
-    CHECK(g_Stage.cleared);
+    CHECK_EQ_INT(g_Stage->score, 98000);
+    CHECK(g_Stage->cleared);
     CHECK(m_Player.is_hit);
     CHECK(m_Scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(m_Scene.active->id, 6);
@@ -426,13 +426,13 @@ TEST(timeout_forces_one_hp_before_damage_without_a_health_draw)
     CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 1);
     CHECK(memcmp(&m_Health, &health, sizeof(health)) == 0);
-    CHECK_EQ_INT(g_Stage.score, 0);
+    CHECK_EQ_INT(g_Stage->score, 0);
     m_TestDamage = true;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 0);
     CHECK(!m_TestDamage);
     CHECK(m_B15J.defeating);
-    CHECK_EQ_INT(g_Stage.score, 0);
+    CHECK_EQ_INT(g_Stage->score, 0);
     Arena_Free(&arena);
 }
 

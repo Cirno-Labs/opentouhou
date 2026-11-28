@@ -85,7 +85,7 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
     CHECK_EQ_INT(Th01Test_Pixel(0, 304, 368), expected_image % 14 + 1);
     CHECK_EQ_INT(Th01Test_Pixel(0, 100, 100), 4);
     CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
-    CHECK_EQ_INT(g_Stage.time, 0);
+    CHECK_EQ_INT(g_Stage->time, 0);
     CHECK_EQ_INT(m_Player.mode, PLAYER_MODE_SPECIAL_FIRST);
     VSyncIrq_Edge();
     CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
@@ -157,7 +157,7 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 CHECK_EQ_INT(m_Player.deflect_duration, deflection[rank]);
                 CHECK_EQ_INT(g_Video.scroll_top, 0);
                 CHECK_EQ_INT(m_Player.remaining_bombs, variant == 0 ? 2 : 5);
-                CHECK_EQ_INT(g_Stage.time, 1000);
+                CHECK_EQ_INT(g_Stage->time, 1000);
                 CHECK_EQ_INT(g_Pellets->speed, -2);
                 CHECK_EQ_INT(g_VSync->count1, 0);
                 CHECK(Miss_Resume(&state.miko, &state.stage, extra_bombs));

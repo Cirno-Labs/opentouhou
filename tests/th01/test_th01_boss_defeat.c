@@ -83,7 +83,7 @@ TEST(raw_wait_reuses_counter_without_replaying_lines)
     const BOSS_DEFEAT waiting = defeat;
     CHECK(!BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
     CHECK(memcmp(&waiting, &defeat, sizeof(waiting)) == 0);
-    CHECK(!g_Stage.cleared && !m_Player.is_hit);
+    CHECK(!g_Stage->cleared && !m_Player.is_hit);
     Arena_Free(&arena);
 }
 
@@ -110,12 +110,12 @@ TEST(restore_and_extra_fade_interval_precede_clear_flags)
         CHECK(!BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
         CHECK_EQ_INT(defeat.frame, frame);
         CHECK_EQ_INT(g_Palette.saved.colors[0][0], frame >= 5 ? 14 : 15);
-        CHECK(!g_Stage.cleared && !m_Player.is_hit);
+        CHECK(!g_Stage->cleared && !m_Player.is_hit);
     }
     VSyncIrq_Edge();
     CHECK(BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
     CHECK_EQ_INT(defeat.frame, 10);
-    CHECK(g_Stage.cleared && m_Player.is_hit);
+    CHECK(g_Stage->cleared && m_Player.is_hit);
     const VSYNC_COUNTERS finished = *g_VSync;
     CHECK(BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
     CHECK(memcmp(&finished, g_VSync, sizeof(finished)) == 0);
@@ -144,7 +144,7 @@ TEST(singyoku_parameters_leave_route_and_gameplay_flags_pending)
         CHECK_EQ_INT(
             BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin),
             frame == 15);
-        CHECK(!g_Stage.cleared && !m_Player.is_hit);
+        CHECK(!g_Stage->cleared && !m_Player.is_hit);
     }
     CHECK_EQ_INT(defeat.phase, BOSS_DEFEAT_DONE);
     Arena_Free(&arena);

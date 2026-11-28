@@ -37,7 +37,7 @@ typedef struct {
     bool boss;
 } STAGE_ORB_COMPOSITE;
 
-extern STAGE_GAMEPLAY g_Stage;
+extern const STAGE_GAMEPLAY *const g_Stage;
 
 // Zeroes the stage for a new world, with first_stage set.
 void Stage_Init(void);
@@ -47,6 +47,45 @@ void Stage_AddScore(uint32_t points);
 
 // Resets the stage frame and clears the boss when the stage is left.
 void Stage_Leave(void);
+
+// Sets the current boss, or BOSS_NONE for an ordinary stage.
+void Stage_SetBoss(BOSS boss);
+
+// Sets whether this is the first stage shown since the last world reset.
+void Stage_SetFirstStage(bool first_stage);
+
+// Sets the stage frame counter.
+void Stage_SetFrame(uint32_t frame);
+
+// Advances the stage frame counter by one.
+void Stage_AdvanceFrame(void);
+
+// Sets the card combo counter.
+void Stage_SetCombo(int16_t combo);
+
+// Sets the highest combo reached this stage.
+void Stage_SetMaximumCombo(int16_t maximum_combo);
+
+// Marks the stage cleared, as the last card leaves the Orb composite.
+void Stage_MarkCleared(void);
+
+// Returns whether the stage is cleared, and clears the flag.
+bool Stage_TakeCleared(void);
+
+// Sets whether the stage timer has already been initialized this stage.
+void Stage_SetTimerInitialized(bool timer_initialized);
+
+// Sets the stage timer value, in frames.
+void Stage_SetTime(uint16_t time);
+
+// Marks the game cleared, after the last boss of the run is defeated.
+void Stage_SetGameCleared(void);
+
+// Syncs the score back from the session, such as on a continue.
+void Stage_SyncScore(uint32_t score);
+
+// Sets the sprite flip cycle offset for a new run.
+void Stage_SetFlipCycle(uint8_t flip_cycle);
 
 // Initialize flip_cycle once per main scene as MasterRng_Next(rng) % 60,
 // not at each stage change.

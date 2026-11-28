@@ -87,7 +87,7 @@ static void M_StageBackground(void)
         ? boss->background(Gameplay_BossAssets())
         : &a->backgrounds[Session_Scene()];
     Video_SelectDrawingPage(0);
-    if (g_Stage.first_stage) {
+    if (g_Stage->first_stage) {
         memcpy(g_Video.pages[0], background->pixels, VIDEO_PAGE_SIZE);
         Palette_Import(&g_StagePalette, background->palette);
         Palette_Set(&g_Palette, &g_StagePalette);
@@ -97,7 +97,7 @@ static void M_StageBackground(void)
         Sprite_PtnPut(&a->miko, 0, -1, g_Player->left, PLAYER_TOP);
     }
     Scene_BeginStage(
-        g_Session.stage_id, g_Stage.first_stage, Gameplay_StageSprites());
+        g_Session.stage_id, g_Stage->first_stage, Gameplay_StageSprites());
     m_StagePhase = GP_STAGE_OBJECT_ENTRANCE;
 }
 
@@ -107,18 +107,19 @@ static void M_StageBegin(const uint64_t host_tick)
     Shots_EraseAndReset();
     const int16_t stage = g_Session.stage_id;
     g_Gameplay.boss_stage = stage % 5 == 4;
-    g_Stage.boss = stage == 4 ? BOSS_SINGYOKU
-        : stage == 9  ? (g_Session.route == 0 ? BOSS_YUUGENMAGAN : BOSS_MIMA)
-        : stage == 14 ? (g_Session.route == 0 ? BOSS_ELIS : BOSS_KIKURI)
-        : stage == 19 ? (g_Session.route == 0 ? BOSS_SARIEL : BOSS_KONNGARA)
-                      : BOSS_NONE;
+    Stage_SetBoss(
+        stage == 4       ? BOSS_SINGYOKU
+            : stage == 9 ? (g_Session.route == 0 ? BOSS_YUUGENMAGAN : BOSS_MIMA)
+            : stage == 14 ? (g_Session.route == 0 ? BOSS_ELIS : BOSS_KIKURI)
+            : stage == 19 ? (g_Session.route == 0 ? BOSS_SARIEL : BOSS_KONNGARA)
+                          : BOSS_NONE);
     Hud_Load(
         &g_GameplayAssets->hud, Gameplay_StageSprites(),
         &g_GameplayAssets->hud_font);
     Player_EndInvincibility();
     M_BossSetup(host_tick);
     if (g_Gameplay.boss_stage) {
-        g_Stage.first_stage = true;
+        Stage_SetFirstStage(true);
         Items_Reset();
     }
     const BOSS_STRATEGY *const boss = Gameplay_Boss();
@@ -135,17 +136,17 @@ static void M_StageBegin(const uint64_t host_tick)
 static void M_StageReady(void)
 {
     StageTimer_Redraw(
-        g_Stage.first_stage, g_Stage.timer_initialized, g_Session.route);
-    g_Stage.maximum_combo = 0;
+        g_Stage->first_stage, g_Stage->timer_initialized, g_Session.route);
+    Stage_SetMaximumCombo(0);
     Orb_LeavePortal();
     Player_SetBombFrame(0);
-    g_Stage.frame = 0;
+    Stage_SetFrame(0);
     Orb_ResetFlight();
     if (g_Session.stage_id % 5 == 0 || g_Gameplay.boss_stage) {
         Player_Center();
     }
     Player_StopActions();
-    g_Stage.combo = 0;
+    Stage_SetCombo(0);
     GameplayLife_Begin();
 }
 
@@ -180,7 +181,7 @@ bool GameplayStage_Step(const uint64_t host_tick)
         if (!StageObjects_ResumeEntrance(Gameplay_StageSprites())) {
             return false;
         }
-        if (g_Stage.first_stage) {
+        if (g_Stage->first_stage) {
             Gameplay_CopyPage(0, 1);
         } else {
             StageObjects_CopyToBackground();

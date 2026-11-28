@@ -117,7 +117,7 @@ bool BossDefeat_Resume(
                     == 0
                 && M_Whitein(post_defeat)) {
                 if (defeat->kind == BOSS_DEFEAT_REGULAR) {
-                    g_Stage.cleared = true;
+                    Stage_MarkCleared();
                     Player_Hit();
                 }
                 defeat->phase = BOSS_DEFEAT_DONE;

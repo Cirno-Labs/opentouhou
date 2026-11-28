@@ -3,6 +3,7 @@
 #include "tests/th01/th01_world.h"
 #include "th01/extend.h"
 #include "th01/session.h"
+#include "th01/stage/private.h"
 
 #include "core/base/arena.h"
 
@@ -21,10 +22,10 @@ TEST(threshold_uses_unsigned_score_and_one_award_per_call)
     Hud_Load(nullptr, &sprites, nullptr);
     g_Session.lives = 1;
     Extend_Reset();
-    g_Stage.score = 399999;
+    p_Stage->score = 399999;
     Extend_UpdateAndRender();
     CHECK_EQ_INT(g_Session.lives, 1);
-    g_Stage.score = UINT32_C(0x80000000);
+    p_Stage->score = UINT32_C(0x80000000);
     Extend_UpdateAndRender();
     CHECK_EQ_INT(g_Session.lives, 2);
     CHECK_EQ_INT(Extend_ResidentLives(), 2);
@@ -37,7 +38,7 @@ TEST(step_caps_lives_but_still_advances_next)
     Th01Test_ResetWorld();
     g_Session.lives = 6;
     Extend_Reset();
-    g_Stage.score = 400000;
+    p_Stage->score = 400000;
     Extend_UpdateAndRender();
     CHECK_EQ_INT(g_Session.lives, 6);
     CHECK_EQ_INT(Extend_ResidentLives(), 0);

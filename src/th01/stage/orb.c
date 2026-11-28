@@ -18,7 +18,7 @@ bool Stage_BeginOrbComposite(
     const PELLET_ASSETS *const pellet_assets)
 {
     ASSERT(!p_OrbComposite.active);
-    Orb_AdvanceMotion(&g_Stage.combo);
+    Orb_AdvanceMotion(&p_Stage->combo);
     p_OrbComposite.boss = g_Session.stage_id % 5 == 4;
     p_OrbComposite.active = true;
     p_OrbComposite.waiting = false;

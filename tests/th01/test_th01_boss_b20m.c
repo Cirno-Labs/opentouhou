@@ -365,7 +365,7 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     CHECK_EQ_INT(m_B20M.leaves.flag[7], 0);
     CHECK_EQ_INT(m_Health.first_white, 10);
     CHECK_EQ_INT(m_Health.first_redwhite, 3);
-    CHECK(g_Stage.first_stage);
+    CHECK(g_Stage->first_stage);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
@@ -385,20 +385,20 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     CHECK(M_BossUpdate(&f.assets, tick));
     CHECK_EQ_INT(m_B20M.status.phase, B20M_PHASE_DEFEAT);
     CHECK_EQ_INT(m_B20M.status.hp, 0);
-    CHECK_EQ_INT(g_Stage.score, 10000);
-    for (int32_t i = 0; !g_Stage.game_cleared && i < 1500; i++) {
+    CHECK_EQ_INT(g_Stage->score, 10000);
+    for (int32_t i = 0; !g_Stage->game_cleared && i < 1500; i++) {
         M_Tick(&f, &tick);
     }
-    CHECK(g_Stage.game_cleared);
+    CHECK(g_Stage->game_cleared);
     CHECK(m_B20M.finished);
-    CHECK_EQ_INT(g_Stage.score, 60000);
+    CHECK_EQ_INT(g_Stage->score, 60000);
     CHECK_EQ_INT(m_B20M.status.frame, 231);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(arena.used, used);
     const B20M done = m_B20M;
     CHECK(M_BossUpdate(&f.assets, tick));
     CHECK(memcmp(&m_B20M, &done, sizeof(m_B20M)) == 0);
-    CHECK_EQ_INT(g_Stage.score, 60000);
+    CHECK_EQ_INT(g_Stage->score, 60000);
     Arena_Free(&arena);
 }
 TEST(bird_collision_waits_before_pattern_rng_and_hit_tail)

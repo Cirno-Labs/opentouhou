@@ -60,17 +60,18 @@ const PTN *Gameplay_StageSprites(void)
 
 void Gameplay_SyncSession(void)
 {
-    Session_Store(g_Stage.score, g_Player->remaining_bombs, g_Pellets->speed);
+    Session_Store(g_Stage->score, g_Player->remaining_bombs, g_Pellets->speed);
 }
 
 const BOSS_STRATEGY *Gameplay_Boss(void)
 {
-    return g_Stage.boss == BOSS_NONE ? nullptr : BossStrategy_Get(g_Stage.boss);
+    return g_Stage->boss == BOSS_NONE ? nullptr
+                                      : BossStrategy_Get(g_Stage->boss);
 }
 
 const void *Gameplay_BossAssets(void)
 {
-    return g_GameplayAssets->bosses[g_Stage.boss];
+    return g_GameplayAssets->bosses[g_Stage->boss];
 }
 
 BOSS_CONTEXT Gameplay_BossContext(
@@ -172,14 +173,14 @@ void Gameplay_Reset(void)
         BossStrategy_Get(boss)->init();
     }
     g_Session.high_score = g_Session.table_high_score;
-    g_Stage.score = g_Session.score;
+    Stage_SyncScore(g_Session.score);
     Player_SetBombs(g_Session.bombs);
     Player_Center();
     Pellets_SetSpeed(g_Session.pellet_speed);
     Extend_SyncResidentLives(g_Session.lives);
     Extend_ResetNext(g_Session.score);
     Rng_Seed(g_Session.frame_rand);
-    g_Stage.flip_cycle = (uint8_t)(MasterRng_Next(&g_Rng) % 60);
+    Stage_SetFlipCycle((uint8_t)(MasterRng_Next(&g_Rng) % 60));
     g_Gameplay.boss_stage = g_Session.stage_id % 5 == 4;
     Scene_Activate(&g_GameplayAssets->scenes[Session_Scene()]);
     Video_SelectDrawingPage(0);

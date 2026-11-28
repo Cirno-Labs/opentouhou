@@ -297,7 +297,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK(phase_two);
         CHECK_EQ_INT(m_B05.status.phase, B05_PHASE_DEFEATED);
         CHECK_EQ_INT(m_B05.status.hp, 0);
-        CHECK_EQ_INT(g_Stage.score, 24000);
+        CHECK_EQ_INT(g_Stage->score, 24000);
         CHECK_EQ_INT(m_B05.pending, B05_IDLE);
         m_Pellets.slots[0] = (PELLET) {
             .moving = true,
@@ -312,7 +312,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK(!m_Pellets.slots[1].moving);
         CHECK_EQ_INT(m_Pellets.slots[1].cloud_frame, 7);
         CHECK_EQ_INT(m_Scene.active->id, 0);
-        CHECK(!g_Stage.cleared && !m_Player.is_hit);
+        CHECK(!g_Stage->cleared && !m_Player.is_hit);
         const B05 frozen = m_B05;
         CHECK(!M_BossUpdate(&f.miko, &f.route_assets, &raw));
         CHECK(memcmp(&m_B05, &frozen, sizeof(m_B05)) == 0);
@@ -327,7 +327,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK_EQ_INT(m_B05.pending, B05_FINISHED);
         CHECK_EQ_INT(g_Session.route, rank % 2);
         CHECK(m_Scene.active == &f.cache[1 + rank % 2]);
-        CHECK(g_Stage.cleared && m_Player.is_hit);
+        CHECK(g_Stage->cleared && m_Player.is_hit);
         CHECK_EQ_INT(g_Rng, rng);
         CHECK_EQ_INT(g_Session.frame_rand, frame_rand);
         CHECK_EQ_INT(arena.used, used);

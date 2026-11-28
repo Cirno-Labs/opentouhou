@@ -7,13 +7,16 @@
 #include "th01/rng.h"
 #include "th01/session.h"
 #include "th01/sound.h"
+#include "th01/stage/private.h"
 
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
 
 #include <string.h>
 
-STAGE_GAMEPLAY g_Stage;
+static STAGE_GAMEPLAY m_Stage;
+const STAGE_GAMEPLAY *const g_Stage = &m_Stage;
+STAGE_GAMEPLAY *const p_Stage = &m_Stage;
 
 static void M_ScorePopups(const GAME_TEXT_FONT *const font)
 {
@@ -71,7 +74,7 @@ RESULT Stage_ValidateScoreFont(const GAME_TEXT_FONT *const font)
 void Stage_HitTestCards(void)
 {
     const STAGE_OBJECTS *const objects = g_StageObjects;
-    STAGE_GAMEPLAY *const game = &g_Stage;
+    STAGE_GAMEPLAY *const game = p_Stage;
     for (int32_t i = 0; i < objects->card_count; i++) {
         STAGE_CARD *const card = &objects->cards[i];
         const int32_t dx = card->left - g_Orb->left;
@@ -160,24 +163,91 @@ void Stage_UpdateCards(
         removed += card->flag == STAGE_CARD_REMOVED;
     }
     if (removed == objects->card_count) {
-        g_Stage.cleared = true;
+        p_Stage->cleared = true;
         Player_Hit();
     }
 }
 
 void Stage_Init(void)
 {
-    memset(&g_Stage, 0, sizeof(g_Stage));
-    g_Stage.first_stage = true;
+    memset(&m_Stage, 0, sizeof(m_Stage));
+    p_Stage->first_stage = true;
 }
 
 void Stage_AddScore(const uint32_t points)
 {
-    g_Stage.score += points;
+    p_Stage->score += points;
 }
 
 void Stage_Leave(void)
 {
-    g_Stage.frame = 0;
-    g_Stage.boss = BOSS_NONE;
+    p_Stage->frame = 0;
+    p_Stage->boss = BOSS_NONE;
+}
+
+void Stage_SetBoss(const BOSS boss)
+{
+    p_Stage->boss = boss;
+}
+
+void Stage_SetFirstStage(const bool first_stage)
+{
+    p_Stage->first_stage = first_stage;
+}
+
+void Stage_SetFrame(const uint32_t frame)
+{
+    p_Stage->frame = frame;
+}
+
+void Stage_AdvanceFrame(void)
+{
+    p_Stage->frame++;
+}
+
+void Stage_SetCombo(const int16_t combo)
+{
+    p_Stage->combo = combo;
+}
+
+void Stage_SetMaximumCombo(const int16_t maximum_combo)
+{
+    p_Stage->maximum_combo = maximum_combo;
+}
+
+void Stage_MarkCleared(void)
+{
+    p_Stage->cleared = true;
+}
+
+bool Stage_TakeCleared(void)
+{
+    const bool cleared = p_Stage->cleared;
+    p_Stage->cleared = false;
+    return cleared;
+}
+
+void Stage_SetTimerInitialized(const bool timer_initialized)
+{
+    p_Stage->timer_initialized = timer_initialized;
+}
+
+void Stage_SetTime(const uint16_t time)
+{
+    p_Stage->time = time;
+}
+
+void Stage_SetGameCleared(void)
+{
+    p_Stage->game_cleared = true;
+}
+
+void Stage_SyncScore(const uint32_t score)
+{
+    p_Stage->score = score;
+}
+
+void Stage_SetFlipCycle(const uint8_t flip_cycle)
+{
+    p_Stage->flip_cycle = flip_cycle;
 }

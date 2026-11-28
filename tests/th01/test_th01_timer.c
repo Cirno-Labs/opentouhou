@@ -9,6 +9,7 @@
 #include "th01/rng.h"
 #include "th01/session.h"
 #include "th01/shots.h"
+#include "th01/stage/private.h"
 #include "th01/timer.c"
 #include "th01/timer.h"
 #include "th01/vsync_irq.c"
@@ -68,7 +69,7 @@ TEST(route_table_and_reinitialization_keep_cycle)
             m_Timer.frames_since_hurry = 555;
             g_Session.stage_id = stage;
             StageTimer_Redraw(false, false, route);
-            CHECK_EQ_INT(g_Stage.time, expected[route][stage]);
+            CHECK_EQ_INT(g_Stage->time, expected[route][stage]);
             CHECK_EQ_INT(m_Timer.hurry_cycle, 255);
             CHECK_EQ_INT(m_Timer.frames_since_hurry, 0);
         }
@@ -80,7 +81,7 @@ TEST(transition_waits_suspend_without_replaying_side_effects)
 {
     FIXTURE f;
     M_Init(&f);
-    g_Stage.time = 2;
+    p_Stage->time = 2;
     CHECK(!StageTimer_TickAndPut());
     CHECK_EQ_INT(m_Timer.phase, TIMER_WAIT_HURRY);
     CHECK_EQ_INT(g_Tram->pixels[80 * 640], TRAM_RED + 1);
@@ -109,7 +110,7 @@ TEST(ready_count_is_consumed_before_first_suspension_and_extension_wraps)
 {
     FIXTURE f;
     M_Init(&f);
-    g_Stage.time = 2;
+    p_Stage->time = 2;
     m_VSync.count1 = 31;
     m_VSync.count2 = g_VSync->count2;
     CHECK(!StageTimer_TickAndPut());
@@ -121,15 +122,15 @@ TEST(ready_count_is_consumed_before_first_suspension_and_extension_wraps)
     m_Timer.hurry_cycle = 81;
     m_Timer.frames_since_hurry = 500;
     StageTimer_ExtendAndPut();
-    CHECK_EQ_INT(g_Stage.time, 1000);
+    CHECK_EQ_INT(g_Stage->time, 1000);
     CHECK_EQ_INT(m_Timer.frames_since_hurry, 0);
     CHECK_EQ_INT(m_Timer.hurry_cycle, 81);
-    g_Stage.time = 65500;
+    p_Stage->time = 65500;
     StageTimer_ExtendAndPut();
-    CHECK_EQ_INT(g_Stage.time, 164);
-    g_Stage.time = 1;
+    CHECK_EQ_INT(g_Stage->time, 164);
+    p_Stage->time = 1;
     CHECK(StageTimer_TickAndPut());
-    CHECK_EQ_INT(g_Stage.time, 65535);
+    CHECK_EQ_INT(g_Stage->time, 65535);
     Arena_Free(&f.arena);
 }
 
@@ -169,13 +170,13 @@ TEST(redraw_does_not_claim_world_timer_initialization)
     m_Timer.hurry_cycle = 97;
     g_Session.stage_id = 19;
     StageTimer_Redraw(true, false, 1);
-    CHECK_EQ_INT(g_Stage.time, 8000);
+    CHECK_EQ_INT(g_Stage->time, 8000);
     CHECK_EQ_INT(m_Timer.hurry_cycle, 97);
-    g_Stage.time = 750;
+    p_Stage->time = 750;
     StageTimer_Redraw(false, true, 0);
-    CHECK_EQ_INT(g_Stage.time, 750);
+    CHECK_EQ_INT(g_Stage->time, 750);
     CHECK(!m_Hud.force_numbers);
     StageTimer_Redraw(false, false, 0);
-    CHECK_EQ_INT(g_Stage.time, 6000);
+    CHECK_EQ_INT(g_Stage->time, 6000);
     Arena_Free(&f.arena);
 }

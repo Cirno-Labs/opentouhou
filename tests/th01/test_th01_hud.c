@@ -11,6 +11,7 @@
 #include "th01/rng.h"
 #include "th01/session.h"
 #include "th01/shots.h"
+#include "th01/stage/private.h"
 
 #include "core/base/arena.h"
 
@@ -121,15 +122,15 @@ TEST(force_draws_leading_zeroes_and_preserves_resident_high_score)
     M_Init(&f);
     g_Session.high_score = 100;
     Hud_SnapNumbers(true);
-    g_Stage.score = 1;
+    p_Stage->score = 1;
     m_Hud.force_numbers = true;
     Hud_ScoreAndCombo();
     CHECK_EQ_INT(g_Session.high_score, 100);
     CHECK_EQ_INT(Th01Test_Pixel(0, 256, 16), 7);
     CHECK_EQ_INT(Th01Test_Pixel(1, 256, 16), 7);
     m_Hud.force_numbers = false;
-    g_Stage.score = 101;
-    g_Stage.combo = 257;
+    p_Stage->score = 101;
+    p_Stage->combo = 257;
     Hud_ScoreAndCombo();
     CHECK_EQ_INT(g_Session.high_score, 101);
     CHECK_EQ_INT(m_Hud.maximum_combo, 1);
@@ -149,7 +150,7 @@ TEST(negative_unchanged_combo_keeps_glyphs_and_background)
     for (int32_t page = 0; page < 2; page++) {
         memset(g_Video.pages[page] + 17 * 640 + 400, 7, 32);
     }
-    g_Stage.combo = -1;
+    p_Stage->combo = -1;
     m_Hud.combo_previous = -1;
     Hud_ScoreAndCombo();
     CHECK_EQ_INT(Th01Test_Pixel(0, 400, 17), 7);

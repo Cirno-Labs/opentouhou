@@ -1925,8 +1925,8 @@ static void M_Leaves(const B20M_ASSETS *const assets, const int16_t interval)
 }
 static void M_Hud(const B20M_ASSETS *const assets)
 {
-    g_Stage.first_stage = true;
-    StageTimer_Redraw(true, g_Stage.timer_initialized, 0);
+    Stage_SetFirstStage(true);
+    StageTimer_Redraw(true, g_Stage->timer_initialized, 0);
     Hud_ScoreAndCombo();
 }
 static void M_BeginEntrance(const void *const data)
@@ -2205,7 +2205,7 @@ static bool M_Defeat(const B20M_ASSETS *const assets, const uint64_t tick)
             for (int32_t i = 0; i < 5; i++) {
                 Stage_AddScore(10000);
             }
-            g_Stage.game_cleared = true;
+            Stage_SetGameCleared();
             m_B20M.finished = true;
             m_B20M.sequence = B20M_SEQUENCE_NONE;
             return true;

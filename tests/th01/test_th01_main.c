@@ -533,7 +533,7 @@ TEST(vsync_hook_runs_before_each_reference_vsync_and_scene_changes)
     CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_OPENING);
     M_Play();
     CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_GAMEPLAY);
-    CHECK(g_Stage.frame == 0);
+    CHECK(g_Stage->frame == 0);
     CHECK_EQ_INT(g_Opening->frame_rand, 1);
     Th01Hooks_Set((TH01_HOOKS) {});
     M_Shutdown();

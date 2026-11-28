@@ -91,10 +91,10 @@ static void M_StartFrames(void)
 {
     g_Gameplay.wait_for_shot = false;
     GameInput_Consume(GAME_INPUT_PRESS_SHOT);
-    g_Stage.timer_initialized = true;
+    Stage_SetTimerInitialized(true);
     Rng_Seed(g_Session.frame_rand);
     GameInput_OpenBombWindow();
-    g_Stage.first_stage = false;
+    Stage_SetFirstStage(false);
     m_LifePhase = GP_LIFE_FRAME_BEGIN;
 }
 
@@ -141,7 +141,7 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         m_LifePhase = GP_LIFE_WAIT_SHOT;
         return true;
     case GP_LIFE_WAIT_SHOT:
-        if (g_Stage.boss != BOSS_NONE || !g_Gameplay.wait_for_shot
+        if (g_Stage->boss != BOSS_NONE || !g_Gameplay.wait_for_shot
             || g_GameInput->shot) {
             M_StartFrames();
         } else {
@@ -158,7 +158,7 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         return true;
     case GP_LIFE_FRAME_BEGIN:
         if (g_Player->is_hit) {
-            g_Stage.timer_initialized = false;
+            Stage_SetTimerInitialized(false);
             GameplayExit_Begin();
             return true;
         }
@@ -188,7 +188,7 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
     case GP_LIFE_ITEMS:
         Items_UpdateAndRender(
             Gameplay_StageSprites(), &g_GameplayAssets->item_font);
-        g_Stage.frame++;
+        Stage_AdvanceFrame();
         Orb_AdvanceForceFrame();
         Player_AdvanceBombFrame();
         GameInput_AdvanceBombFrame();
@@ -230,7 +230,7 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         return true;
     case GP_LIFE_AFTER_ORB:
         Extend_UpdateAndRender();
-        if (g_Stage.game_cleared) {
+        if (g_Stage->game_cleared) {
             GameplayEnd_BeginVictory();
         } else {
             if (g_Pellets->destroy_score_delta != 0) {

@@ -244,8 +244,8 @@ void Hud_BombsPut(const int16_t previous)
 }
 void Hud_ScoreAndCombo(void)
 {
-    const uint32_t score = g_Stage.score;
-    const int16_t combo = g_Stage.combo;
+    const uint32_t score = g_Stage->score;
+    const int16_t combo = g_Stage->combo;
     for (int32_t page = 1; page >= 0; page--) {
         Video_SelectDrawingPage(page);
         for (int32_t bank = 1; bank <= 3; bank += 2) {
@@ -333,7 +333,7 @@ void Hud_SnapNumbers(const bool first_stage)
             }
             Video_SelectDrawingPage(0);
             const uint32_t value =
-                bank == 1 ? g_Stage.score : g_Session.high_score;
+                bank == 1 ? g_Stage->score : g_Session.high_score;
             uint32_t divisor = 1000000;
             for (int32_t i = 0; i < 7; i++, divisor /= 10) {
                 M_DrawText(

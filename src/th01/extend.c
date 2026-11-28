@@ -52,7 +52,7 @@ bool Extend_Step(int16_t *const next, const uint32_t score)
 
 void Extend_UpdateAndRender(void)
 {
-    if (!Extend_Step(&m_Extend.next, g_Stage.score)) {
+    if (!Extend_Step(&m_Extend.next, g_Stage->score)) {
         return;
     }
     int16_t *const lives = &g_Session.lives;

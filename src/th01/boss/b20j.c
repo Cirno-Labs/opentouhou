@@ -1219,7 +1219,7 @@ static bool M_Death(const B20J_ASSETS *const assets)
             for (int32_t i = 0; i < 5; i++) {
                 Stage_AddScore(10000);
             }
-            g_Stage.game_cleared = true;
+            Stage_SetGameCleared();
             m_B20J.finished = true;
             m_B20J.defeating = false;
             return true;

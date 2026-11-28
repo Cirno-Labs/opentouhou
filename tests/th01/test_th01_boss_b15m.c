@@ -401,8 +401,8 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         CHECK_EQ_INT(bat, 30);
         CHECK(m_B15M.finished);
         CHECK_EQ_INT(m_B15M.status.hp, 0);
-        CHECK_EQ_INT(g_Stage.score, 98000);
-        CHECK(g_Stage.cleared);
+        CHECK_EQ_INT(g_Stage->score, 98000);
+        CHECK(g_Stage->cleared);
         CHECK(m_Player.is_hit);
         CHECK(m_Scene.active == &f.assets.next_scene);
         CHECK_EQ_INT(m_Scene.active->id, 5);
@@ -451,7 +451,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 100));
     CHECK_EQ_INT(m_B15M.wait.kind, WAIT_TICKS);
     CHECK(!m_Player.is_hit);
-    CHECK(!g_Stage.cleared);
+    CHECK(!g_Stage->cleared);
     CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 105));
     CHECK(!m_Player.is_hit);
@@ -459,9 +459,9 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     CHECK(m_B15M.defeating);
     CHECK_EQ_INT(m_B15M.status.hp, 0);
     CHECK(m_Player.is_hit);
-    CHECK(!g_Stage.cleared);
+    CHECK(!g_Stage->cleared);
     CHECK(m_Scene.active == nullptr);
-    CHECK_EQ_INT(g_Stage.score, 7000);
+    CHECK_EQ_INT(g_Stage->score, 7000);
     CHECK_EQ_INT(g_Rng, rng);
     CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
     CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
@@ -475,7 +475,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     uint64_t tick = 106;
     M_Run(&f, &tick);
     CHECK(m_B15M.finished);
-    CHECK(g_Stage.cleared);
+    CHECK(g_Stage->cleared);
     CHECK(m_Scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
     CHECK_EQ_INT(g_Rng, rng);

@@ -413,7 +413,7 @@ TEST(card_completion_sets_hit_after_lethal_test_and_suppresses_orb_put)
     StageOrb_Init();
     CHECK(Stage_BeginOrbComposite(&state.sprites, nullptr, nullptr));
     CHECK(m_Player.is_hit);
-    CHECK(g_Stage.cleared);
+    CHECK(g_Stage->cleared);
     CHECK_EQ_INT(m_StageObjects.cards[0].flag, STAGE_CARD_REMOVED);
     CHECK_EQ_INT(Th01Test_Pixel(0, 500, 342), 6);
     CHECK_EQ_INT(Th01Test_Pixel(0, 500, 350), 2);

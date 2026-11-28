@@ -34,12 +34,11 @@ bool GameplayExit_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         g_Session.exit_rand = g_Session.frame_rand;
         Boss_ClearTestDamage();
         Player_SetBombFrame(200);
-        if (g_Stage.cleared) {
-            g_Stage.cleared = false;
+        if (Stage_TakeCleared()) {
             Player_ClearHit();
-            if (g_Stage.boss != BOSS_NONE) {
+            if (g_Stage->boss != BOSS_NONE) {
                 g_Gameplay.wait_for_shot = true;
-                g_Stage.first_stage = true;
+                Stage_SetFirstStage(true);
             }
             g_Session.stage_id++;
             GameplayEnd_BeginBonus(g_Session.stage_id, raw, host_tick);

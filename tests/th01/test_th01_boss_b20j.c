@@ -16,6 +16,7 @@
 #include "th01/shots.h"
 #include "th01/sound.h"
 #include "th01/stage/objects.c"
+#include "th01/stage/private.h"
 
 #include "core/base/arena.h"
 
@@ -247,7 +248,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             CHECK_EQ_INT(m_B20J.status.frame, 0);
             CHECK_EQ_INT(m_B20J.status.hp, 18);
             CHECK_EQ_INT(arena.used, used);
-            CHECK(!g_Stage.game_cleared);
+            CHECK(!g_Stage->game_cleared);
         }
     }
     Arena_Free(&arena);
@@ -263,7 +264,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     m_B20J.pattern = 99;
     m_B20J.status.frame = 0;
     m_B20J.status.hp = 0;
-    g_Stage.score = UINT32_MAX - 100;
+    p_Stage->score = UINT32_MAX - 100;
     f.assets.scroll.palette[7] = (GFX_COLOR) { 255, 255, 255, 255 };
     g_Palette.saved.colors[7][0] = 15;
     VSyncIrq_Reset();
@@ -271,7 +272,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     int32_t polls = 0;
     while (!M_BossUpdate(&f.assets)) {
         const B20J snapshot = m_B20J;
-        CHECK(!g_Stage.game_cleared);
+        CHECK(!g_Stage->game_cleared);
         for (int32_t i = 0; i < 3; i++) {
             CHECK(!M_BossUpdate(&f.assets));
             CHECK(memcmp(&m_B20J, &snapshot, sizeof(m_B20J)) == 0);
@@ -279,8 +280,8 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
         VSyncIrq_Edge();
         CHECK(++polls < 1200);
     }
-    CHECK(g_Stage.game_cleared && m_B20J.finished && !m_B20J.defeating);
-    CHECK_EQ_INT(g_Stage.score, 49899);
+    CHECK(g_Stage->game_cleared && m_B20J.finished && !m_B20J.defeating);
+    CHECK_EQ_INT(g_Stage->score, 49899);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(m_B20J.status.frame, 65);
     CHECK_EQ_INT(m_B20J.scroll_frame, 264);
@@ -333,7 +334,7 @@ TEST(hit_tests_current_orb_at_inclusive_rectangle_edges)
         VSyncIrq_Reset();
         CHECK(M_BossUpdate(&f.assets));
         CHECK_EQ_INT(m_B20J.status.hp, i < 2 ? 17 : 18);
-        CHECK_EQ_INT(g_Stage.score, i < 2 ? 10000 : 0);
+        CHECK_EQ_INT(g_Stage->score, i < 2 ? 10000 : 0);
     }
     Arena_Free(&arena);
 }
@@ -374,8 +375,8 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     }
     CHECK_EQ_INT(images, 9);
     CHECK_EQ_INT(m_B20J.status.hp, 0);
-    CHECK_EQ_INT(g_Stage.score, 60000);
-    CHECK(g_Stage.game_cleared && m_B20J.finished);
+    CHECK_EQ_INT(g_Stage->score, 60000);
+    CHECK(g_Stage->game_cleared && m_B20J.finished);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
