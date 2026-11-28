@@ -1,4 +1,4 @@
-#include "th01/pellet_assets.h"
+#include "th01/pellets/assets.h"
 
 #include "pc98/zun/math16.h"
 #include "pc98/zun/sprite_sheet.h"

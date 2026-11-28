@@ -1,7 +1,7 @@
 #pragma once
 
 #include "th01/boss.h"
-#include "th01/pellet_assets.h"
+#include "th01/pellets/assets.h"
 #include "th01/player.h"
 #include "th01/shots.h"
 #include "th01/stage/objects.h"

@@ -1,6 +1,6 @@
 #include "tests/test.h"
 #include "tests/th01/th01_sprites.h"
-#include "th01/pellet_assets.h"
+#include "th01/pellets/assets.h"
 
 #include "core/base/memory.h"
 
